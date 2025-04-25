@@ -54,40 +54,49 @@ jobs:
           set -x  # Enable debugging
           
           if [ "${{ github.event_name }}" == "workflow_dispatch" ]; then
-            echo "VERSION=${{ github.event.inputs.version }}" >> $GITHUB_OUTPUT
+            VERSION="${{ github.event.inputs.version }}"
           else
             # Extract version from tag (remove 'v' prefix)
             VERSION=${GITHUB_REF#refs/tags/v}
-            echo "VERSION=$VERSION" >> $GITHUB_OUTPUT
           fi
           
-          # Configure Git (required for npm version)
-          git config --global user.email "action@github.com"
-          git config --global user.name "GitHub Action"
+          echo "VERSION=$VERSION" >> $GITHUB_OUTPUT
+          echo "Extracted version: $VERSION"
           
           # Show current package.json version
           echo "Current package.json version:"
-          grep -m 1 '"version"' package.json
+          cat package.json | grep -m 1 '"version"'
           
-          # Update package.json version to match tag without creating a commit
-          npm --no-git-tag-version version $VERSION
+          # Manually update package.json version using sed
+          sed -i.bak "s/\"version\": \".*\"/\"version\": \"$VERSION\"/" package.json
           
           # Verify the update
           echo "Updated package.json version:"
-          grep -m 1 '"version"' package.json
+          cat package.json | grep -m 1 '"version"'
+          
+          # Show the full package.json for debugging
+          echo "Full package.json content:"
+          cat package.json
           
       - name: Build WordPress plugin bundle
-        run: node wp-bundle.js
+        run: |
+          VERSION=${{ steps.get_build_version.outputs.VERSION }}
+          echo "Building WordPress plugin bundle for version $VERSION"
+          node wp-bundle.js
+        
+      - name: List all files
+        run: ls -la
         
       - name: Verify WordPress plugin bundle
         run: |
           VERSION=${{ steps.get_build_version.outputs.VERSION }}
           echo "Looking for agentman-chat-widget-$VERSION.zip"
-          ls -la
           if [ -f "agentman-chat-widget-$VERSION.zip" ]; then
             echo "WordPress plugin bundle found!"
           else
             echo "WordPress plugin bundle NOT found!"
+            echo "Looking for any zip files:"
+            find . -name "*.zip"
             exit 1
           fi
       
