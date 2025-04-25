@@ -187,8 +187,8 @@ export const baseStyles = `
 
   .chat-input-container {
     display: flex;
+    align-items: center;
     padding: 8px 16px 8px;
-    position: relative;
     background: white;
     border-top: 1px solid rgba(0, 0, 0, 0.05);
   }
@@ -199,10 +199,10 @@ export const baseStyles = `
   }
 
   .chat-input {
-    width: 100%;
+    flex: 1;
     min-height: 44px;
     max-height: 120px;
-    padding: 10px 44px 6px 12px;
+    padding: 10px 12px 6px 12px;
     border: 1px solid rgba(0, 0, 0, 0.1);
     border-radius: 8px;
     font-size: 14px;
@@ -214,9 +214,7 @@ export const baseStyles = `
   }
 
   .chat-send {
-    position: absolute;
-    right: 12px;
-    bottom: 16px;
+    margin-left: 8px;
     width: 32px;
     height: 32px;
     padding: 6px;
