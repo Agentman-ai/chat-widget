@@ -67,14 +67,15 @@ jobs:
           echo "Current package.json version:"
           cat package.json | grep -m 1 '"version"'
           
-          # Manually update package.json version using sed
-          sed -i.bak "s/\"version\": \".*\"/\"version\": \"$VERSION\"/" package.json
+          # Update package.json version using npm version but IGNORE scripts
+          # This prevents the postversion script from running
+          npm --no-git-tag-version --ignore-scripts version $VERSION
           
           # Verify the update
           echo "Updated package.json version:"
           cat package.json | grep -m 1 '"version"'
           
-          # Show the full package.json for debugging
+          # Show the full package.json content for debugging
           echo "Full package.json content:"
           cat package.json
           
