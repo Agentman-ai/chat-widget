@@ -15,6 +15,8 @@ A customizable chat widget that can be easily integrated into any web applicatio
 - [Configuration](#configuration)
 - [Theme Customization](#theme-customization)
 - [Icon Customization](#icon-customization)
+- [Persistence](#persistence)
+- [WordPress Integration](#wordpress-integration)
 - [License](#license)
 
 ## Features
@@ -23,7 +25,9 @@ A customizable chat widget that can be easily integrated into any web applicatio
 - 🔒 Secure token-based authentication
 - 🌐 Easy integration with any web application
 - 📱 Responsive design for all devices
+- 💾 Built-in persistence for chat history
 - ⚡ Lightweight and performant
+- 🔌 WordPress plugin support
 
 ## Installation
 
@@ -78,7 +82,14 @@ const config = {
   
   // Logos
   logo: 'https://example.com/logo.png',  // Main logo
-  headerLogo: 'https://example.com/header-logo-32x32.png' // Header logo (32x32px)
+  headerLogo: 'https://example.com/header-logo-32x32.png', // Header logo (32x32px)
+  
+  // Persistence configuration
+  persistence: {
+    enabled: true,           // Enable/disable persistence
+    days: 7,                // Number of days to keep messages
+    key: 'custom_storage_key' // Optional custom storage key
+  }
 };
 
 const chatWidget = new ChatWidget(config);
@@ -112,6 +123,7 @@ chatWidget.destroy();
 | `icons` | `object` | No | Icon customization (see Icon Customization) |
 | `logo` | `string` | No | URL for the main logo |
 | `headerLogo` | `string` | No | URL for the header logo (32x32px) |
+| `persistence` | `object` | No | Persistence configuration (see Persistence) |
 
 ## Theme Customization
 
@@ -147,6 +159,63 @@ Each avatar icon can be specified as either:
 - A URL to an image file (PNG, JPG, etc.)
 - An SVG string
 - The color of SVG icons can be customized using `userIconColor` and `agentIconColor` in the theme when using SVG
+
+## Persistence
+
+The chat widget includes built-in persistence functionality to save conversation history across page reloads:
+
+```javascript
+const config = {
+  // ... other options
+  
+  // Persistence configuration
+  persistence: {
+    enabled: true,           // Enable/disable persistence
+    days: 7,                // Number of days to keep messages
+    key: 'custom_storage_key' // Optional custom storage key
+  }
+};
+```
+
+| Option | Type | Required | Description |
+|--------|------|----------|-------------|
+| `enabled` | `boolean` | No | Enable/disable persistence. Default: `false` |
+| `days` | `number` | No | Number of days to keep messages. Default: `7` |
+| `key` | `string` | No | Custom storage key. Default: `chatwidget_{containerId}_data` |
+
+The persistence functionality:
+- Saves messages to localStorage
+- Restores conversation history on page reload
+- Maintains conversation IDs across sessions
+- Automatically expires old conversations
+
+## WordPress Integration
+
+The chat widget can be easily integrated into WordPress sites using our dedicated plugin.
+
+### Bundling for WordPress
+
+To create a WordPress-compatible bundle of the chat widget:
+
+```bash
+# Run the WordPress bundling script
+node wp-bundle.js
+```
+
+This script:
+1. Builds the chat widget with all dependencies
+2. Creates a WordPress-specific bundle
+3. Copies the bundle to the WordPress plugin directory
+4. Updates version information in the plugin
+5. Creates a distributable zip file
+
+### WordPress Plugin Features
+
+- Easy installation and configuration through WordPress admin
+- Full integration with the chat widget's built-in persistence
+- Customizable appearance and behavior
+- Admin-only error messages and debugging
+- Compatible with all WordPress themes
 
 ## License
 

@@ -5,7 +5,7 @@ import { logo as logo, logo as headerLogo} from './assets/logo';
 
 export class ConfigManager {
   private static readonly defaultTheme: ChatTheme = {
-    userBackgroundColor: '#007bff',
+    userBackgroundColor: '#10b981',
     agentBackgroundColor: '#6c757d',
     textColor: '#212529',
     backgroundColor: '#ffffff',

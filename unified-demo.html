@@ -1,0 +1,638 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ChatWidget Unified Demo</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 20px;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        #chat-container {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            z-index: 1000;
+        }
+        .config-panel {
+            margin: 20px 0;
+            padding: 20px;
+            background: #f5f5f5;
+            border-radius: 8px;
+        }
+        .form-group {
+            margin-bottom: 15px;
+        }
+        .form-row {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 20px;
+        }
+        .form-column {
+            flex: 1;
+            min-width: 300px;
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: 500;
+        }
+        input, select {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            box-sizing: border-box;
+        }
+        input[type="checkbox"] {
+            width: auto;
+        }
+        input[type="color"] {
+            height: 40px;
+            padding: 2px;
+        }
+        .color-preview {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 1px solid #ccc;
+            border-radius: 3px;
+            vertical-align: middle;
+            margin-left: 5px;
+        }
+        .actions {
+            margin-top: 20px;
+            padding-top: 20px;
+            border-top: 1px solid #ddd;
+            display: flex;
+            justify-content: space-between;
+        }
+        button {
+            padding: 10px 20px;
+            margin-right: 10px;
+            background: #10b981;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        button:hover {
+            background: #059669;
+        }
+        .section-title {
+            margin-top: 0;
+            border-bottom: 1px solid #ddd;
+            padding-bottom: 10px;
+        }
+        .storage-info {
+            margin-top: 15px;
+            font-family: monospace;
+            font-size: 12px;
+            padding: 10px;
+            background: #f0f0f0;
+            border-radius: 4px;
+            max-height: 300px;
+            overflow: auto;
+            white-space: pre;
+        }
+        .tabs {
+            display: flex;
+            margin-bottom: 20px;
+            border-bottom: 1px solid #ddd;
+        }
+        .tab {
+            padding: 10px 20px;
+            cursor: pointer;
+            border: 1px solid transparent;
+            border-bottom: none;
+            border-radius: 4px 4px 0 0;
+            margin-right: 5px;
+        }
+        .tab.active {
+            background: #f5f5f5;
+            border-color: #ddd;
+        }
+        .tab-content {
+            display: none;
+        }
+        .tab-content.active {
+            display: block;
+        }
+    </style>
+</head>
+<body>
+    <h1>ChatWidget Unified Demo</h1>
+    
+    <div class="tabs">
+        <div class="tab active" data-tab="config">Configuration</div>
+        <div class="tab" data-tab="persistence">Persistence</div>
+        <div class="tab" data-tab="debug">Debug</div>
+    </div>
+    
+    <!-- Configuration Tab -->
+    <div class="tab-content active" id="config-tab">
+        <div class="config-panel">
+            <form id="configForm" onsubmit="return false;">
+                <div class="form-row">
+                    <!-- Basic Configuration -->
+                    <div class="form-column">
+                        <h2 class="section-title">Basic Settings</h2>
+                        
+                        <div class="form-group">
+                            <label for="apiUrl">API URL</label>
+                            <input type="text" id="apiUrl" value="https://studio-api.chainofagents.ai">
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="agentToken">Agent Token</label>
+                            <input type="text" id="agentToken" value=".eJyrVipJzUvMK4nPTFGyMjHTUUosKMjJTE4syczPQ4ilp0JVGBqa1wIAxoEQ6Q.Z32csg.xbR3NqyuNlDpt-Dafp1O2GpKw5U">
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="title">Widget Title</label>
+                            <input type="text" id="title" value="Chat Assistant">
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="placeholder">Input Placeholder</label>
+                            <input type="text" id="placeholder" value="Ask me anything...">
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="variant">Widget Variant</label>
+                            <select id="variant">
+                                <option value="corner">Corner (Floating Button)</option>
+                                <option value="embedded">Embedded</option>
+                            </select>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="position">Widget Position</label>
+                            <select id="position">
+                                <option value="bottom-right">Bottom Right</option>
+                                <option value="bottom-left">Bottom Left</option>
+                                <option value="top-right">Top Right</option>
+                                <option value="top-left">Top Left</option>
+                            </select>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label>
+                                <input type="checkbox" id="initiallyOpen"> Initially Open
+                            </label>
+                        </div>
+                    </div>
+                    
+                    <!-- Theme Configuration -->
+                    <div class="form-column">
+                        <h2 class="section-title">Theme Settings</h2>
+                        
+                        <div class="form-group">
+                            <label for="headerBackgroundColor">Header Background</label>
+                            <input type="color" id="headerBackgroundColor" value="#10b981">
+                            <span class="color-preview" style="background-color: #10b981;"></span>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="headerTextColor">Header Text</label>
+                            <input type="color" id="headerTextColor" value="#FFFFFF">
+                            <span class="color-preview" style="background-color: #FFFFFF;"></span>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="backgroundColor">Widget Background</label>
+                            <input type="color" id="backgroundColor" value="#FFFFFF">
+                            <span class="color-preview" style="background-color: #FFFFFF;"></span>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="textColor">Text Color</label>
+                            <input type="color" id="textColor" value="#111827">
+                            <span class="color-preview" style="background-color: #111827;"></span>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="buttonColor">Button Color</label>
+                            <input type="color" id="buttonColor" value="#10b981">
+                            <span class="color-preview" style="background-color: #10b981;"></span>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="buttonTextColor">Button Text</label>
+                            <input type="color" id="buttonTextColor" value="#FFFFFF">
+                            <span class="color-preview" style="background-color: #FFFFFF;"></span>
+                        </div>
+                    </div>
+                    
+                    <!-- Message Styling -->
+                    <div class="form-column">
+                        <h2 class="section-title">Message Styling</h2>
+                        
+                        <div class="form-group">
+                            <label for="userBackgroundColor">User Message Background</label>
+                            <input type="color" id="userBackgroundColor" value="#10b981">
+                            <span class="color-preview" style="background-color: #10b981;"></span>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="userForegroundColor">User Message Text</label>
+                            <input type="color" id="userForegroundColor" value="#FFFFFF">
+                            <span class="color-preview" style="background-color: #FFFFFF;"></span>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="agentBackgroundColor">Agent Message Background</label>
+                            <input type="color" id="agentBackgroundColor" value="#f3f4f6">
+                            <span class="color-preview" style="background-color: #f3f4f6;"></span>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="agentForegroundColor">Agent Message Text</label>
+                            <input type="color" id="agentForegroundColor" value="#111827">
+                            <span class="color-preview" style="background-color: #111827;"></span>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="userIconColor">User Icon Color</label>
+                            <input type="color" id="userIconColor" value="#FFFFFF">
+                            <span class="color-preview" style="background-color: #FFFFFF;"></span>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="agentIconColor">Agent Icon Color</label>
+                            <input type="color" id="agentIconColor" value="#10b981">
+                            <span class="color-preview" style="background-color: #10b981;"></span>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Persistence Settings -->
+                <div class="form-row">
+                    <div class="form-column">
+                        <h2 class="section-title">Persistence Settings</h2>
+                        
+                        <div class="form-group">
+                            <label>
+                                <input type="checkbox" id="persistenceEnabled" checked> Enable Persistence
+                            </label>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="persistenceDays">Days to Keep Messages</label>
+                            <input type="number" id="persistenceDays" value="7" min="1" max="30">
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="persistenceKey">Custom Storage Key (optional)</label>
+                            <input type="text" id="persistenceKey" placeholder="Leave blank for default">
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="actions">
+                    <div>
+                        <button type="button" onclick="resetConfig()">Reset to Defaults</button>
+                        <button type="button" onclick="applyConfig()">Apply Configuration</button>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+    
+    <!-- Persistence Tab -->
+    <div class="tab-content" id="persistence-tab">
+        <div class="config-panel">
+            <h2 class="section-title">Persistence Controls</h2>
+            
+            <div class="form-row">
+                <div class="form-column">
+                    <button onclick="reloadPage()">Reload Page</button>
+                    <button onclick="clearStorage()">Clear Storage</button>
+                    <button onclick="showStorage()">Show Storage</button>
+                    <button onclick="showConversationId()">Show Conversation ID</button>
+                </div>
+            </div>
+            
+            <div class="storage-info" id="storageInfo"></div>
+        </div>
+    </div>
+    
+    <!-- Debug Tab -->
+    <div class="tab-content" id="debug-tab">
+        <div class="config-panel">
+            <h2 class="section-title">Debug Information</h2>
+            
+            <div class="form-row">
+                <div class="form-column">
+                    <button onclick="showWidgetState()">Show Widget State</button>
+                    <button onclick="showWidgetMethods()">Show Widget Methods</button>
+                    <button onclick="showPersistenceManager()">Show Persistence Manager</button>
+                </div>
+            </div>
+            
+            <div class="storage-info" id="debugInfo"></div>
+        </div>
+    </div>
+    
+    <div id="chat-container"></div>
+    
+    <!-- Include the bundled widget -->
+    <script src="dist/index.js"></script>
+    
+    <script>
+        let chatWidget;
+        const STORAGE_KEY = 'chatwidget_chat-container_data';
+        
+        // Initialize the widget with persistence
+        function initWidget() {
+            // Get the ChatWidget class
+            const ChatWidget = window['@agentman/chat-widget'].ChatWidget;
+            
+            console.log('Using built-in persistence functionality');
+            
+            // Debug the ChatWidget prototype
+            console.log('ChatWidget prototype methods:', 
+                Object.getOwnPropertyNames(ChatWidget.prototype).filter(prop => 
+                    typeof ChatWidget.prototype[prop] === 'function'
+                )
+            );
+            
+            // Create widget instance with persistence enabled
+            chatWidget = new ChatWidget(getFormConfig());
+            
+            console.log('Widget initialized with persistence');
+        }
+        
+        // UI Helper Functions
+        function reloadPage() {
+            window.location.reload();
+        }
+        
+        function clearStorage() {
+            if (chatWidget && chatWidget.persistenceManager) {
+                chatWidget.persistenceManager.clearStorage();
+                console.log('Storage cleared');
+                showStorage();
+            } else {
+                console.error('ChatWidget not initialized or persistenceManager not available');
+            }
+        }
+        
+        function showStorage() {
+            try {
+                const key = chatWidget?.persistenceManager?.getStorageKey() || STORAGE_KEY;
+                const raw = localStorage.getItem(key);
+                const storageInfo = document.getElementById('storageInfo');
+                
+                if (raw) {
+                    const data = JSON.parse(raw);
+                    const prettyData = JSON.stringify(data, null, 2);
+                    storageInfo.textContent = prettyData;
+                    
+                    // Show message count
+                    console.log(`Storage contains ${data.messages.length} messages`);
+                } else {
+                    storageInfo.textContent = 'No data in storage';
+                }
+            } catch (e) {
+                console.error('Error showing storage:', e);
+            }
+        }
+        
+        function showConversationId() {
+            try {
+                const storageInfo = document.getElementById('storageInfo');
+                
+                if (!chatWidget) {
+                    storageInfo.textContent = 'ChatWidget not initialized';
+                    return;
+                }
+                
+                // Get conversation ID from widget
+                const widgetConvId = chatWidget.conversationId;
+                
+                // Get conversation ID from storage
+                let storageConvId = null;
+                try {
+                    const key = chatWidget?.persistenceManager?.getStorageKey() || STORAGE_KEY;
+                    const raw = localStorage.getItem(key);
+                    if (raw) {
+                        const data = JSON.parse(raw);
+                        storageConvId = data.conversationId;
+                    }
+                } catch (e) {
+                    console.error('Error getting storage conversation ID:', e);
+                }
+                
+                // Display information
+                const info = {
+                    widget_conversation_id: widgetConvId || 'Not available',
+                    storage_conversation_id: storageConvId || 'Not available',
+                    match: widgetConvId && storageConvId ? 
+                        (widgetConvId === storageConvId ? 'YES ✅' : 'NO ❌') : 
+                        'Cannot determine (missing IDs)',
+                    storage_key: chatWidget?.persistenceManager?.getStorageKey() || STORAGE_KEY
+                };
+                
+                storageInfo.textContent = JSON.stringify(info, null, 2);
+            } catch (e) {
+                console.error('Error showing conversation ID:', e);
+            }
+        }
+        
+        function showWidgetState() {
+            try {
+                const debugInfo = document.getElementById('debugInfo');
+                
+                if (!chatWidget) {
+                    debugInfo.textContent = 'ChatWidget not initialized';
+                    return;
+                }
+                
+                const state = chatWidget.stateManager?.getState() || 'No state available';
+                debugInfo.textContent = JSON.stringify(state, null, 2);
+            } catch (e) {
+                console.error('Error showing widget state:', e);
+            }
+        }
+        
+        function showWidgetMethods() {
+            try {
+                const debugInfo = document.getElementById('debugInfo');
+                
+                if (!chatWidget) {
+                    debugInfo.textContent = 'ChatWidget not initialized';
+                    return;
+                }
+                
+                const methods = Object.getOwnPropertyNames(Object.getPrototypeOf(chatWidget))
+                    .filter(prop => typeof chatWidget[prop] === 'function');
+                
+                debugInfo.textContent = JSON.stringify(methods, null, 2);
+            } catch (e) {
+                console.error('Error showing widget methods:', e);
+            }
+        }
+        
+        function showPersistenceManager() {
+            try {
+                const debugInfo = document.getElementById('debugInfo');
+                
+                if (!chatWidget || !chatWidget.persistenceManager) {
+                    debugInfo.textContent = 'Persistence Manager not available';
+                    return;
+                }
+                
+                const pmInfo = {
+                    enabled: chatWidget.config.persistence?.enabled,
+                    days: chatWidget.config.persistence?.days,
+                    key: chatWidget.persistenceManager.getStorageKey(),
+                    conversationId: chatWidget.conversationId
+                };
+                
+                debugInfo.textContent = JSON.stringify(pmInfo, null, 2);
+            } catch (e) {
+                console.error('Error showing persistence manager:', e);
+            }
+        }
+        
+        function getFormConfig() {
+            return {
+                apiUrl: document.getElementById('apiUrl').value,
+                agentToken: document.getElementById('agentToken').value,
+                title: document.getElementById('title').value,
+                placeholder: document.getElementById('placeholder').value,
+                variant: document.getElementById('variant').value,
+                position: document.getElementById('position').value,
+                initiallyOpen: document.getElementById('initiallyOpen').checked,
+                containerId: 'chat-container',
+                
+                // Theme settings
+                theme: {
+                    headerBackgroundColor: document.getElementById('headerBackgroundColor').value,
+                    headerTextColor: document.getElementById('headerTextColor').value,
+                    backgroundColor: document.getElementById('backgroundColor').value,
+                    textColor: document.getElementById('textColor').value,
+                    buttonColor: document.getElementById('buttonColor').value,
+                    buttonTextColor: document.getElementById('buttonTextColor').value,
+                },
+                
+                // Message styling
+                userBackgroundColor: document.getElementById('userBackgroundColor').value,
+                userForegroundColor: document.getElementById('userForegroundColor').value,
+                agentBackgroundColor: document.getElementById('agentBackgroundColor').value,
+                agentForegroundColor: document.getElementById('agentForegroundColor').value,
+                userIconColor: document.getElementById('userIconColor').value,
+                agentIconColor: document.getElementById('agentIconColor').value,
+                
+                // Persistence settings
+                persistence: {
+                    enabled: document.getElementById('persistenceEnabled').checked,
+                    days: parseInt(document.getElementById('persistenceDays').value, 10),
+                    key: document.getElementById('persistenceKey').value || undefined
+                }
+            };
+        }
+        
+        function applyConfig() {
+            // Remove existing widget
+            if (chatWidget) {
+                chatWidget.destroy();
+            }
+            
+            // Initialize with new config
+            const ChatWidget = window['@agentman/chat-widget'].ChatWidget;
+            chatWidget = new ChatWidget(getFormConfig());
+            
+            console.log('Widget configuration applied');
+        }
+        
+        function resetConfig() {
+            // Reset form to defaults
+            document.getElementById('apiUrl').value = 'https://studio-api.chainofagents.ai';
+            document.getElementById('agentToken').value = '.eJyrVipJzUvMK4nPTFGyMjHTUUosKMjJTE4syczPQ4ilp0JVGBqa1wIAxoEQ6Q.Z32csg.xbR3NqyuNlDpt-Dafp1O2GpKw5U';
+            document.getElementById('title').value = 'Chat Assistant';
+            document.getElementById('placeholder').value = 'Ask me anything...';
+            document.getElementById('variant').value = 'corner';
+            document.getElementById('position').value = 'bottom-right';
+            document.getElementById('initiallyOpen').checked = false;
+            
+            // Theme settings
+            document.getElementById('headerBackgroundColor').value = '#10b981';
+            document.getElementById('headerTextColor').value = '#FFFFFF';
+            document.getElementById('backgroundColor').value = '#FFFFFF';
+            document.getElementById('textColor').value = '#111827';
+            document.getElementById('buttonColor').value = '#10b981';
+            document.getElementById('buttonTextColor').value = '#FFFFFF';
+            
+            // Message styling
+            document.getElementById('userBackgroundColor').value = '#10b981';
+            document.getElementById('userForegroundColor').value = '#FFFFFF';
+            document.getElementById('agentBackgroundColor').value = '#f3f4f6';
+            document.getElementById('agentForegroundColor').value = '#111827';
+            document.getElementById('userIconColor').value = '#FFFFFF';
+            document.getElementById('agentIconColor').value = '#10b981';
+            
+            // Persistence settings
+            document.getElementById('persistenceEnabled').checked = true;
+            document.getElementById('persistenceDays').value = '7';
+            document.getElementById('persistenceKey').value = '';
+            
+            // Update color previews
+            updateColorPreviews();
+            
+            console.log('Form reset to defaults');
+        }
+        
+        // Update all color preview elements
+        function updateColorPreviews() {
+            document.querySelectorAll('input[type="color"]').forEach(input => {
+                const preview = input.nextElementSibling;
+                if (preview && preview.classList.contains('color-preview')) {
+                    preview.style.backgroundColor = input.value;
+                }
+            });
+        }
+        
+        // Tab switching
+        function setupTabs() {
+            document.querySelectorAll('.tab').forEach(tab => {
+                tab.addEventListener('click', () => {
+                    // Remove active class from all tabs
+                    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+                    document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+                    
+                    // Add active class to clicked tab
+                    tab.classList.add('active');
+                    
+                    // Show corresponding content
+                    const tabId = tab.getAttribute('data-tab');
+                    document.getElementById(`${tabId}-tab`).classList.add('active');
+                });
+            });
+        }
+        
+        // Initialize color preview updates
+        document.querySelectorAll('input[type="color"]').forEach(input => {
+            input.addEventListener('input', function() {
+                const preview = this.nextElementSibling;
+                if (preview && preview.classList.contains('color-preview')) {
+                    preview.style.backgroundColor = this.value;
+                }
+            });
+        });
+        
+        // Initialize on page load
+        document.addEventListener('DOMContentLoaded', function() {
+            setupTabs();
+            updateColorPreviews();
+            initWidget();
+            showStorage();
+        });
+    </script>
+</body>
+</html>

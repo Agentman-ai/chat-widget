@@ -61,6 +61,7 @@ export interface ChatConfig {
   toggleText?: string;
   initialMessage?: string;
   placeholder?: string;
+  persistence?: PersistenceConfig;
 }
 
 export interface Message {
@@ -85,4 +86,10 @@ export interface APIResponse {
   id: string;
   type: 'ai' | 'user';
   content: string;
+}
+
+export interface PersistenceConfig {
+  enabled?: boolean;
+  days?: number;
+  key?: string;
 }

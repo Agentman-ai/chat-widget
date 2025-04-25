@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ChatWidget Built-in Persistence Test</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 20px;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        #chat-container {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            z-index: 1000;
+        }
+        .controls {
+            margin: 20px 0;
+            padding: 20px;
+            background: #f5f5f5;
+            border-radius: 8px;
+        }
+        button {
+            padding: 10px 20px;
+            margin-right: 10px;
+            background: #10b981;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        button:hover {
+            background: #059669;
+        }
+        .storage-info {
+            margin-top: 15px;
+            font-family: monospace;
+            font-size: 12px;
+            padding: 10px;
+            background: #f0f0f0;
+            border-radius: 4px;
+            max-height: 300px;
+            overflow: auto;
+            white-space: pre;
+        }
+    </style>
+</head>
+<body>
+    <h1>ChatWidget Built-in Persistence Test</h1>
+    
+    <div class="controls">
+        <button onclick="reloadPage()">Reload Page</button>
+        <button onclick="clearStorage()">Clear Storage</button>
+        <button onclick="showStorage()">Show Storage</button>
+        <button onclick="showConversationId()">Show Conversation ID</button>
+        
+        <div class="storage-info" id="storageInfo"></div>
+    </div>
+    
+    <div id="chat-container"></div>
+    
+    <!-- Include the bundled widget -->
+    <script src="dist/index.js"></script>
+    
+    <script>
+        let chatWidget;
+        
+        // Initialize the widget with built-in persistence
+        function initWidget() {
+            const ChatWidget = window['@agentman/chat-widget'].ChatWidget;
+            
+            chatWidget = new ChatWidget({
+                apiUrl: 'https://studio-api.chainofagents.ai',
+                agentToken: '.eJyrVipJzUvMK4nPTFGyMjHTUUosKMjJTE4syczPQ4ilp0JVGBqa1wIAxoEQ6Q.Z32csg.xbR3NqyuNlDpt-Dafp1O2GpKw5U',
+                variant: 'corner',
+                containerId: 'chat-container',
+                initiallyOpen: true,
+                title: 'Built-in Persistence Test',
+                placeholder: 'Ask me anything...',
+                position: 'bottom-right',
+                initialHeight: '600px',
+                initialWidth: '400px',
+                persistence: {
+                    enabled: true,
+                    days: 7
+                }
+            });
+            
+            console.log('Widget initialized with built-in persistence');
+        }
+        
+        // UI Helper Functions
+        function reloadPage() {
+            window.location.reload();
+        }
+        
+        function clearStorage() {
+            if (chatWidget && chatWidget.clearStorage) {
+                chatWidget.clearStorage();
+                showStorage();
+                console.log('Storage cleared');
+            } else {
+                document.getElementById('storageInfo').textContent = 'Error: clearStorage method not available';
+            }
+        }
+        
+        function showStorage() {
+            try {
+                const storageKey = `chatwidget_chat-container_data`;
+                const raw = localStorage.getItem(storageKey);
+                
+                if (!raw) {
+                    document.getElementById('storageInfo').textContent = 'No stored data found';
+                    return;
+                }
+                
+                const data = JSON.parse(raw);
+                document.getElementById('storageInfo').textContent = JSON.stringify(data, null, 2);
+            } catch (e) {
+                document.getElementById('storageInfo').textContent = `Error reading storage: ${e.message}`;
+            }
+        }
+        
+        function showConversationId() {
+            if (chatWidget) {
+                try {
+                    // Try to access the conversation ID
+                    const id = chatWidget.conversationId;
+                    if (id) {
+                        document.getElementById('storageInfo').textContent = `Current conversation ID: ${id}`;
+                    } else {
+                        document.getElementById('storageInfo').textContent = 'No conversation ID found';
+                    }
+                } catch (e) {
+                    document.getElementById('storageInfo').textContent = `Error accessing conversation ID: ${e.message}`;
+                }
+            } else {
+                document.getElementById('storageInfo').textContent = 'Widget not initialized';
+            }
+        }
+        
+        // Initialize on page load
+        document.addEventListener('DOMContentLoaded', function() {
+            // Show initial storage state
+            showStorage();
+            
+            // Initialize the widget
+            initWidget();
+        });
+    </script>
+</body>
+</html>

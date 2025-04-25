@@ -1,5 +1,6 @@
 // ChatWidget.ts
-import type { ChatConfig, Message, APIResponse, ChatState, ChatTheme, ChatAssets } from './types/types';
+import type { ChatConfig, Message, APIResponse, ChatState, ChatTheme, ChatAssets, PersistenceConfig } from './types/types';
+import { PersistenceManager } from './PersistenceManager';
 
 import { ConfigManager } from './ConfigManager';
 import { StateManager } from './StateManager';
@@ -32,6 +33,7 @@ export class ChatWidget {
   private isInitialized: boolean = false;
   private isOffline: boolean = false;
   private lastMessageCount: number = 0;
+  private persistenceManager: PersistenceManager | null = null;
 
   private static readonly defaultIcons = {
     closeIcon: close,
@@ -112,6 +114,27 @@ export class ChatWidget {
     this.messageRenderer = new MessageRenderer();
 
     this.styleManager = new StyleManager(config.variant);
+    
+    // Initialize persistence if enabled
+    if (this.config.persistence?.enabled) {
+      this.persistenceManager = new PersistenceManager(
+        this.config.persistence,
+        this.stateManager,
+        this.containerId
+      );
+      
+      // Check if we have a stored conversation ID
+      const storedId = this.persistenceManager.getConversationId();
+      if (storedId) {
+        this.conversationId = storedId;
+      }
+      
+      // Tell PersistenceManager about our current conversation ID
+      this.persistenceManager.setConversationId(this.conversationId);
+      
+      // Cross-tab sync disabled to prevent refresh loops
+      // TODO: Re-enable with proper debouncing/throttling mechanism
+    }
 
     this.init();
 
@@ -296,6 +319,21 @@ export class ChatWidget {
     this.createElements();
     this.attachEventListeners();
 
+    // Load persisted messages if available
+    if (this.persistenceManager) {
+      const messages = this.persistenceManager.loadMessages();
+      if (messages.length > 0) {
+        // Clear existing messages
+        this.stateManager.clearMessages();
+        
+        // Add each message
+        messages.forEach(msg => this.addMessage(msg));
+        
+        // Update lastMessageCount to skip already loaded AI messages
+        this.lastMessageCount = messages.filter(m => m.sender === 'agent').length;
+      }
+    }
+
     this.initializeChat();
 
     // Update UI based on initial state
@@ -349,6 +387,16 @@ export class ChatWidget {
 
     // Remove from instances map
     ChatWidget.instances.delete(this.containerId);
+  }
+
+  /**
+   * Clear persisted messages and conversation history
+   */
+  public clearStorage(): void {
+    if (this.persistenceManager) {
+      this.persistenceManager.clearStorage();
+      this.stateManager.clearMessages();
+    }
   }
 
   public static destroyAll(): void {
@@ -870,6 +918,11 @@ export class ChatWidget {
       // Process the response array
       if (Array.isArray(data.response)) {
         await this.handleResponse(data.response);
+        
+        // Save messages after response is processed
+        if (this.persistenceManager) {
+          this.persistenceManager.saveMessages();
+        }
       } else {
         console.error('Invalid response format:', data);
       }
@@ -927,6 +980,11 @@ export class ChatWidget {
     }
 
     this.stateManager.addMessage(message);
+    
+    // Save message to persistence storage
+    if (this.persistenceManager) {
+      this.persistenceManager.saveMessages();
+    }
 
     const messageElement = document.createElement('div');
     messageElement.className = `message ${message.sender}`;

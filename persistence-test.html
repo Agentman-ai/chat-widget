@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ChatWidget Persistence Test</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 20px;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        #chat-container {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            z-index: 1000;
+        }
+        .controls {
+            margin: 20px 0;
+            padding: 20px;
+            background: #f5f5f5;
+            border-radius: 8px;
+        }
+        button {
+            padding: 10px 20px;
+            margin: 0 10px 10px 0;
+            background: #10b981;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        button:hover {
+            background: #059669;
+        }
+        .storage-info {
+            margin-top: 15px;
+            font-family: monospace;
+            font-size: 12px;
+            padding: 10px;
+            background: #f0f0f0;
+            border-radius: 4px;
+            max-height: 300px;
+            overflow: auto;
+            white-space: pre;
+        }
+    </style>
+</head>
+<body>
+    <h1>ChatWidget Persistence Test</h1>
+    
+    <div class="controls">
+        <button onclick="reloadPage()">Reload Page</button>
+        <button onclick="clearStorage()">Clear Storage</button>
+        <button onclick="showStorage()">Show Storage</button>
+        <button onclick="showConversationId()">Show Conversation ID</button>
+        
+        <div class="storage-info" id="storageInfo"></div>
+    </div>
+    
+    <div id="chat-container"></div>
+    
+    <!-- Include the bundled widget -->
+    <script src="dist/index.js"></script>
+    
+    <script>
+        let chatWidget;
+        const STORAGE_KEY = 'chatwidget_chat-container_data';
+        
+        // Initialize the widget with persistence
+        function initWidget() {
+            // Get the ChatWidget class
+            const ChatWidget = window['@agentman/chat-widget'].ChatWidget;
+            
+            // No need to patch - persistence is now built-in!
+            console.log('Using built-in persistence functionality');
+            
+            // Debug the ChatWidget prototype
+            console.log('ChatWidget prototype methods:', 
+                Object.getOwnPropertyNames(ChatWidget.prototype).filter(prop => 
+                    typeof ChatWidget.prototype[prop] === 'function'
+                )
+            );
+            
+            // Create widget instance with persistence enabled
+            chatWidget = new ChatWidget({
+                apiUrl: 'https://studio-api.chainofagents.ai',
+                agentToken: '.eJyrVipJzUvMK4nPTFGyMjHTUUosKMjJTE4syczPQ4ilp0JVGBqa1wIAxoEQ6Q.Z32csg.xbR3NqyuNlDpt-Dafp1O2GpKw5U',
+                variant: 'corner',
+                containerId: 'chat-container',
+                initiallyOpen: true,
+                title: 'Persistence Test',
+                placeholder: 'Ask me anything...',
+                position: 'bottom-right',
+                initialHeight: '600px',
+                initialWidth: '400px',
+                userBackgroundColor: '#10b981',
+                persistence: {
+                    enabled: true,
+                    days: 7
+                }
+            });
+            
+            console.log('Widget initialized with persistence');
+        }
+        
+        // No need for patch function anymore - persistence is built into the ChatWidget
+        // This comment block is kept for documentation purposes only
+        /*
+        function patchChatWidgetWithPersistence(CW) {
+            // This functionality is now built into the ChatWidget class:
+            // 1. Persistence settings are merged with defaults
+            // 2. Storage keys are computed based on containerId
+            // 3. Messages are loaded from storage on initialization
+            // 4. Messages are saved to storage after each update
+            // 5. Cross-tab synchronization via storage events
+            // 6. Conversation IDs are preserved across page loads
+            console.log('Built-in persistence is now used');
+        }
+        */
+        
+        // UI Helper Functions
+        function reloadPage() {
+            window.location.reload();
+        }
+        
+        function clearStorage() {
+            if (chatWidget && chatWidget.persistenceManager) {
+                chatWidget.persistenceManager.clearStorage();
+                console.log('Storage cleared');
+                showStorage();
+            } else {
+                console.error('ChatWidget not initialized or persistenceManager not available');
+            }
+        }
+        
+        function showStorage() {
+            const infoElement = document.getElementById('storageInfo');
+            const raw = localStorage.getItem(STORAGE_KEY);
+            
+            if (!raw) {
+                infoElement.textContent = 'No chat data in localStorage';
+                return;
+            }
+            
+            try {
+                const data = JSON.parse(raw);
+                infoElement.textContent = JSON.stringify(data, null, 2);
+            } catch (e) {
+                infoElement.textContent = 'Error parsing storage data: ' + e.message;
+            }
+        }
+        
+        function showConversationId() {
+            try {
+                const storageInfo = document.getElementById('storageInfo');
+                
+                if (!chatWidget) {
+                    storageInfo.textContent = 'ChatWidget not initialized';
+                    return;
+                }
+                
+                // Get conversation ID from widget
+                const widgetConvId = chatWidget.conversationId;
+                
+                // Get conversation ID from storage
+                let storageConvId = null;
+                try {
+                    const key = chatWidget?.persistenceManager?.getStorageKey() || STORAGE_KEY;
+                    const raw = localStorage.getItem(key);
+                    if (raw) {
+                        const data = JSON.parse(raw);
+                        storageConvId = data.conversationId;
+                    }
+                } catch (e) {
+                    console.error('Error getting storage conversation ID:', e);
+                }
+                
+                // Display information
+                const info = {
+                    widget_conversation_id: widgetConvId || 'Not available',
+                    storage_conversation_id: storageConvId || 'Not available',
+                    match: widgetConvId && storageConvId ? 
+                        (widgetConvId === storageConvId ? 'YES ' : 'NO ') : 
+                        'Cannot determine (missing IDs)',
+                    storage_key: chatWidget?.persistenceManager?.getStorageKey() || STORAGE_KEY
+                };
+                
+                storageInfo.textContent = JSON.stringify(info, null, 2);
+            } catch (e) {
+                console.error('Error showing conversation ID:', e);
+            }
+        }
+        
+        // Initialize on page load
+        document.addEventListener('DOMContentLoaded', function() {
+            // Show initial storage state
+            showStorage();
+            
+            // Initialize widget
+            setTimeout(initWidget, 500);
+        });
+    </script>
+</body>
+</html>

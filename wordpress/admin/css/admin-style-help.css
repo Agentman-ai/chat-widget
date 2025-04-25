@@ -1,0 +1,155 @@
+/**
+ * Agentman Chat Widget Admin Help Documentation Styles
+ */
+
+/* Help Documentation Styles */
+.agentman-help-icon {
+    display: inline-block;
+    width: 16px;
+    height: 16px;
+    background-color: #0073aa;
+    color: #fff;
+    border-radius: 50%;
+    text-align: center;
+    line-height: 16px;
+    font-size: 12px;
+    margin-left: 5px;
+    cursor: help;
+    position: relative;
+}
+
+.agentman-tooltip {
+    display: none;
+    position: absolute;
+    left: 25px;
+    top: -5px;
+    background-color: #333;
+    color: #fff;
+    padding: 10px;
+    border-radius: 4px;
+    width: 250px;
+    z-index: 100;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+    font-size: 12px;
+    line-height: 1.4;
+}
+
+.agentman-tooltip:before {
+    content: '';
+    position: absolute;
+    left: -5px;
+    top: 10px;
+    width: 0;
+    height: 0;
+    border-top: 5px solid transparent;
+    border-bottom: 5px solid transparent;
+    border-right: 5px solid #333;
+}
+
+.agentman-help-toggle {
+    display: inline-block;
+    margin: 10px 0;
+    color: #0073aa;
+    cursor: pointer;
+    font-weight: 500;
+}
+
+.agentman-help-toggle:before {
+    content: '\u25b6';
+    display: inline-block;
+    margin-right: 5px;
+    font-size: 10px;
+    transition: transform 0.2s;
+}
+
+.agentman-help-toggle.open:before {
+    transform: rotate(90deg);
+}
+
+.agentman-help-content {
+    display: none;
+    padding: 10px;
+    background-color: #f9f9f9;
+    border-left: 4px solid #0073aa;
+    margin: 10px 0;
+}
+
+.agentman-field-help {
+    opacity: 0.7;
+    transition: opacity 0.3s;
+}
+
+.agentman-field-help.active {
+    opacity: 1;
+}
+
+/* Contextual Help Styles */
+.contextual-help-tabs {
+    margin-top: 0;
+}
+
+.contextual-help-tabs .active {
+    background: #f0f0f1;
+    border-color: #c3c4c7;
+    border-width: 1px 0 1px 1px;
+    margin-right: -1px;
+}
+
+.contextual-help-tabs-wrap {
+    padding: 10px 20px 10px;
+    border-left: 1px solid #c3c4c7;
+}
+
+/* Field Help Styles */
+.agentman-field-container {
+    position: relative;
+    margin-bottom: 15px;
+}
+
+.agentman-field-container label {
+    display: block;
+    margin-bottom: 5px;
+    font-weight: 600;
+}
+
+.agentman-field-container .description {
+    margin-top: 5px;
+    color: #666;
+    font-style: italic;
+}
+
+.agentman-field {
+    width: 100%;
+    max-width: 400px;
+}
+
+/* Help Sidebar */
+.help-sidebar {
+    background: #f8f8f8;
+    padding: 10px;
+    border-left: 4px solid #0073aa;
+}
+
+.help-sidebar h3 {
+    margin-top: 0;
+    color: #23282d;
+}
+
+.help-sidebar ul {
+    margin-left: 1.5em;
+}
+
+.help-sidebar a {
+    text-decoration: none;
+}
+
+/* Responsive Help Styles */
+@media screen and (max-width: 782px) {
+    .agentman-tooltip {
+        width: 200px;
+    }
+    
+    .contextual-help-tabs-wrap {
+        padding: 10px;
+    }
+}
