@@ -31,15 +31,8 @@
                             <p class="description"><?php _e('Your Agentman API token (required).', 'agentman-chat-widget'); ?></p>
                         </td>
                     </tr>
-                    <tr>
-                        <th scope="row">
-                            <label for="agentman_chat_widget_options[api_url]"><?php _e('API URL', 'agentman-chat-widget'); ?></label>
-                        </th>
-                        <td>
-                            <input type="url" id="agentman_chat_widget_options[api_url]" name="agentman_chat_widget_options[api_url]" value="<?php echo esc_url($this->options['api_url']); ?>" class="regular-text" required />
-                            <p class="description"><?php _e('The API endpoint URL.', 'agentman-chat-widget'); ?></p>
-                        </td>
-                    </tr>
+                    <!-- API URL field hidden as it's an internal setting that won't change -->
+                    <input type="hidden" id="agentman_chat_widget_options[api_url]" name="agentman_chat_widget_options[api_url]" value="<?php echo esc_url($this->options['api_url']); ?>" />
                     <tr>
                         <th scope="row">
                             <label for="agentman_chat_widget_options[variant]"><?php _e('Widget Placement', 'agentman-chat-widget'); ?></label>
@@ -285,13 +278,4 @@
             <input type="submit" name="submit" id="submit" class="button button-primary" value="<?php _e('Save Changes', 'agentman-chat-widget'); ?>" />
         </p>
     </form>
-    
-    <!-- Preview Modal -->
-    <div id="agentman-preview-modal" class="agentman-modal">
-        <div class="agentman-modal-content">
-            <span class="agentman-modal-close">&times;</span>
-            <h2><?php _e('Chat Widget Preview', 'agentman-chat-widget'); ?></h2>
-            <div id="agentman-preview-container"></div>
-        </div>
-    </div>
 </div>

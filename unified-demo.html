@@ -158,8 +158,13 @@
                         </div>
                         
                         <div class="form-group">
-                            <label for="placeholder">Input Placeholder</label>
-                            <input type="text" id="placeholder" value="Ask me anything...">
+                            <label for="placeholder">Placeholder Text</label>
+                            <input type="text" id="placeholder" value="Type your message..." />
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="initialMessage">Initial Message</label>
+                            <input type="text" id="initialMessage" placeholder="Optional welcome message from the AI" />
                         </div>
                         
                         <div class="form-group">
@@ -510,6 +515,9 @@
                 position: document.getElementById('position').value,
                 initiallyOpen: document.getElementById('initiallyOpen').checked,
                 containerId: 'chat-container',
+                
+                // Initial message (if provided)
+                initialMessage: document.getElementById('initialMessage').value || undefined,
                 
                 // Theme settings
                 theme: {

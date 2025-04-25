@@ -615,6 +615,7 @@ export class ChatWidget {
             ${this.config.icons?.sendIcon || send}
           </button>
         </div>
+        <div class="chat-branding">Powered by <a href="https://agentman.ai" target="_blank" rel="noopener noreferrer">Agentman.ai</a></div>
       </div>
     `;
   }
@@ -756,6 +757,9 @@ export class ChatWidget {
     this.lastMessageCount = 0;
 
     try {
+      // Use the initialMessage if provided, otherwise default to 'Hello'
+      const initialMessage = this.config.initialMessage || 'Hello';
+      
       const response = await fetch(`${this.config.apiUrl}/v2/agentman_runtime/agent`, {
         method: 'POST',
         headers: {
@@ -765,7 +769,7 @@ export class ChatWidget {
           agent_token: this.config.agentToken,
           force_load: false,
           conversation_id: this.conversationId,
-          user_input: ''
+          user_input: initialMessage
         })
       });
 
@@ -775,46 +779,19 @@ export class ChatWidget {
 
       const data = await response.json();
       this.workflowId = data.workflow_id;
+      
+      // Handle the response directly
+      if (data.response) {
+        this.handleInitialResponse(data.response);
+      }
 
       this.stateManager.setInitialized(true);
-
-      // Send initial message
-      await this.sendInitialMessage();
     } catch (error) {
       console.error('Chat initialization error:', error);
       this.stateManager.setError('Failed to initialize chat. Please try again.');
     } finally {
       this.isInitializing = false;
       this.showInitializingMessage(false);
-    }
-  }
-
-  private async sendInitialMessage(): Promise<void> {
-    try {
-      const response = await fetch(
-        `${this.config.apiUrl}/v2/agentman_runtime/agent`,
-        {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            agent_token: this.config.agentToken,
-            force_load: false,
-            conversation_id: this.conversationId,
-            user_input: this.config.initialMessage || 'Hello'
-          }),
-        }
-      );
-
-      if (!response.ok) {
-        throw new Error('Failed to send initial message');
-      }
-
-      const data = await response.json();
-      this.handleInitialResponse(data.response);
-    } catch (error) {
-      console.error('Error sending initial message:', error);
     }
   }
 

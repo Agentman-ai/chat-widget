@@ -167,12 +167,30 @@ export const baseStyles = `
     fill: var(--chat-user-icon-color, #FFFFFF);
   }
 
-  .chat-input-container {
-    position: relative;
-    padding: 8px 12px;
-    border-top: 1px solid rgba(0, 0, 0, 0.1);
+  .chat-branding {
+    text-align: left;
+    font-size: 10px;
+    padding: 4px 16px;
+    color: #9CA3AF;
     background: white;
-    z-index: 2;
+  }
+
+  .chat-branding a {
+    color: #059669;
+    text-decoration: none;
+    font-weight: 500;
+  }
+
+  .chat-branding a:hover {
+    text-decoration: underline;
+  }
+
+  .chat-input-container {
+    display: flex;
+    padding: 8px 16px 8px;
+    position: relative;
+    background: white;
+    border-top: 1px solid rgba(0, 0, 0, 0.05);
   }
 
   .chat-input-wrapper {
@@ -197,8 +215,8 @@ export const baseStyles = `
 
   .chat-send {
     position: absolute;
-    right: 4px;
-    bottom: 4px;
+    right: 12px;
+    bottom: 16px;
     width: 32px;
     height: 32px;
     padding: 6px;

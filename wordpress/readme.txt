@@ -1,8 +1,8 @@
 === Agentman Chat Widget ===
 Contributors: agentman
 Tags: chat, support, ai, assistant, chatbot, conversation, help, customer support
-Requires at least: 5.0
-Tested up to: 6.4
+Requires at least: 5.6
+Tested up to: 6.5
 Stable tag: 0.13.0
 Requires PHP: 7.2
 License: MIT

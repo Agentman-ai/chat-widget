@@ -58,12 +58,13 @@
             const settings = {
                 agentToken: $('#agentman_chat_widget_options\\[agent_token\\]').val(),
                 apiUrl: $('#agentman_chat_widget_options\\[api_url\\]').val(),
-                containerId: 'agentman-preview-container',
+                // Use the variant from the settings
                 variant: $('#agentman_chat_widget_options\\[variant\\]').val(),
+                position: $('#agentman_chat_widget_options\\[position\\]').val(),
                 title: $('#agentman_chat_widget_options\\[title\\]').val(),
                 placeholder: $('#agentman_chat_widget_options\\[placeholder\\]').val(),
                 toggleText: $('#agentman_chat_widget_options\\[toggle_text\\]').val(),
-                initiallyOpen: true,
+                initiallyOpen: true, // Always open for preview
                 initialMessage: $('#agentman_chat_widget_options\\[initial_message\\]').val(),
                 initialHeight: $('#agentman_chat_widget_options\\[initial_height\\]').val(),
                 initialWidth: $('#agentman_chat_widget_options\\[initial_width\\]').val(),
@@ -81,35 +82,57 @@
                 },
                 icons: {
                     userIcon: $('#agentman_chat_widget_options\\[user_icon\\]').val(),
-                    agentIcon: $('#agentman_chat_widget_options\\[agent_icon\\]').val()
+                    agentIcon: $('#agentman_chat_widget_options\\[agent_icon_color\\]').val()
                 },
                 logo: $('#agentman_chat_widget_options\\[logo\\]').val(),
-                headerLogo: $('#agentman_chat_widget_options\\[header_logo\\]').val()
+                headerLogo: $('#agentman_chat_widget_options\\[header_logo\\]').val(),
+                persistence: {
+                    enabled: $('#agentman_chat_widget_options\\[persistence_enabled\\]').is(':checked'),
+                    days: parseInt($('#agentman_chat_widget_options\\[persistence_days\\]').val(), 10) || 7
+                }
             };
             
-            // Show the modal
-            $('#agentman-preview-modal').css('display', 'block');
-            
-            // Initialize the widget in the preview container
+            // Initialize or update the widget directly (no modal)
             if (window.AgentmanChatWidget) {
+                // If preview widget exists, destroy it first
                 if (window.previewWidget) {
                     window.previewWidget.destroy();
                 }
+                
+                // Create a new preview widget with current settings
                 window.previewWidget = new window.AgentmanChatWidget(settings);
+                
+                // Show a notification that preview is active
+                const $notification = $('<div class="notice notice-info is-dismissible"><p><strong>Preview Active:</strong> The chat widget is now visible with your current settings. Click "Stop Preview" to hide it.</p></div>');
+                $notification.insertAfter('#agentman-preview-widget');
+                
+                // Change button text to "Stop Preview"
+                $(this).text('Stop Preview').addClass('button-secondary').attr('id', 'agentman-stop-preview');
+                
+                // Add event handler for the stop preview button
+                $('#agentman-stop-preview').on('click', function(e) {
+                    e.preventDefault();
+                    
+                    // Destroy the preview widget
+                    if (window.previewWidget) {
+                        window.previewWidget.destroy();
+                        window.previewWidget = null;
+                    }
+                    
+                    // Remove the notification
+                    $('.notice').remove();
+                    
+                    // Change button text back
+                    $(this).text('Preview Chat Widget').removeClass('button-secondary').attr('id', 'agentman-preview-widget');
+                });
             } else {
-                $('#agentman-preview-container').html('<div class="error">Chat widget preview not available. Please save settings first.</div>');
+                // Show error if widget class is not available
+                const $error = $('<div class="notice notice-error is-dismissible"><p>Chat widget preview not available. Please save settings first.</p></div>');
+                $error.insertAfter('#agentman-preview-widget');
             }
         });
         
-        // Close Modal
-        $('.agentman-modal-close').on('click', function() {
-            $('#agentman-preview-modal').css('display', 'none');
-            
-            // Destroy the preview widget
-            if (window.previewWidget) {
-                window.previewWidget.destroy();
-            }
-        });
+        // We've removed the modal, so this handler is no longer needed
         
         // Reset Settings
         $('#agentman-reset-settings').on('click', function(e) {
