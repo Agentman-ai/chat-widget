@@ -3,7 +3,7 @@
  * Plugin Name: Agentman Chat Widget
  * Plugin URI: https://github.com/Agentman-ai/chat-widget/tree/main/wordpress
  * Description: Integrates the Agentman Chat Widget into your WordPress site with admin customization options.
- * Version: 0.13.0
+ * Version: 0.15.0
  * Author: Agentman
  * Author URI: https://agentman.ai
  * License: MIT
@@ -19,7 +19,7 @@ if (!defined('ABSPATH')) {
 }
 
 // Define plugin constants
-define('AGENTMAN_CHAT_WIDGET_VERSION', '0.13.0');
+define('AGENTMAN_CHAT_WIDGET_VERSION', '0.15.0');
 define('AGENTMAN_CHAT_WIDGET_PATH', plugin_dir_path(__FILE__));
 define('AGENTMAN_CHAT_WIDGET_URL', plugin_dir_url(__FILE__));
 define('AGENTMAN_CHAT_WIDGET_BASENAME', plugin_basename(__FILE__));

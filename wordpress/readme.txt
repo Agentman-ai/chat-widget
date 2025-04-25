@@ -28,11 +28,12 @@ The Agentman Chat Widget is designed to provide a seamless experience for your w
 
 == Installation ==
 
-1. Upload the plugin files to the `/wp-content/plugins/agentman-chat-widget` directory, or install the plugin through the WordPress plugins screen.
-2. Activate the plugin through the 'Plugins' screen in WordPress.
-3. Use the Settings -> Agentman Chat screen to configure the plugin.
-4. Enter your Agentman API token to connect to your assistant.
-5. Customize the appearance to match your website's design.
+1. Download the latest version of the plugin from the [GitHub repository](https://github.com/Agentman-ai/chat-widget/tree/main/wordpress) or the [releases page](https://github.com/Agentman-ai/chat-widget/releases).
+2. Upload the plugin files to the `/wp-content/plugins/agentman-chat-widget` directory, or install the plugin through the WordPress plugins screen.
+3. Activate the plugin through the 'Plugins' screen in WordPress.
+4. Use the Settings -> Agentman Chat screen to configure the plugin.
+5. Enter your Agentman API token to connect to your assistant.
+6. Customize the appearance to match your website's design.
 
 == Frequently Asked Questions ==
 

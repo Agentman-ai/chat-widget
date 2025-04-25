@@ -7,6 +7,9 @@ on:
         description: 'Version to release (major.minor.patch)'
         required: true
         type: string
+  push:
+    tags:
+      - 'v*'
 
 jobs:
   release:
@@ -25,23 +28,55 @@ jobs:
       - name: Install dependencies
         run: npm ci
       
-      - name: Update version
+      # Only run this step if triggered by workflow_dispatch
+      - name: Update version (manual trigger)
+        if: github.event_name == 'workflow_dispatch'
         run: |
           git config --local user.email "action@github.com"
           git config --local user.name "GitHub Action"
           npm version ${{ github.event.inputs.version }}
       
-      - name: Push changes
+      # Only run this step if triggered by workflow_dispatch
+      - name: Push changes (manual trigger)
+        if: github.event_name == 'workflow_dispatch'
         run: |
           git push
           git push --tags
       
+      - name: Build package
+        run: npm run build
+      
+      - name: Build WordPress plugin bundle
+        run: node wp-bundle.js
+      
+      - name: Get version
+        id: get_version
+        run: |
+          if [ "${{ github.event_name }}" == "workflow_dispatch" ]; then
+            echo "VERSION=${{ github.event.inputs.version }}" >> $GITHUB_OUTPUT
+          else
+            # Extract version from tag (remove 'v' prefix)
+            VERSION=${GITHUB_REF#refs/tags/v}
+            echo "VERSION=$VERSION" >> $GITHUB_OUTPUT
+          fi
+      
       - name: Create Release
+        id: create_release
         uses: actions/create-release@v1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          tag_name: v${{ github.event.inputs.version }}
-          release_name: Release v${{ github.event.inputs.version }}
+          tag_name: v${{ steps.get_version.outputs.VERSION }}
+          release_name: Release v${{ steps.get_version.outputs.VERSION }}
           draft: false
           prerelease: false
+      
+      - name: Upload WordPress Plugin
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: ./agentman-chat-widget-${{ steps.get_version.outputs.VERSION }}.zip
+          asset_name: agentman-chat-widget-${{ steps.get_version.outputs.VERSION }}.zip
+          asset_content_type: application/zip

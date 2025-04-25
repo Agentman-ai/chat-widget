@@ -19,7 +19,7 @@ This plugin allows you to easily add the Agentman Chat Widget to your WordPress 
 
 ## Installation
 
-1. Download the plugin zip file
+1. Download the latest plugin zip file from the [GitHub releases page](https://github.com/Agentman-ai/chat-widget/releases) or get the latest version directly from this repository
 2. Go to your WordPress admin dashboard
 3. Navigate to Plugins > Add New
 4. Click "Upload Plugin" and select the zip file
