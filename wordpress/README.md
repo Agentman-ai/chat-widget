@@ -36,7 +36,6 @@ This plugin allows you to easily add the Agentman Chat Widget to your WordPress 
 ### Required Settings
 
 - **Agent Token**: Your Agentman API token
-- **API URL**: The API endpoint URL (default: https://api.agentman.ai)
 
 ### Customization Options
 
