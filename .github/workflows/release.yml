@@ -51,6 +51,8 @@ jobs:
       - name: Get version for build
         id: get_build_version
         run: |
+          set -x  # Enable debugging
+          
           if [ "${{ github.event_name }}" == "workflow_dispatch" ]; then
             echo "VERSION=${{ github.event.inputs.version }}" >> $GITHUB_OUTPUT
           else
@@ -58,9 +60,21 @@ jobs:
             VERSION=${GITHUB_REF#refs/tags/v}
             echo "VERSION=$VERSION" >> $GITHUB_OUTPUT
           fi
-          # Update package.json version to match tag
-          npm version $VERSION --no-git-tag-version
-          echo "Updated package.json to version $VERSION"
+          
+          # Configure Git (required for npm version)
+          git config --global user.email "action@github.com"
+          git config --global user.name "GitHub Action"
+          
+          # Show current package.json version
+          echo "Current package.json version:"
+          grep -m 1 '"version"' package.json
+          
+          # Update package.json version to match tag without creating a commit
+          npm --no-git-tag-version version $VERSION
+          
+          # Verify the update
+          echo "Updated package.json version:"
+          grep -m 1 '"version"' package.json
           
       - name: Build WordPress plugin bundle
         run: node wp-bundle.js
