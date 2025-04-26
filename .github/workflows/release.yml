@@ -69,7 +69,7 @@ jobs:
           
           # Update package.json version using npm version but IGNORE scripts
           # This prevents the postversion script from running
-          npm --no-git-tag-version --ignore-scripts version $VERSION
+          npm --no-git-tag-version --ignore-scripts version $VERSION --allow-same-version || echo "Version unchanged, continuing"
           
           # Verify the update
           echo "Updated package.json version:"
@@ -79,6 +79,12 @@ jobs:
           echo "Full package.json content:"
           cat package.json
           
+      - name: Update WP plugin version
+        run: |
+          VERSION=${{ steps.get_build_version.outputs.VERSION }}
+          sed -i "s/^\( *\* Version: \).*/\1$VERSION/" wordpress/agentman-chat-widget.php
+          sed -i "s/^define('AGENTMAN_CHAT_WIDGET_VERSION', *'.*'/define('AGENTMAN_CHAT_WIDGET_VERSION', '$VERSION'/" wordpress/agentman-chat-widget.php
+
       - name: Build WordPress plugin bundle
         run: |
           VERSION=${{ steps.get_build_version.outputs.VERSION }}
