@@ -319,7 +319,7 @@ export class ChatWidget {
     this.createElements();
     this.attachEventListeners();
 
-    // Load persisted messages if available
+    let shouldInitChat = true;
     if (this.persistenceManager) {
       const messages = this.persistenceManager.loadMessages();
       if (messages.length > 0) {
@@ -331,10 +331,15 @@ export class ChatWidget {
         
         // Update lastMessageCount to skip already loaded AI messages
         this.lastMessageCount = messages.filter(m => m.sender === 'agent').length;
+        
+        // Skip initialization since conversation is restored
+        shouldInitChat = false;
       }
     }
 
-    this.initializeChat();
+    if (shouldInitChat) {
+      this.initializeChat();
+    }
 
     // Update UI based on initial state
     this.updateUI(this.stateManager.getState());
