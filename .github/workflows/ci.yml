@@ -44,6 +44,13 @@ jobs:
       - name: Build Package
         run: npm run build
       - name: Publish to NPM
-        run: npm publish --access public
+        run: |
+          VERSION=$(node -p "require('./package.json').version")
+          if ! npm view @agentman/chat-widget@$VERSION &>/dev/null; then
+            echo "Publishing version $VERSION to npm..."
+            npm publish --access public
+          else
+            echo "Version $VERSION already exists on npm, skipping publish"
+          fi
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
