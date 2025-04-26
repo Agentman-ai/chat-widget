@@ -27,4 +27,4 @@ yarn-debug.log*
 yarn-error.log*
 
 wp-dist/
-agentman-chat-widget-0.16.0.zip
+agentman-chat-widget*.zip
