@@ -64,7 +64,7 @@ document.addEventListener('DOMContentLoaded', function() {
     if (window.AgentmanChatWidget) {
         const widget = new AgentmanChatWidget({
             agentToken: 'your-token',
-            apiUrl: 'https://api.agentman.ai',
+            apiUrl: 'https://run.agentman.ai',
             containerId: 'my-custom-chat-container',
             variant: 'inline',
             persistence: {
@@ -93,7 +93,7 @@ const widget = new AgentmanChatWidget(config);
 const config = {
     // Required
     agentToken: 'your-agent-token',
-    apiUrl: 'https://api.agentman.ai',
+    apiUrl: 'https://run.agentman.ai',
     
     // Display options
     variant: 'corner', // 'corner', 'centered', or 'inline'
@@ -385,4 +385,4 @@ const widget = new AgentmanChatWidget({
 - [GitHub Repository](https://github.com/agentman/chat-widget)
 - [Support Forum](https://wordpress.org/support/plugin/agentman-chat-widget/)
 - [Documentation](https://docs.agentman.ai/chat-widget/)
-- [API Reference](https://api.agentman.ai/docs/)
+- [API Reference](https://run.agentman.ai/docs/)

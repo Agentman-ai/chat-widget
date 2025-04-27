@@ -111,7 +111,7 @@ class Agentman_Chat_Widget {
         return array(
             'enabled' => true,
             'agent_token' => '',
-            'api_url' => 'https://api.agentman.ai',
+            'api_url' => 'https://run.agentman.ai',
             'variant' => 'corner',
             'position' => 'bottom-right',
             'title' => 'Chat Assistant',
