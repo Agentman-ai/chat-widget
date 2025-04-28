@@ -5,7 +5,6 @@
  * Updated to use the new version with built-in persistence
  */
 (function() {
-    console.log('Agentman Chat Widget Loader: Starting initialization with built-in persistence');
     
     // Check all possible locations where the ChatWidget might be defined
     function findChatWidgetClass() {
@@ -53,7 +52,6 @@
     if (ChatWidgetClass) {
         // Expose it globally
         window.ChatWidget = ChatWidgetClass;
-        console.log('Agentman Chat Widget with built-in persistence: Class exposed globally.', window.ChatWidget);
     } else {
         console.error('Agentman Chat Widget: Module not loaded correctly.');
         

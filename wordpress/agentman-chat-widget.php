@@ -1,8 +1,8 @@
 <?php
 /**
- * Plugin Name: Agentman Chat Widget
+ * Plugin Name: Agentman AI Assistant
  * Plugin URI: https://github.com/Agentman-ai/chat-widget/tree/main/wordpress
- * Description: Integrates the Agentman Chat Widget into your WordPress site with admin customization options.
+ * Description: Integrates the Agentman AI Assistant into your WordPress site with admin customization options.
  * Version: 0.17.0
  * Author: Agentman
  * Author URI: https://agentman.ai
@@ -145,8 +145,8 @@ class Agentman_Chat_Widget {
      */
     public function add_admin_menu() {
         add_options_page(
-            __('Agentman Chat Widget', 'agentman-chat-widget'),
-            __('Agentman Chat', 'agentman-chat-widget'),
+            __('Agentman AI Assistant', 'agentman-chat-widget'),
+            __('Agentman AI Assistant', 'agentman-chat-widget'),
             'manage_options',
             'agentman-chat-widget',
             array($this, 'render_admin_page')

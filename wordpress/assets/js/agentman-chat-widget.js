@@ -21,7 +21,6 @@
             return;
         }
         
-        console.log('Agentman Chat Widget Init: Configuration found', agentmanChatWidgetOptions);
 
         // Check if required fields are present
         if (!agentmanChatWidgetOptions.agentToken) {
@@ -72,9 +71,7 @@
     function initializeWidget() {
         try {
             // Initialize the widget with the configuration
-            console.log('Agentman Chat Widget: Attempting to initialize with', window.ChatWidget);
             window.agentmanChatWidget = new window.ChatWidget(agentmanChatWidgetOptions);
-            console.log('Agentman Chat Widget: Successfully initialized.');
             
             // Dispatch an event that other scripts can listen for
             document.dispatchEvent(new CustomEvent('agentman-chat-widget-initialized', {
@@ -95,5 +92,4 @@
     }
     
     // The chat widget now has built-in persistence, no need to wait for external persistence
-    console.log('Agentman Chat Widget: Using built-in persistence');
 })();
