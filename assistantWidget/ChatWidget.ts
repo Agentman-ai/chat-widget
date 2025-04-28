@@ -352,7 +352,7 @@ export class ChatWidget {
   private applyInitialDimensions(height?: string, width?: string): void {
     if (!height && !width) return;
 
-    const container = this.element.querySelector('.chat-container') as HTMLElement;
+    const container = this.element.querySelector('.am-chat-container') as HTMLElement;
     if (container) {
       if (height) container.style.height = height;
       if (width) container.style.width = width;
@@ -383,7 +383,7 @@ export class ChatWidget {
     window.removeEventListener('resize', this.handleResize.bind(this));
 
     // Remove DOM elements
-    const widgetElement = document.querySelector(`.chat-widget[data-container="${this.containerId}"]`);
+    const widgetElement = document.querySelector(`.am-chat-widget[data-container="${this.containerId}"]`);
     widgetElement?.remove();
 
     // Clean up state manager
@@ -428,7 +428,7 @@ export class ChatWidget {
   private handleImmediateResize(): void {
     // Handle any immediate resize needs
     // For example, adjusting input field height
-    const input = this.element.querySelector('.chat-input') as HTMLTextAreaElement;
+    const input = this.element.querySelector('.am-chat-input') as HTMLTextAreaElement;
     if (input) {
       input.style.height = 'auto';
       input.style.height = `${Math.min(input.scrollHeight, 100)}px`;
@@ -442,8 +442,8 @@ export class ChatWidget {
   private setupForCurrentDevice(): void {
     if (this.config.variant !== 'corner') return;
 
-    const container = this.element.querySelector('.chat-container') as HTMLElement;
-    const input = this.element.querySelector('.chat-input') as HTMLTextAreaElement;
+    const container = this.element.querySelector('.am-chat-container') as HTMLElement;
+    const input = this.element.querySelector('.am-chat-input') as HTMLTextAreaElement;
     if (!container) return;
 
     const isMobile = window.innerWidth <= 480;
@@ -481,8 +481,8 @@ export class ChatWidget {
   }
 
   private updateUI(state: ChatState): void {
-    const container = this.element.querySelector('.chat-container') as HTMLDivElement;
-    const toggle = this.element.querySelector('.chat-toggle') as HTMLButtonElement;
+    const container = this.element.querySelector('.am-chat-container') as HTMLDivElement;
+    const toggle = this.element.querySelector('.am-chat-toggle') as HTMLButtonElement;
 
     if (container) {
       // For corner variant, handle show/hide
@@ -550,13 +550,13 @@ export class ChatWidget {
 
   private createElements(): void {
     // Remove any existing widget for this container
-    const existingWidget = document.querySelector(`.chat-widget[data-container="${this.containerId}"]`);
+    const existingWidget = document.querySelector(`.am-chat-widget[data-container="${this.containerId}"]`);
     if (existingWidget) {
       existingWidget.remove();
     }
 
     this.element = document.createElement('div');
-    this.element.className = `chat-widget chat-widget--${this.config.variant}`;
+    this.element.className = `am-chat-widget am-chat-widget--${this.config.variant}`;
     this.element.setAttribute('data-container', this.containerId);
 
     // Only show toggle button for corner variant
@@ -584,52 +584,52 @@ export class ChatWidget {
   private generateTemplate(showToggle: boolean): string {
     return `
       ${showToggle ? `
-        <button class="chat-toggle">
-          <div class="chat-toggle-content">
-            <div class="chat-logo">
+        <button class="am-chat-toggle">
+          <div class="am-chat-toggle-content">
+            <div class="am-chat-logo">
               ${this.assets.logo}
             </div>
-            <span class="chat-toggle-text">${this.config.toggleText || 'Ask Agentman'}</span>
+            <span class="am-chat-toggle-text">${this.config.toggleText || 'Ask Agentman'}</span>
           </div>
         </button>
       ` : ''}
-      <div class="chat-container">
-        <div class="chat-header">
-          <div class="chat-header-content">
-            <div class="chat-logo-title">
-              <div class="chat-header-logo">${this.assets.headerLogo}</div>
+      <div class="am-chat-container">
+        <div class="am-chat-header">
+          <div class="am-chat-header-content">
+            <div class="am-chat-logo-title">
+              <div class="am-chat-header-logo">${this.assets.headerLogo}</div>
               <span>${this.config.title}</span>
             </div>
-            <div class="chat-header-actions">
-              <button class="chat-expand chat-header-button desktop-only">
+            <div class="am-chat-header-actions">
+              <button class="am-chat-expand am-chat-header-button desktop-only">
                 ${this.config.icons?.expandIcon || expand}
               </button>
-              <button class="chat-minimize chat-header-button">
+              <button class="am-chat-minimize am-chat-header-button">
                 ${this.config.icons?.minimizeIcon || minimize}
               </button>
             </div>
           </div>
         </div>
-        <div class="chat-messages"></div>
-        <div class="chat-input-container">
+        <div class="am-chat-messages"></div>
+        <div class="am-chat-input-container">
           <textarea
-            class="chat-input"
-            placeholder="${this.config.placeholder || 'Type your message...'}"
-          ></textarea>
-          <button class="chat-send" disabled>
+            class="am-chat-input"
+            placeholder="${this.config.placeholder || 'Type your message...'}">
+          </textarea>
+          <button class="am-chat-send" disabled>
             ${this.config.icons?.sendIcon || send}
           </button>
         </div>
-        <div class="chat-branding">Powered by <a href="https://agentman.ai" target="_blank" rel="noopener noreferrer">Agentman.ai</a></div>
+        <div class="am-chat-branding">Powered by <a href="https://agentman.ai" target="_blank" rel="noopener noreferrer">Agentman.ai</a></div>
       </div>
     `;
   }
 
   private attachEventListeners(): void {
-    const toggle = this.element.querySelector('.chat-toggle');
-    const minimize = this.element.querySelector('.chat-minimize');
-    const send = this.element.querySelector('.chat-send');
-    const input = this.element.querySelector('.chat-input') as HTMLTextAreaElement;
+    const toggle = this.element.querySelector('.am-chat-toggle');
+    const minimize = this.element.querySelector('.am-chat-minimize');
+    const send = this.element.querySelector('.am-chat-send');
+    const input = this.element.querySelector('.am-chat-input') as HTMLTextAreaElement;
 
     if (toggle) {
       toggle.addEventListener('click', (e: Event) => {
@@ -662,7 +662,7 @@ export class ChatWidget {
       input.addEventListener('input', this.handleInputChange);
     }
 
-    const expandButton = this.element.querySelector('.chat-expand');
+    const expandButton = this.element.querySelector('.am-chat-expand');
     if (expandButton) {
       expandButton.addEventListener('click', this.handleExpandClick);
     }
@@ -699,7 +699,7 @@ export class ChatWidget {
     const input = e.target as HTMLTextAreaElement;
 
     // Update send button state immediately
-    const sendButton = this.element.querySelector('.chat-send') as HTMLButtonElement;
+    const sendButton = this.element.querySelector('.am-chat-send') as HTMLButtonElement;
     if (sendButton) {
       sendButton.disabled = !input.value.trim();
     }
@@ -833,9 +833,9 @@ export class ChatWidget {
 
 
   private showInitializingMessage(show: boolean): void {
-    const initializingElement = this.element.querySelector('.chat-initializing') as HTMLElement;
-    const sendButton = this.element.querySelector('.chat-send') as HTMLButtonElement;
-    const inputElement = this.element.querySelector('.chat-input') as HTMLTextAreaElement;
+    const initializingElement = this.element.querySelector('.am-chat-initializing') as HTMLElement;
+    const sendButton = this.element.querySelector('.am-chat-send') as HTMLButtonElement;
+    const inputElement = this.element.querySelector('.am-chat-input') as HTMLTextAreaElement;
 
     if (initializingElement) {
       initializingElement.style.display = show ? 'block' : 'none';
@@ -925,7 +925,7 @@ export class ChatWidget {
 
   // Update handleSendMessage to properly handle state
   private async handleSendMessage(): Promise<void> {
-    const input = this.element.querySelector('.chat-input') as HTMLTextAreaElement;
+    const input = this.element.querySelector('.am-chat-input') as HTMLTextAreaElement;
     const message = input.value.trim();
 
     if (!message || this.state.isSending) {
@@ -941,7 +941,7 @@ export class ChatWidget {
       input.style.height = 'auto';
 
       // Disable send button
-      const sendButton = this.element.querySelector('.chat-send') as HTMLButtonElement;
+      const sendButton = this.element.querySelector('.am-chat-send') as HTMLButtonElement;
       if (sendButton) {
         sendButton.disabled = true;
       }
@@ -955,7 +955,7 @@ export class ChatWidget {
   }
 
   public addMessage(message: Message): void {
-    const messagesContainer = this.element.querySelector('.chat-messages');
+    const messagesContainer = this.element.querySelector('.am-chat-messages');
     if (!messagesContainer) {
       console.error('Messages container not found');
       return;
@@ -969,7 +969,7 @@ export class ChatWidget {
     }
 
     const messageElement = document.createElement('div');
-    messageElement.className = `message ${message.sender}`;
+    messageElement.className = `am-message ${message.sender}`;
 
     const renderedContent = this.messageRenderer.render(message);
     const icon = message.sender === 'user' 
@@ -977,10 +977,10 @@ export class ChatWidget {
       : this.config.icons?.agentIcon || ChatWidget.defaultIcons.agentIcon;
 
     messageElement.innerHTML = `
-      <div class="message-avatar ${message.sender}" style="color: ${message.sender === 'user' ? this.theme.userIconColor : this.theme.agentIconColor}">
+      <div class="am-message-avatar ${message.sender}" style="color: ${message.sender === 'user' ? this.theme.userIconColor : this.theme.agentIconColor}">
         ${getIconHtml(icon, `${message.sender} avatar`)}
       </div>
-      <div class="message-content">
+      <div class="am-message-content">
         ${renderedContent}
       </div>
     `;
@@ -1046,21 +1046,21 @@ export class ChatWidget {
       return;
     }
 
-    const messagesContainer = this.element.querySelector('.chat-messages');
+    const messagesContainer = this.element.querySelector('.am-chat-messages');
     if (!messagesContainer) {
       return;
     }
 
     this.loadingMessageElement = document.createElement('div');
-    this.loadingMessageElement.className = 'message agent loading-message';
+    this.loadingMessageElement.className = 'am-message agent am-chat-loading-message';
 
     const icon = this.config.icons?.agentIcon || ChatWidget.defaultIcons.agentIcon;
 
     this.loadingMessageElement.innerHTML = `
-      <div class="message-avatar" style="color: ${this.theme.agentIconColor}">
+      <div class="am-message-avatar" style="color: ${this.theme.agentIconColor}">
         ${getIconHtml(icon, 'agent avatar')}
       </div>
-      <div class="message-content">
+      <div class="am-message-content">
         <div class="loading-container">
           <div class="loading-bars">
             <span></span><span></span><span></span>
@@ -1114,16 +1114,16 @@ export class ChatWidget {
     e.preventDefault();
     e.stopPropagation();
     
-    const isExpanded = this.element.classList.contains('chat-expanded');
+    const isExpanded = this.element.classList.contains('am-chat-expanded');
     if (isExpanded) {
-      this.element.classList.remove('chat-expanded');
-      const expandButton = this.element.querySelector('.chat-expand');
+      this.element.classList.remove('am-chat-expanded');
+      const expandButton = this.element.querySelector('.am-chat-expand');
       if (expandButton) {
         expandButton.innerHTML = this.config.icons?.expandIcon || expand;
       }
     } else {
-      this.element.classList.add('chat-expanded');
-      const expandButton = this.element.querySelector('.chat-expand');
+      this.element.classList.add('am-chat-expanded');
+      const expandButton = this.element.querySelector('.am-chat-expand');
       if (expandButton) {
         expandButton.innerHTML = this.config.icons?.collapseIcon || collapse;
       }
