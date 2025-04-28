@@ -48,7 +48,7 @@ export const variantStyles = {
       }
 
       .am-chat-widget--corner .am-chat-toggle-text {
-        color: white;
+        color: var(--chat-header-text-color, #FFFFFF);
         font-size: 16px;
         font-weight: 500;
       }
