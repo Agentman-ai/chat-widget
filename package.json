@@ -23,7 +23,7 @@
     "prepublishOnly": "npm test",
     "preversion": "echo 'Skipping lint check'",
     "version": "npm run build",
-    "postversion": "git push && git push --tags",
+    "postversion": "git push --follow-tags",
     "test": "jest --passWithNoTests",
     "lint": "eslint . --ext .ts",
     "docs": "mkdir -p docs && cp README.md docs/index.md",
