@@ -114,7 +114,7 @@ class Agentman_Chat_Widget {
             'api_url' => 'https://run.agentman.ai',
             'variant' => 'corner',
             'position' => 'bottom-right',
-            'title' => 'Chat Assistant',
+            'title' => 'AI Assistant',
             'placeholder' => 'Ask me anything...',
             'toggle_text' => 'Ask Agentman',
             'initially_open' => false,
