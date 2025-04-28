@@ -11,6 +11,7 @@ export const messageStyles = `
   .am-message.user {
     flex-direction: row-reverse;
     margin-top: 16px;
+    text-align: right;
   }
 
   .am-message-content {
@@ -31,10 +32,13 @@ export const messageStyles = `
   .am-message.user .am-message-content {
     background: var(--chat-user-background-color, #ecfdf5);
     color: var(--chat-user-foreground-color, #111827);
-    margin-left: auto;
+    margin-right: 12px; /* Add some margin on the right side */
     border: 1px solid rgba(0, 0, 0, 0.05);
-    margin-top: 16px;
+    margin-top: 8px;
     margin-bottom: 8px;
+    max-width: 90%; /* Allow user messages to be slightly wider */
+    align-self: flex-end; /* Align to the right */
+    text-align: left; /* Keep text left-aligned within the bubble */
   }
 
   // Content formatting - Reduce spacing

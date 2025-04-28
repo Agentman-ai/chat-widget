@@ -144,10 +144,12 @@
                                     <label for="agentman_chat_widget_options[agent_icon_color]"><?php _e('Agent Icon Color', 'agentman-chat-widget'); ?></label>
                                     <input type="color" id="agentman_chat_widget_options[agent_icon_color]" name="agentman_chat_widget_options[agent_icon_color]" value="<?php echo esc_attr($this->options['agent_icon_color']); ?>" />
                                 </div>
+                                <!-- User icon color setting removed since user icons are not displayed
                                 <div class="agentman-color-field">
                                     <label for="agentman_chat_widget_options[user_icon_color]"><?php _e('User Icon Color', 'agentman-chat-widget'); ?></label>
                                     <input type="color" id="agentman_chat_widget_options[user_icon_color]" name="agentman_chat_widget_options[user_icon_color]" value="<?php echo esc_attr($this->options['user_icon_color']); ?>" />
                                 </div>
+                                -->
                             </div>
                         </td>
                     </tr>

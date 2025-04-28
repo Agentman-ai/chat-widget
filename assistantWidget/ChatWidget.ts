@@ -976,14 +976,28 @@ export class ChatWidget {
       ? this.config.icons?.userIcon || ChatWidget.defaultIcons.userIcon 
       : this.config.icons?.agentIcon || ChatWidget.defaultIcons.agentIcon;
 
-    messageElement.innerHTML = `
-      <div class="am-message-avatar ${message.sender}" style="color: ${message.sender === 'user' ? this.theme.userIconColor : this.theme.agentIconColor}">
-        ${getIconHtml(icon, `${message.sender} avatar`)}
-      </div>
-      <div class="am-message-content">
-        ${renderedContent}
-      </div>
-    `;
+    // For SVG icons, we need to ensure they're treated as SVG content
+    const iconHtml = typeof icon === 'string' && (icon.includes('<svg') || isImageUrl(icon))
+      ? getIconHtml(icon, `${message.sender} avatar`)
+      : icon; // If it's already an SVG object, use it directly
+
+    // Only show avatar for agent messages, not for user messages
+    if (message.sender === 'user') {
+      messageElement.innerHTML = `
+        <div class="am-message-content">
+          ${renderedContent}
+        </div>
+      `;
+    } else {
+      messageElement.innerHTML = `
+        <div class="am-message-avatar ${message.sender}" style="color: ${this.theme.agentIconColor}">
+          ${iconHtml}
+        </div>
+        <div class="am-message-content">
+          ${renderedContent}
+        </div>
+      `;
+    }
 
     messagesContainer.appendChild(messageElement);
     messagesContainer.scrollTop = messagesContainer.scrollHeight;
@@ -1055,10 +1069,15 @@ export class ChatWidget {
     this.loadingMessageElement.className = 'am-message agent am-chat-loading-message';
 
     const icon = this.config.icons?.agentIcon || ChatWidget.defaultIcons.agentIcon;
+    
+    // For SVG icons, we need to ensure they're treated as SVG content
+    const iconHtml = typeof icon === 'string' && (icon.includes('<svg') || isImageUrl(icon))
+      ? getIconHtml(icon, 'agent avatar')
+      : icon; // If it's already an SVG object, use it directly
 
     this.loadingMessageElement.innerHTML = `
       <div class="am-message-avatar" style="color: ${this.theme.agentIconColor}">
-        ${getIconHtml(icon, 'agent avatar')}
+        ${iconHtml}
       </div>
       <div class="am-message-content">
         <div class="loading-container">

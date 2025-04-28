@@ -77,12 +77,12 @@
                     userForegroundColor: $('#agentman_chat_widget_options\\[user_foreground_color\\]').val(),
                     headerBackgroundColor: $('#agentman_chat_widget_options\\[header_background_color\\]').val(),
                     headerTextColor: $('#agentman_chat_widget_options\\[header_text_color\\]').val(),
-                    agentIconColor: $('#agentman_chat_widget_options\\[agent_icon_color\\]').val(),
-                    userIconColor: $('#agentman_chat_widget_options\\[user_icon_color\\]').val()
+                    agentIconColor: $('#agentman_chat_widget_options\\[agent_icon_color\\]').val()
+                    // User icon color removed since user icons are not displayed
                 },
                 icons: {
-                    userIcon: $('#agentman_chat_widget_options\\[user_icon\\]').val(),
-                    agentIcon: $('#agentman_chat_widget_options\\[agent_icon_color\\]').val()
+                    // User icon removed since user icons are not displayed
+                    agentIcon: $('#agentman_chat_widget_options\\[agent_icon\\]').val()
                 },
                 logo: $('#agentman_chat_widget_options\\[logo\\]').val(),
                 headerLogo: $('#agentman_chat_widget_options\\[header_logo\\]').val(),
