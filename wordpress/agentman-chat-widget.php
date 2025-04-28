@@ -3,7 +3,7 @@
  * Plugin Name: Agentman AI Assistant
  * Plugin URI: https://github.com/Agentman-ai/chat-widget/tree/main/wordpress
  * Description: Integrates the Agentman AI Assistant into your WordPress site with admin customization options.
- * Version: 0.17.0
+ * Version: 0.21.2
  * Author: Agentman
  * Author URI: https://agentman.ai
  * License: MIT
@@ -19,7 +19,7 @@ if (!defined('ABSPATH')) {
 }
 
 // Define plugin constants
-define('AGENTMAN_CHAT_WIDGET_VERSION', '0.17.0');
+define('AGENTMAN_CHAT_WIDGET_VERSION', '0.21.2');
 define('AGENTMAN_CHAT_WIDGET_PATH', plugin_dir_path(__FILE__));
 define('AGENTMAN_CHAT_WIDGET_URL', plugin_dir_url(__FILE__));
 define('AGENTMAN_CHAT_WIDGET_BASENAME', plugin_basename(__FILE__));
@@ -286,6 +286,11 @@ class Agentman_Chat_Widget {
      */
     private function get_widget_config() {
         return array(
+            // Cache busting parameters
+            'version' => AGENTMAN_CHAT_WIDGET_VERSION,
+            'timestamp' => isset($this->options['last_republish']) ? $this->options['last_republish'] : time(), // Use last republish timestamp for cache busting
+            
+            // Widget configuration
             'agentToken' => $this->options['agent_token'],
             'apiUrl' => $this->options['api_url'],
             'containerId' => 'agentman-chat-widget-container',

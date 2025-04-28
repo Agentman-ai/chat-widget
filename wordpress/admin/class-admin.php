@@ -36,6 +36,7 @@ class Agentman_Chat_Widget_Admin {
         // Add admin hooks
         add_action('admin_enqueue_scripts', array($this, 'enqueue_admin_assets'));
         add_action('wp_ajax_agentman_reset_settings', array($this, 'reset_settings'));
+        add_action('wp_ajax_agentman_republish_widget', array($this, 'republish_widget'));
         
         // Add help documentation
         add_action('admin_head', array($this, 'add_help_tabs'));
@@ -133,6 +134,79 @@ class Agentman_Chat_Widget_Admin {
         
         // Send success response
         wp_send_json_success('Settings reset to defaults');
+    }
+    
+    /**
+     * Republish the widget by clearing caches and updating version info
+     */
+    public function republish_widget() {
+        // Check nonce
+        check_ajax_referer('agentman_chat_widget_nonce', 'nonce');
+        
+        // Check permissions
+        if (!current_user_can('manage_options')) {
+            wp_send_json_error(array('message' => 'Permission denied'));
+        }
+        
+        // Clear WordPress transients related to the widget
+        global $wpdb;
+        $wpdb->query("DELETE FROM {$wpdb->options} WHERE option_name LIKE '%_transient_agentman_%'");
+        $wpdb->query("DELETE FROM {$wpdb->options} WHERE option_name LIKE '%_transient_timeout_agentman_%'");
+        
+        // Flush WordPress object cache
+        wp_cache_flush();
+        
+        // Try to clear popular caching plugins
+        $this->clear_cache_plugins();
+        
+        // Bump the version timestamp to force cache refresh
+        $options = get_option('agentman_chat_widget_options');
+        if ($options) {
+            // Add or update a timestamp field to force cache invalidation
+            $options['last_republish'] = time();
+            update_option('agentman_chat_widget_options', $options);
+        }
+        
+        // Send success response
+        wp_send_json_success(array(
+            'message' => 'Widget republished successfully. All caches have been cleared and configurations refreshed.',
+            'timestamp' => time()
+        ));
+    }
+    
+    /**
+     * Clear caches from popular WordPress caching plugins
+     */
+    private function clear_cache_plugins() {
+        // WP Super Cache
+        if (function_exists('wp_cache_clear_cache')) {
+            wp_cache_clear_cache();
+        }
+        
+        // W3 Total Cache
+        if (function_exists('w3tc_flush_all')) {
+            w3tc_flush_all();
+        }
+        
+        // WP Rocket
+        if (function_exists('rocket_clean_domain')) {
+            rocket_clean_domain();
+        }
+        
+        // WP Fastest Cache
+        if (function_exists('wpfc_clear_all_cache')) {
+            wpfc_clear_all_cache(true);
+        }
+        
+        // LiteSpeed Cache
+        if (class_exists('LiteSpeed_Cache_API') && method_exists('LiteSpeed_Cache_API', 'purge_all')) {
+            LiteSpeed_Cache_API::purge_all();
+        }
+        
+        // Autoptimize
+        if (class_exists('autoptimizeCache') && method_exists('autoptimizeCache', 'clearall')) {
+            autoptimizeCache::clearall();
+        }
     }
     
     /**

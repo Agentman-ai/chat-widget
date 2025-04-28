@@ -75,7 +75,8 @@
                         </th>
                         <td>
                             <button type="button" id="agentman-preview-widget" class="button button-primary"><?php _e('Preview Chat Widget', 'agentman-chat-widget'); ?></button>
-                            <p class="description"><?php _e('Preview how the chat widget will appear on your site with current settings.', 'agentman-chat-widget'); ?></p>
+                            <button type="button" id="agentman-republish-widget" class="button button-secondary"><?php _e('Republish Widget', 'agentman-chat-widget'); ?></button>
+                            <p class="description"><?php _e('Preview how the chat widget will appear on your site with current settings. Use Republish if you need to force a refresh of the widget on your site.', 'agentman-chat-widget'); ?></p>
                         </td>
                     </tr>
                 </table>

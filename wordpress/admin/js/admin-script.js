@@ -134,6 +134,101 @@
         
         // We've removed the modal, so this handler is no longer needed
         
+        // Republish Widget
+        $('#agentman-republish-widget').on('click', function(e) {
+            e.preventDefault();
+            
+            // Show loading state
+            const $button = $(this);
+            const originalText = $button.text();
+            $button.text('Republishing...').addClass('updating-message').prop('disabled', true);
+            
+            // Make AJAX request to republish the widget
+            $.ajax({
+                url: agentmanChatWidget.ajaxUrl, // Use localized AJAX URL for consistency
+                type: 'POST',
+                data: {
+                    action: 'agentman_republish_widget',
+                    nonce: agentmanChatWidget.nonce
+                },
+                success: function(response) {
+                    // Remove any existing notices
+                    $('.notice').remove();
+                    
+                    // Show success message
+                    if (response.success) {
+                        const $success = $('<div class="notice notice-success is-dismissible"><p>' + response.data.message + '</p></div>');
+                        $success.insertAfter('#agentman-republish-widget');
+                        
+                        // If the preview is active, refresh it to show latest changes
+                        if (window.previewWidget) {
+                            console.log('Refreshing preview with new settings...');
+                            // Destroy the current preview
+                            window.previewWidget.destroy();
+                            
+                            // Short delay to ensure settings are refreshed
+                            setTimeout(function() {
+                                // Get current settings and reinitialize the preview
+                                const settings = {
+                                    agentToken: $('#agentman_chat_widget_options\\[agent_token\\]').val(),
+                                    apiUrl: $('#agentman_chat_widget_options\\[api_url\\]').val(),
+                                    containerId: 'agentman-chat-widget-container',
+                                    variant: $('#agentman_chat_widget_options\\[variant\\]').val(),
+                                    position: $('#agentman_chat_widget_options\\[position\\]').val(),
+                                    title: $('#agentman_chat_widget_options\\[title\\]').val(),
+                                    placeholder: $('#agentman_chat_widget_options\\[placeholder\\]').val(),
+                                    toggleText: $('#agentman_chat_widget_options\\[toggle_text\\]').val(),
+                                    initiallyOpen: $('#agentman_chat_widget_options\\[initially_open\\]').is(':checked'),
+                                    initialMessage: $('#agentman_chat_widget_options\\[initial_message\\]').val(),
+                                    initialHeight: $('#agentman_chat_widget_options\\[initial_height\\]').val(),
+                                    initialWidth: $('#agentman_chat_widget_options\\[initial_width\\]').val(),
+                                    theme: {
+                                        backgroundColor: $('#agentman_chat_widget_options\\[background_color\\]').val(),
+                                        textColor: $('#agentman_chat_widget_options\\[text_color\\]').val(),
+                                        agentBackgroundColor: $('#agentman_chat_widget_options\\[agent_background_color\\]').val(),
+                                        userBackgroundColor: $('#agentman_chat_widget_options\\[user_background_color\\]').val(),
+                                        agentForegroundColor: $('#agentman_chat_widget_options\\[agent_foreground_color\\]').val(),
+                                        userForegroundColor: $('#agentman_chat_widget_options\\[user_foreground_color\\]').val(),
+                                        headerBackgroundColor: $('#agentman_chat_widget_options\\[header_background_color\\]').val(),
+                                        headerTextColor: $('#agentman_chat_widget_options\\[header_text_color\\]').val(),
+                                        agentIconColor: $('#agentman_chat_widget_options\\[agent_icon_color\\]').val()
+                                    },
+                                    icons: {
+                                        agentIcon: $('#agentman_chat_widget_options\\[agent_icon\\]').val()
+                                    },
+                                    logo: $('#agentman_chat_widget_options\\[logo\\]').val(),
+                                    headerLogo: $('#agentman_chat_widget_options\\[header_logo\\]').val(),
+                                    persistence: {
+                                        enabled: $('#agentman_chat_widget_options\\[persistence_enabled\\]').is(':checked'),
+                                        days: parseInt($('#agentman_chat_widget_options\\[persistence_days\\]').val(), 10) || 7
+                                    },
+                                    // Add timestamp to force browser cache refresh
+                                    timestamp: response.data.timestamp
+                                };
+                                
+                                window.previewWidget = new window.AgentmanChatWidget(settings);
+                                console.log('Preview refreshed with latest settings');
+                            }, 300);
+                        }
+                    } else {
+                        const $error = $('<div class="notice notice-error is-dismissible"><p>' + response.data.message + '</p></div>');
+                        $error.insertAfter('#agentman-republish-widget');
+                    }
+                    
+                    // Reset button state
+                    $button.text(originalText).removeClass('updating-message').prop('disabled', false);
+                },
+                error: function() {
+                    // Show error message
+                    const $error = $('<div class="notice notice-error is-dismissible"><p>Failed to republish widget. Please try again.</p></div>');
+                    $error.insertAfter('#agentman-republish-widget');
+                    
+                    // Reset button state
+                    $button.text(originalText).removeClass('updating-message').prop('disabled', false);
+                }
+            });
+        });
+        
         // Reset Settings
         $('#agentman-reset-settings').on('click', function(e) {
             e.preventDefault();

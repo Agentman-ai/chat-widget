@@ -70,6 +70,45 @@
     
     function initializeWidget() {
         try {
+            // Check for stored version and timestamp in localStorage
+            const storedVersion = localStorage.getItem('agentman_chat_widget_version');
+            const storedTimestamp = localStorage.getItem('agentman_chat_widget_timestamp');
+            const currentVersion = agentmanChatWidgetOptions.version;
+            const currentTimestamp = agentmanChatWidgetOptions.timestamp ? agentmanChatWidgetOptions.timestamp.toString() : '';
+            
+            // Check if either version or timestamp has changed
+            const versionChanged = storedVersion !== currentVersion;
+            const timestampChanged = storedTimestamp !== currentTimestamp;
+            
+            // If version or timestamp has changed, clear cached data
+            if (versionChanged || timestampChanged) {
+                console.log(`Agentman Chat Widget: Configuration changed, clearing cached data`);
+                if (versionChanged) {
+                    console.log(`- Version changed from ${storedVersion || 'none'} to ${currentVersion}`);
+                }
+                if (timestampChanged) {
+                    console.log(`- Timestamp changed from ${storedTimestamp || 'none'} to ${currentTimestamp}`);
+                }
+                
+                // Clear configuration-related localStorage items, preserving chat history
+                // These key patterns align with the actual keys used by the widget
+                Object.keys(localStorage).forEach(key => {
+                    if (key === 'agentman_chat_widget_version' ||
+                        key === 'agentman_chat_widget_timestamp' ||
+                        key.includes('agentman_config') ||
+                        key.includes('agentman_endpoint') ||
+                        key.includes('agentman_api_url') ||
+                        key.includes('agentman_settings')) {
+                        console.log(`- Clearing: ${key}`);
+                        localStorage.removeItem(key);
+                    }
+                });
+                
+                // Store the new version and timestamp
+                localStorage.setItem('agentman_chat_widget_version', currentVersion);
+                localStorage.setItem('agentman_chat_widget_timestamp', currentTimestamp);
+            }
+            
             // Initialize the widget with the configuration
             window.agentmanChatWidget = new window.ChatWidget(agentmanChatWidgetOptions);
             
