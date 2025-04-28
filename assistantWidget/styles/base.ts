@@ -14,7 +14,7 @@ export const baseStyles = `
     overflow: hidden;
     display: flex;
     width: 360px;
-    height: 560px;
+    height: 700px;
     border-radius: 8px;
     box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
     flex: 1;

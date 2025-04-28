@@ -69,6 +69,15 @@
                             <p class="description"><?php _e('Open the chat widget automatically when the page loads.', 'agentman-chat-widget'); ?></p>
                         </td>
                     </tr>
+                    <tr>
+                        <th scope="row">
+                            <label><?php _e('Preview', 'agentman-chat-widget'); ?></label>
+                        </th>
+                        <td>
+                            <button type="button" id="agentman-preview-widget" class="button button-primary"><?php _e('Preview Chat Widget', 'agentman-chat-widget'); ?></button>
+                            <p class="description"><?php _e('Preview how the chat widget will appear on your site with current settings.', 'agentman-chat-widget'); ?></p>
+                        </td>
+                    </tr>
                 </table>
             </div>
             
@@ -142,6 +151,7 @@
                             </div>
                         </td>
                     </tr>
+                    <!-- Logo customization temporarily disabled
                     <tr>
                         <th scope="row">
                             <label for="agentman_chat_widget_options[logo]"><?php _e('Logo URL', 'agentman-chat-widget'); ?></label>
@@ -152,6 +162,8 @@
                             <p class="description"><?php _e('URL for the main logo.', 'agentman-chat-widget'); ?></p>
                         </td>
                     </tr>
+                    -->
+                    <!-- Header logo customization temporarily disabled
                     <tr>
                         <th scope="row">
                             <label for="agentman_chat_widget_options[header_logo]"><?php _e('Header Logo URL', 'agentman-chat-widget'); ?></label>
@@ -162,6 +174,8 @@
                             <p class="description"><?php _e('URL for the header logo (32x32px).', 'agentman-chat-widget'); ?></p>
                         </td>
                     </tr>
+                    -->
+                    <!-- User icon customization temporarily disabled
                     <tr>
                         <th scope="row">
                             <label for="agentman_chat_widget_options[user_icon]"><?php _e('User Icon URL', 'agentman-chat-widget'); ?></label>
@@ -172,6 +186,8 @@
                             <p class="description"><?php _e('URL for the user avatar icon.', 'agentman-chat-widget'); ?></p>
                         </td>
                     </tr>
+                    -->
+                    <!-- Agent icon customization temporarily disabled
                     <tr>
                         <th scope="row">
                             <label for="agentman_chat_widget_options[agent_icon]"><?php _e('Agent Icon URL', 'agentman-chat-widget'); ?></label>
@@ -182,6 +198,7 @@
                             <p class="description"><?php _e('URL for the agent avatar icon.', 'agentman-chat-widget'); ?></p>
                         </td>
                     </tr>
+                    -->
                 </table>
             </div>
             
@@ -252,15 +269,7 @@
                             </fieldset>
                         </td>
                     </tr>
-                    <tr>
-                        <th scope="row">
-                            <label><?php _e('Preview', 'agentman-chat-widget'); ?></label>
-                        </th>
-                        <td>
-                            <button type="button" id="agentman-preview-widget" class="button button-primary"><?php _e('Preview Chat Widget', 'agentman-chat-widget'); ?></button>
-                            <p class="description"><?php _e('Preview how the chat widget will appear on your site with current settings.', 'agentman-chat-widget'); ?></p>
-                        </td>
-                    </tr>
+
                     <tr>
                         <th scope="row">
                             <label><?php _e('Reset Settings', 'agentman-chat-widget'); ?></label>

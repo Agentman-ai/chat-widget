@@ -13,7 +13,7 @@ export const variantStyles = {
         bottom: var(--chat-container-bottom, 20px);
         right: var(--chat-container-right, 20px);
         width: var(--chat-container-width, 360px);
-        height: var(--chat-container-height, 560px);
+        height: var(--chat-container-height, 700px);
       }
 
       .am-chat-widget--corner .am-chat-toggle {

@@ -460,7 +460,7 @@ export class ChatWidget {
       }
     } else {
       container.style.width = this.config.initialWidth || '360px';
-      container.style.height = this.config.initialHeight || '560px';
+      container.style.height = this.config.initialHeight || '700px';
       container.style.borderRadius = '12px';
       container.style.bottom = '20px';
       container.style.right = '20px';
