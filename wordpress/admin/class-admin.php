@@ -162,8 +162,9 @@ class Agentman_Chat_Widget_Admin {
         // Bump the version timestamp to force cache refresh
         $options = get_option('agentman_chat_widget_options');
         if ($options) {
-            // Add or update a timestamp field to force cache invalidation
+            // Add or update a timestamp and API URL to force refresh and update endpoint
             $options['last_republish'] = time();
+            $options['api_url']       = 'https://run.agentman.ai';
             update_option('agentman_chat_widget_options', $options);
         }
         
