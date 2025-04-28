@@ -45,7 +45,7 @@ import { ChatWidget } from '@agentman/chat-widget';
 const config = {
   // Required settings
   agentToken: 'YOUR_AGENT_TOKEN',
-  apiUrl: 'https://your-api.com',
+  apiUrl: 'https://run.agentman.ai',
   containerId: 'chat-widget-container',
   
   // Widget appearance
