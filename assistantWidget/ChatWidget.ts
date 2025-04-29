@@ -655,7 +655,7 @@ export class ChatWidget {
             ${this.config.icons?.sendIcon || send}
           </button>
         </div>
-        <div class="am-chat-branding">Powered by ${!this.config.hideBranding ? `<a href="https://agentman.ai" target="_blank" rel="noopener noreferrer">Agentman.ai</a>` : `<span>Agentman.ai</span>`}</div>
+        <div class="am-chat-branding">Powered by ${this.config.hideBranding ? `<span style="color: #10b981;">Agentman.ai</span>` : `<a href="https://agentman.ai" target="_blank" rel="noopener noreferrer">Agentman.ai</a>`}</div>
       </div>
     `;
   }
