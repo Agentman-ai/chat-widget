@@ -28,7 +28,7 @@
                         </th>
                         <td>
                             <input type="text" id="agentman_chat_widget_options[agent_token]" name="agentman_chat_widget_options[agent_token]" value="<?php echo esc_attr($this->options['agent_token']); ?>" class="regular-text" required />
-                            <p class="description"><?php _e('Your Agentman API token (required).', 'agentman-chat-widget'); ?></p>
+                            <p class="description"><?php _e('Your Agentman API token. A default demo token is provided so you can test the plugin immediately. For a custom assistant, get your own token at <a href="https://agentman.ai" target="_blank">agentman.ai</a>.', 'agentman-chat-widget'); ?></p>
                         </td>
                     </tr>
                     <!-- API URL field hidden as it's an internal setting that won't change -->
@@ -291,6 +291,21 @@
                                         <?php _e('days', 'agentman-chat-widget'); ?>
                                     </label>
                                 </div>
+                            </fieldset>
+                        </td>
+                    </tr>
+
+                    <tr>
+                        <th scope="row">
+                            <label for="agentman_chat_widget_options[hide_branding]"><?php _e('Branding', 'agentman-chat-widget'); ?></label>
+                        </th>
+                        <td>
+                            <fieldset>
+                                <label for="agentman_chat_widget_options[hide_branding]">
+                                    <input type="checkbox" id="agentman_chat_widget_options[hide_branding]" name="agentman_chat_widget_options[hide_branding]" value="1" <?php checked(1, isset($this->options['hide_branding']) ? $this->options['hide_branding'] : 0); ?> />
+                                    <?php _e('Hide "Powered by Agentman.ai" in the chat widget', 'agentman-chat-widget'); ?>
+                                </label>
+                                <p class="description"><?php _e('When enabled, the "Powered by Agentman.ai" link will be hidden from the chat widget. This is enabled by default to comply with WordPress.org guidelines.', 'agentman-chat-widget'); ?></p>
                             </fieldset>
                         </td>
                     </tr>

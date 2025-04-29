@@ -65,6 +65,7 @@ export interface ChatConfig {
   initialMessage?: string;
   placeholder?: string;
   persistence?: PersistenceConfig;
+  hideBranding?: boolean;
 }
 
 export interface Message {

@@ -64,6 +64,7 @@ export class ConfigManager {
       ...config,
       title: config.title || 'Chat Assistant',
       position: config.position || 'bottom-right',
+      hideBranding: config.hideBranding !== undefined ? config.hideBranding : true,
       theme: {
         ...ConfigManager.defaultTheme,
         ...config.theme

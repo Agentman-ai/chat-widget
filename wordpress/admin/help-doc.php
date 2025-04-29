@@ -107,7 +107,7 @@ function agentman_chat_widget_add_help_tabs() {
  */
 function agentman_chat_widget_field_help($field_id) {
     $help_text = array(
-        'agent_token' => __('Your unique Agentman API token. You can find this in your Agentman dashboard.', 'agentman-chat-widget'),
+        'agent_token' => __('Your Agentman API token. The plugin comes with a default demo token so you can test immediately without creating an account. For a custom assistant with your own content and branding, sign up at agentman.ai and replace this token with your own.', 'agentman-chat-widget'),
         'api_url' => __('The API endpoint URL. Leave as default unless instructed otherwise by Agentman support.', 'agentman-chat-widget'),
         'variant' => __('Corner: Shows a floating button that expands to the chat widget. Centered: Displays the widget in the center of the screen. Inline: Embeds the widget directly in a container.', 'agentman-chat-widget'),
         'position' => __('Where the chat widget appears on your website. Only applies to corner and centered variants.', 'agentman-chat-widget'),

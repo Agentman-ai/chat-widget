@@ -110,7 +110,7 @@ class Agentman_Chat_Widget {
     private function get_default_options() {
         return array(
             'enabled' => true,
-            'agent_token' => '',
+            'agent_token' => '.eJyrVipJzUvMK4nPTFGyMjHTUUosKMjJTE4syczPQ4ilp0JVGBqa1wIAxoEQ6Q.aBBksw.BckjpVgss02uf6AWE5yqqMUrQms',
             'api_url' => 'https://run.agentman.ai',
             'variant' => 'corner',
             'position' => 'bottom-right',
@@ -311,6 +311,7 @@ class Agentman_Chat_Widget {
             'initialMessage' => $this->options['initial_message'],
             'initialHeight' => $this->options['initial_height'],
             'initialWidth' => $this->options['initial_width'],
+            'hideBranding' => isset($this->options['hide_branding']) ? (bool)$this->options['hide_branding'] : false,
             'theme' => array(
                 'backgroundColor' => $this->options['background_color'],
                 'textColor' => $this->options['text_color'],
