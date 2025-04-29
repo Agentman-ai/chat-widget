@@ -111,6 +111,7 @@ function agentman_chat_widget_field_help($field_id) {
         'api_url' => __('The API endpoint URL. Leave as default unless instructed otherwise by Agentman support.', 'agentman-chat-widget'),
         'variant' => __('Corner: Shows a floating button that expands to the chat widget. Centered: Displays the widget in the center of the screen. Inline: Embeds the widget directly in a container.', 'agentman-chat-widget'),
         'position' => __('Where the chat widget appears on your website. Only applies to corner and centered variants.', 'agentman-chat-widget'),
+        'hide_branding' => __('When enabled, the "Powered by Agentman.ai" text will still appear but without a clickable link. This is enabled by default to comply with WordPress.org guidelines.', 'agentman-chat-widget'),
         'persistence_enabled' => __('When enabled, conversations are saved in the user\'s browser and restored when they return to your site.', 'agentman-chat-widget'),
         'persistence_days' => __('Number of days to keep conversations before they expire. Set to a lower value to reduce storage usage.', 'agentman-chat-widget'),
     );

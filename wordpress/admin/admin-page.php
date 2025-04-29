@@ -301,11 +301,11 @@
                         </th>
                         <td>
                             <fieldset>
-                                <label for="agentman_chat_widget_options[hide_branding]">
+                                <label>
                                     <input type="checkbox" id="agentman_chat_widget_options[hide_branding]" name="agentman_chat_widget_options[hide_branding]" value="1" <?php checked(1, isset($this->options['hide_branding']) ? $this->options['hide_branding'] : true); ?> />
-                                    <?php _e('Hide "Powered by Agentman.ai" in the chat widget', 'agentman-chat-widget'); ?>
+                                    <?php _e('Hide external links in the chat widget', 'agentman-chat-widget'); ?>
                                 </label>
-                                <p class="description"><?php _e('When enabled, the "Powered by Agentman.ai" link will be hidden from the chat widget. This is enabled by default to comply with WordPress.org guidelines.', 'agentman-chat-widget'); ?></p>
+                                <p class="description"><?php _e('When enabled, the "Powered by Agentman.ai" text will still appear but without a clickable link. This is enabled by default to comply with WordPress.org guidelines.', 'agentman-chat-widget'); ?></p>
                             </fieldset>
                         </td>
                     </tr>
