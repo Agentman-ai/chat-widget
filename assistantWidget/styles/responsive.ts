@@ -13,6 +13,10 @@ export const responsiveStyles = `
       max-width: 100%;
       margin: 0 16px;
     }
+    
+    .desktop-only {
+      display: none !important;
+    }
   }
 
   @media (max-width: 480px) {

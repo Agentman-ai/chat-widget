@@ -237,6 +237,28 @@
                     </tr>
                     <tr>
                         <th scope="row">
+                            <label><?php _e('Toggle Button Colors', 'agentman-chat-widget'); ?></label>
+                        </th>
+                        <td>
+                            <div class="agentman-color-fields">
+                                <div class="agentman-color-field">
+                                    <label for="agentman_chat_widget_options[toggle_background_color]"><?php _e('Background', 'agentman-chat-widget'); ?></label>
+                                    <input type="color" id="agentman_chat_widget_options[toggle_background_color]" name="agentman_chat_widget_options[toggle_background_color]" value="<?php echo esc_attr(isset($this->options['toggle_background_color']) ? $this->options['toggle_background_color'] : '#059669'); ?>" />
+                                </div>
+                                <div class="agentman-color-field">
+                                    <label for="agentman_chat_widget_options[toggle_text_color]"><?php _e('Text Color', 'agentman-chat-widget'); ?></label>
+                                    <input type="color" id="agentman_chat_widget_options[toggle_text_color]" name="agentman_chat_widget_options[toggle_text_color]" value="<?php echo esc_attr(isset($this->options['toggle_text_color']) ? $this->options['toggle_text_color'] : '#ffffff'); ?>" />
+                                </div>
+                                <div class="agentman-color-field">
+                                    <label for="agentman_chat_widget_options[toggle_icon_color]"><?php _e('Icon Color', 'agentman-chat-widget'); ?></label>
+                                    <input type="color" id="agentman_chat_widget_options[toggle_icon_color]" name="agentman_chat_widget_options[toggle_icon_color]" value="<?php echo esc_attr(isset($this->options['toggle_icon_color']) ? $this->options['toggle_icon_color'] : '#ffffff'); ?>" />
+                                </div>
+                            </div>
+                            <p class="description"><?php _e('Custom colors for the toggle button to prevent inheriting WordPress theme styles.', 'agentman-chat-widget'); ?></p>
+                        </td>
+                    </tr>
+                    <tr>
+                        <th scope="row">
                             <label for="agentman_chat_widget_options[initial_message]"><?php _e('Initial Message', 'agentman-chat-widget'); ?></label>
                         </th>
                         <td>

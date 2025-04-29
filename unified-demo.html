@@ -231,6 +231,31 @@
                             <input type="color" id="buttonTextColor" value="#FFFFFF">
                             <span class="color-preview" style="background-color: #FFFFFF;"></span>
                         </div>
+                        
+                        <h3 style="margin-top: 20px; padding-top: 10px; border-top: 1px solid #ddd;">Toggle Button</h3>
+                        
+                        <div class="form-group">
+                            <label for="toggleText">Toggle Button Text</label>
+                            <input type="text" id="toggleText" value="Ask Agentman">
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="toggleBackgroundColor">Toggle Background</label>
+                            <input type="color" id="toggleBackgroundColor" value="#10b981">
+                            <span class="color-preview" style="background-color: #10b981;"></span>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="toggleTextColor">Toggle Text</label>
+                            <input type="color" id="toggleTextColor" value="#FFFFFF">
+                            <span class="color-preview" style="background-color: #FFFFFF;"></span>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="toggleIconColor">Toggle Icon</label>
+                            <input type="color" id="toggleIconColor" value="#000000">
+                            <span class="color-preview" style="background-color: #000000;"></span>
+                        </div>
                     </div>
                     
                     <!-- Message Styling -->
@@ -527,7 +552,14 @@
                     textColor: document.getElementById('textColor').value,
                     buttonColor: document.getElementById('buttonColor').value,
                     buttonTextColor: document.getElementById('buttonTextColor').value,
+                    // Toggle button styling
+                    toggleBackgroundColor: document.getElementById('toggleBackgroundColor').value,
+                    toggleTextColor: document.getElementById('toggleTextColor').value,
+                    toggleIconColor: document.getElementById('toggleIconColor').value,
                 },
+                
+                // Toggle text
+                toggleText: document.getElementById('toggleText').value,
                 
                 // Message styling
                 userBackgroundColor: document.getElementById('userBackgroundColor').value,
@@ -576,6 +608,12 @@
             document.getElementById('textColor').value = '#111827';
             document.getElementById('buttonColor').value = '#10b981';
             document.getElementById('buttonTextColor').value = '#FFFFFF';
+            
+            // Toggle button settings
+            document.getElementById('toggleText').value = 'Ask Agentman';
+            document.getElementById('toggleBackgroundColor').value = '#10b981';
+            document.getElementById('toggleTextColor').value = '#FFFFFF';
+            document.getElementById('toggleIconColor').value = '#000000';
             
             // Message styling
             document.getElementById('userBackgroundColor').value = '#10b981';

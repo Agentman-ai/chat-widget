@@ -87,6 +87,10 @@ export class ChatWidget {
     if (config.headerTextColor) themeProperties.headerTextColor = config.headerTextColor;
     if (config.agentIconColor) themeProperties.agentIconColor = config.agentIconColor;
     if (config.userIconColor) themeProperties.userIconColor = config.userIconColor;
+    // Add toggle button styling properties
+    if (config.theme?.toggleBackgroundColor) themeProperties.toggleBackgroundColor = config.theme.toggleBackgroundColor;
+    if (config.theme?.toggleTextColor) themeProperties.toggleTextColor = config.theme.toggleTextColor;
+    if (config.theme?.toggleIconColor) themeProperties.toggleIconColor = config.theme.toggleIconColor;
 
     const configWithTheme: ChatConfig = {
       ...config,
@@ -298,7 +302,11 @@ export class ChatWidget {
       headerBackgroundColor: this.config.headerBackgroundColor || this.config.theme?.headerBackgroundColor || '#BE185D',
       headerTextColor: this.config.headerTextColor || this.config.theme?.headerTextColor || '#FFFFFF',
       agentIconColor: this.config.theme?.agentIconColor || '#BE185D',
-      userIconColor: this.config.theme?.userIconColor || '#F43F5E'
+      userIconColor: this.config.theme?.userIconColor || '#F43F5E',
+      // Add toggle button styling properties with fallbacks to header colors
+      toggleBackgroundColor: this.config.theme?.toggleBackgroundColor || this.config.theme?.headerBackgroundColor || '#BE185D',
+      toggleTextColor: this.config.theme?.toggleTextColor || this.config.theme?.headerTextColor || '#FFFFFF',
+      toggleIconColor: this.config.theme?.toggleIconColor || this.config.theme?.headerTextColor || '#FFFFFF'
     };
   }
 
@@ -475,9 +483,27 @@ export class ChatWidget {
   }
 
 
-  private handleStateChange(newState: ChatState): void {
-    this.state = newState;
-    this.updateUI(this.state);
+  private handleStateChange(state: ChatState): void {
+    this.updateUI(state);
+    this.updateToggleButtonStyling();
+  }
+  
+  private updateToggleButtonStyling(): void {
+    const toggleButton = this.element.querySelector('.am-chat-toggle') as HTMLButtonElement;
+    if (toggleButton) {
+      toggleButton.style.backgroundColor = this.theme.toggleBackgroundColor;
+      
+      const toggleIcon = toggleButton.querySelector('.am-chat-logo') as HTMLElement;
+      if (toggleIcon) {
+        toggleIcon.style.color = this.theme.toggleIconColor;
+      }
+      
+      const toggleText = toggleButton.querySelector('.am-chat-toggle-text') as HTMLElement;
+      if (toggleText) {
+        toggleText.style.color = this.theme.toggleTextColor;
+        toggleText.textContent = this.config.toggleText || 'Ask Agentman';
+      }
+    }
   }
 
   private updateUI(state: ChatState): void {
@@ -545,6 +571,15 @@ export class ChatWidget {
       if (theme.headerTextColor) this.element.style.setProperty('--chat-header-text-color', theme.headerTextColor);
       if (theme.agentIconColor) this.element.style.setProperty('--chat-agent-icon-color', theme.agentIconColor);
       if (theme.userIconColor) this.element.style.setProperty('--chat-user-icon-color', theme.userIconColor);
+      // Add toggle button styling CSS variables
+      if (theme.toggleBackgroundColor) this.element.style.setProperty('--chat-toggle-background-color', theme.toggleBackgroundColor);
+      if (theme.toggleTextColor) this.element.style.setProperty('--chat-toggle-text-color', theme.toggleTextColor);
+      if (theme.toggleIconColor) this.element.style.setProperty('--chat-toggle-icon-color', theme.toggleIconColor);
+      
+      // Update toggle button styling directly
+      if (theme.toggleBackgroundColor || theme.toggleTextColor || theme.toggleIconColor) {
+        this.updateToggleButtonStyling();
+      }
     }
   }
 
@@ -584,12 +619,12 @@ export class ChatWidget {
   private generateTemplate(showToggle: boolean): string {
     return `
       ${showToggle ? `
-        <button class="am-chat-toggle">
+        <button class="am-chat-toggle" style="background-color: ${this.theme.toggleBackgroundColor} !important;">
           <div class="am-chat-toggle-content">
-            <div class="am-chat-logo">
+            <div class="am-chat-logo" style="color: ${this.theme.toggleIconColor} !important;">
               ${this.assets.logo}
             </div>
-            <span class="am-chat-toggle-text">${this.config.toggleText || 'Ask Agentman'}</span>
+            <span class="am-chat-toggle-text" style="color: ${this.theme.toggleTextColor} !important;">${this.config.toggleText || 'Ask Agentman'}</span>
           </div>
         </button>
       ` : ''}

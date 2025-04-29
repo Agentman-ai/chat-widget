@@ -16,7 +16,11 @@ export class ConfigManager {
     headerBackgroundColor: '#f3f4f6',
     headerTextColor: '#111827',
     agentIconColor: '#ffffff',
-    userIconColor: '#ffffff'
+    userIconColor: '#ffffff',
+    // Toggle button styling properties
+    toggleBackgroundColor: '#10b981',
+    toggleTextColor: '#ffffff',
+    toggleIconColor: '#ffffff'
   };
 
   private static readonly defaultAssets: ChatAssets = {

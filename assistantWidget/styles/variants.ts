@@ -17,40 +17,77 @@ export const variantStyles = {
       }
 
       .am-chat-widget--corner .am-chat-toggle {
-        position: fixed;
-        bottom: var(--chat-toggle-bottom, 12px);
-        right: var(--chat-toggle-right, 12px);
-        padding: 0;
-        border: none;
-        background: var(--chat-header-background-color, #059669);
-        cursor: pointer;
-        z-index: var(--chat-z-index, 1000);
-        border-radius: 32px;
-        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
-        transition: transform 0.2s;
+        position: fixed !important;
+        bottom: var(--chat-toggle-bottom, 12px) !important;
+        right: var(--chat-toggle-right, 12px) !important;
+        padding: 0 !important;
+        border: none !important;
+        background: var(--chat-toggle-background-color, var(--chat-header-background-color, #059669)) !important;
+        cursor: pointer !important;
+        z-index: var(--chat-z-index, 1000)
+        border-radius: 32px !important;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15) !important;
+        transition: transform 0.2s !important;
+        text-transform: none !important;
+        letter-spacing: normal !important;
+        line-height: normal !important;
+        text-decoration: none !important;
+        min-width: auto !important;
+        min-height: auto !important;
+        max-width: none !important;
+        max-height: none !important;
+        width: auto !important;
+        height: auto !important;
+        margin: 0 !important;
       }
 
       .am-chat-widget--corner .am-chat-toggle:hover {
-        transform: translateY(-1px);
+        transform: translateY(-1px) !important;
+        background: var(--chat-toggle-background-color, var(--chat-header-background-color, #059669)) !important;
+        color: var(--chat-toggle-text-color, var(--chat-header-text-color, #FFFFFF)) !important;
+        text-decoration: none !important;
+        border: none !important;
+        outline: none !important;
+      }
+      
+      .am-chat-widget--corner .am-chat-toggle:focus {
+        outline: none !important;
+        box-shadow: 0 0 0 2px rgba(5, 150, 105, 0.5) !important;
       }
 
       .am-chat-widget--corner .am-chat-toggle-content {
-        display: flex;
-        align-items: center;
-        gap: 4px;
-        padding: 8px 12px;
+        display: flex !important;
+        align-items: center !important;
+        gap: 4px !important;
+        padding: 8px 12px !important;
+        text-transform: none !important;
+        letter-spacing: normal !important;
+        line-height: normal !important;
+        text-decoration: none !important;
+        margin: 0 !important;
       }
 
       .am-chat-widget--corner .am-chat-toggle img {
-        width: 24px;
-        height: 24px;
-        border-radius: 50%;
+        width: 24px !important;
+        height: 24px !important;
+        border-radius: 50% !important;
+        max-width: 24px !important;
+        max-height: 24px !important;
+        min-width: 24px !important;
+        min-height: 24px !important;
+        padding: 0 !important;
+        margin: 0 !important;
+        display: inline-block !important;
+        vertical-align: middle !important;
       }
 
       .am-chat-widget--corner .am-chat-toggle-text {
-        color: var(--chat-header-text-color, #FFFFFF);
-        font-size: 16px;
-        font-weight: 500;
+        color: var(--chat-toggle-text-color, var(--chat-header-text-color, #FFFFFF)) !important;
+        font-size: 16px !important;
+        font-weight: 500 !important;
+        text-transform: none !important;
+        letter-spacing: normal !important;
+        text-decoration: none !important;
       }
 
       @media (max-width: 640px) {

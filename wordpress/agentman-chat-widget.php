@@ -19,7 +19,7 @@ if (!defined('ABSPATH')) {
 }
 
 // Define plugin constants
-define('AGENTMAN_CHAT_WIDGET_VERSION', '0.21.10');
+define('AGENTMAN_CHAT_WIDGET_VERSION', '0.21.11');
 define('AGENTMAN_CHAT_WIDGET_PATH', plugin_dir_path(__FILE__));
 define('AGENTMAN_CHAT_WIDGET_URL', plugin_dir_url(__FILE__));
 define('AGENTMAN_CHAT_WIDGET_BASENAME', plugin_basename(__FILE__));
@@ -129,6 +129,9 @@ class Agentman_Chat_Widget {
             'user_foreground_color' => '#ffffff',
             'header_background_color' => '#059669',
             'header_text_color' => '#ffffff',
+            'toggle_background_color' => '#059669',
+            'toggle_text_color' => '#ffffff',
+            'toggle_icon_color' => '#ffffff',
             'agent_icon_color' => '#059669',
             'user_icon_color' => '#059669',
             'user_icon' => '',
@@ -196,6 +199,11 @@ class Agentman_Chat_Widget {
         $sanitized['header_text_color'] = sanitize_hex_color($input['header_text_color']);
         $sanitized['agent_icon_color'] = sanitize_hex_color($input['agent_icon_color']);
         $sanitized['user_icon_color'] = sanitize_hex_color($input['user_icon_color']);
+        
+        // Toggle button color options
+        $sanitized['toggle_background_color'] = sanitize_hex_color(isset($input['toggle_background_color']) ? $input['toggle_background_color'] : '#059669');
+        $sanitized['toggle_text_color'] = sanitize_hex_color(isset($input['toggle_text_color']) ? $input['toggle_text_color'] : '#ffffff');
+        $sanitized['toggle_icon_color'] = sanitize_hex_color(isset($input['toggle_icon_color']) ? $input['toggle_icon_color'] : '#ffffff');
         
         // Select options
         $sanitized['variant'] = in_array($input['variant'], array('corner', 'centered', 'inline')) ? $input['variant'] : 'corner';
@@ -314,6 +322,11 @@ class Agentman_Chat_Widget {
                 'headerTextColor' => $this->options['header_text_color'],
                 'agentIconColor' => $this->options['agent_icon_color'],
                 'userIconColor' => $this->options['user_icon_color']
+            ),
+            'toggleStyle' => array(
+                'backgroundColor' => isset($this->options['toggle_background_color']) ? $this->options['toggle_background_color'] : '#059669',
+                'textColor' => isset($this->options['toggle_text_color']) ? $this->options['toggle_text_color'] : '#ffffff',
+                'iconColor' => isset($this->options['toggle_icon_color']) ? $this->options['toggle_icon_color'] : '#ffffff'
             ),
             'icons' => array(
                 'userIcon' => $this->options['user_icon'],

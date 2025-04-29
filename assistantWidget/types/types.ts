@@ -14,6 +14,9 @@ export interface ChatTheme {
   headerTextColor: string;
   agentIconColor: string;
   userIconColor: string;
+  toggleBackgroundColor: string;
+  toggleTextColor: string;
+  toggleIconColor: string;
 }
 
 export interface ChatAssets {
