@@ -3,7 +3,7 @@
  * Plugin Name: Agentman AI Assistant
  * Plugin URI: https://github.com/Agentman-ai/chat-widget/tree/main/wordpress
  * Description: Integrates the Agentman AI Assistant into your WordPress site with admin customization options.
- * Version: 0.21.10
+ * Version: 0.21.11
  * Author: Agentman
  * Author URI: https://agentman.ai
  * License: MIT
