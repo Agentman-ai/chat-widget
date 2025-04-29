@@ -11,13 +11,11 @@
         // Option 1: Check if it's in the expected module format
         if (typeof window['@agentman/chat-widget'] !== 'undefined' && 
             typeof window['@agentman/chat-widget'].ChatWidget === 'function') {
-            console.log('Found ChatWidget in @agentman/chat-widget module');
             return window['@agentman/chat-widget'].ChatWidget;
         }
         
         // Option 2: Check if it's already defined globally
         if (typeof window.ChatWidget === 'function') {
-            console.log('ChatWidget already defined globally');
             return window.ChatWidget;
         }
         
@@ -25,24 +23,20 @@
         if (typeof exports !== 'undefined' && 
             typeof exports['@agentman/chat-widget'] !== 'undefined' && 
             typeof exports['@agentman/chat-widget'].ChatWidget === 'function') {
-            console.log('Found ChatWidget in exports');
             return exports['@agentman/chat-widget'].ChatWidget;
         }
         
         // Option 4: Look for it in the webpack modules if available
         if (typeof window.webpackJsonp !== 'undefined') {
-            console.log('Webpack detected, attempting to extract ChatWidget');
             // This is a complex operation and depends on the webpack configuration
         }
         
         // Option 5: Check if it's in the vendor script directly
         var vendorScript = document.querySelector('script[src*="agentman-chat-widget.js"]');
         if (vendorScript) {
-            console.log('Vendor script found, checking for ChatWidget definition');
             // The script is loaded, but the class might not be exposed properly
         }
         
-        console.error('ChatWidget class not found in any expected location');
         return null;
     }
     
@@ -60,7 +54,6 @@
             console.error('Using fallback ChatWidget implementation. The actual widget functionality is not available.');
             this.config = config;
             this.initialize = function() { 
-                console.log('Fallback initialize called');
                 return this; 
             };
             this.open = function() { return this; };

@@ -1,10 +1,10 @@
-# Agentman Chat Widget for WordPress
+# Agentman AI Agents for WordPress
 
-A WordPress plugin that integrates the Agentman Chat Widget into your WordPress site with full customization options in the admin dashboard.
+A WordPress plugin that integrates the Agentman AI Agents into your WordPress site with full customization options in the admin dashboard.
 
 ## Description
 
-This plugin allows you to easily add the Agentman Chat Widget to your WordPress website. The chat widget provides a modern, responsive interface for your visitors to interact with Agentman AI.
+This plugin allows you to easily add the Agentman AI Agents to your WordPress website. The chat widget provides a modern, responsive interface for your visitors to interact with Agentman AI.
 
 ### Features
 
@@ -28,7 +28,7 @@ This plugin allows you to easily add the Agentman Chat Widget to your WordPress 
 
 ## Configuration
 
-1. After activation, go to Settings > Agentman Chat
+1. After activation, go to Settings > Agentman AI Agents
 2. Enter your Agentman Agent Token (required)
 3. Configure the appearance and behavior of the chat widget
 4. Click "Save Changes"
@@ -49,7 +49,7 @@ The plugin provides extensive customization options:
 
 ## Persistence Functionality
 
-The Agentman Chat Widget includes built-in persistence functionality that allows conversations to be saved and restored across page reloads and browser sessions.
+The Agentman AI Agents includes built-in persistence functionality that allows conversations to be saved and restored across page reloads and browser sessions.
 
 ### How Persistence Works
 

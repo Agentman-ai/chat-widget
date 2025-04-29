@@ -1,6 +1,6 @@
 <?php
 /**
- * Agentman Chat Widget Admin
+ * Agentman AI Agents Admin
  *
  * @package Agentman_Chat_Widget
  */
@@ -11,7 +11,7 @@ if (!defined('ABSPATH')) {
 }
 
 /**
- * Admin class for Agentman Chat Widget
+ * Admin class for Agentman AI Agents
  */
 class Agentman_Chat_Widget_Admin {
     /**

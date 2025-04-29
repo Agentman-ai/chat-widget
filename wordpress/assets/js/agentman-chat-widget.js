@@ -1,7 +1,7 @@
 /**
- * Agentman Chat Widget Frontend Script
+ * Agentman AI Agents Frontend Script
  * 
- * This script initializes the Agentman Chat Widget on the frontend
+ * This script initializes the Agentman AI Agents on the frontend
  * using the configuration provided by WordPress.
  */
 (function() {
@@ -12,8 +12,6 @@
     
     // Function to initialize the widget
     function attemptInitialization() {
-        console.log(`Agentman Chat Widget Init: Attempt ${initAttempts + 1} of ${MAX_ATTEMPTS}`);
-        
         // Check if the configuration object exists
         if (typeof agentmanChatWidgetOptions === 'undefined') {
             console.error('Agentman Chat Widget: Configuration not found.');
@@ -36,7 +34,6 @@
             // If we haven't reached max attempts, try again
             if (initAttempts < MAX_ATTEMPTS) {
                 initAttempts++;
-                console.log(`Agentman Chat Widget: Retrying in ${initAttempts * 500}ms...`);
                 setTimeout(attemptInitialization, initAttempts * 500);
             } else {
                 handleInitFailure('ChatWidget class not found after multiple attempts');
@@ -82,13 +79,7 @@
             
             // If version or timestamp has changed, clear cached data
             if (versionChanged || timestampChanged) {
-                console.log(`Agentman Chat Widget: Configuration changed, clearing cached data`);
-                if (versionChanged) {
-                    console.log(`- Version changed from ${storedVersion || 'none'} to ${currentVersion}`);
-                }
-                if (timestampChanged) {
-                    console.log(`- Timestamp changed from ${storedTimestamp || 'none'} to ${currentTimestamp}`);
-                }
+                
                 
                 // Clear configuration-related localStorage items, preserving chat history
                 // These key patterns align with the actual keys used by the widget
@@ -99,7 +90,6 @@
                         key.includes('agentman_endpoint') ||
                         key.includes('agentman_api_url') ||
                         key.includes('agentman_settings')) {
-                        console.log(`- Clearing: ${key}`);
                         localStorage.removeItem(key);
                     }
                 });

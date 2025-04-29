@@ -1,5 +1,5 @@
 /**
- * Agentman Chat Widget Admin Scripts
+ * Agentman AI Agents Admin Scripts
  */
 (function($) {
     'use strict';
