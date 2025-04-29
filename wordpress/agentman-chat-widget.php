@@ -1,9 +1,9 @@
 <?php
 /**
- * Plugin Name: Agentman AI Assistant
+ * Plugin Name: Agentman AI Agents
  * Plugin URI: https://github.com/Agentman-ai/chat-widget/tree/main/wordpress
- * Description: Integrates the Agentman AI Assistant into your WordPress site with admin customization options.
- * Version: 0.21.12
+ * Description: Integrates the Agentman AI Agents into your WordPress site with admin customization options.
+ * Version: 0.21.13
  * Author: Agentman
  * Author URI: https://agentman.ai
  * License: MIT
@@ -19,7 +19,7 @@ if (!defined('ABSPATH')) {
 }
 
 // Define plugin constants
-define('AGENTMAN_CHAT_WIDGET_VERSION', '0.21.12');
+define('AGENTMAN_CHAT_WIDGET_VERSION', '0.21.13');
 define('AGENTMAN_CHAT_WIDGET_PATH', plugin_dir_path(__FILE__));
 define('AGENTMAN_CHAT_WIDGET_URL', plugin_dir_url(__FILE__));
 define('AGENTMAN_CHAT_WIDGET_BASENAME', plugin_basename(__FILE__));
@@ -139,7 +139,8 @@ class Agentman_Chat_Widget {
             'logo' => '',
             'header_logo' => '',
             'persistence_enabled' => true,
-            'persistence_days' => 7
+            'persistence_days' => 7,
+            'hide_branding' => true
         );
     }
 
@@ -177,6 +178,7 @@ class Agentman_Chat_Widget {
         $sanitized['enabled'] = isset($input['enabled']) ? (bool) $input['enabled'] : false;
         $sanitized['initially_open'] = isset($input['initially_open']) ? (bool) $input['initially_open'] : false;
         $sanitized['persistence_enabled'] = isset($input['persistence_enabled']) ? (bool) $input['persistence_enabled'] : true;
+        $sanitized['hide_branding'] = isset($input['hide_branding']) ? (bool) $input['hide_branding'] : true;
         
         // Text options
         $sanitized['agent_token'] = sanitize_text_field($input['agent_token']);
@@ -311,7 +313,7 @@ class Agentman_Chat_Widget {
             'initialMessage' => $this->options['initial_message'],
             'initialHeight' => $this->options['initial_height'],
             'initialWidth' => $this->options['initial_width'],
-            'hideBranding' => isset($this->options['hide_branding']) ? (bool)$this->options['hide_branding'] : false,
+            'hideBranding' => isset($this->options['hide_branding']) ? (bool)$this->options['hide_branding'] : true,
             'theme' => array(
                 'backgroundColor' => $this->options['background_color'],
                 'textColor' => $this->options['text_color'],

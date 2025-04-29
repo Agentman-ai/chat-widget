@@ -320,6 +320,14 @@
                             <label for="persistenceKey">Custom Storage Key (optional)</label>
                             <input type="text" id="persistenceKey" placeholder="Leave blank for default">
                         </div>
+
+                        <h2 class="section-title">Branding Settings</h2>
+                        
+                        <div class="form-group">
+                            <label>
+                                <input type="checkbox" id="hideBranding" checked> Hide "Powered by Agentman.ai" Branding
+                            </label>
+                        </div>
                     </div>
                 </div>
                 
@@ -569,6 +577,9 @@
                 userIconColor: document.getElementById('userIconColor').value,
                 agentIconColor: document.getElementById('agentIconColor').value,
                 
+                // Branding settings
+                hideBranding: document.getElementById('hideBranding').checked,
+                
                 // Persistence settings
                 persistence: {
                     enabled: document.getElementById('persistenceEnabled').checked,
@@ -627,6 +638,9 @@
             document.getElementById('persistenceEnabled').checked = true;
             document.getElementById('persistenceDays').value = '7';
             document.getElementById('persistenceKey').value = '';
+            
+            // Branding settings
+            document.getElementById('hideBranding').checked = true;
             
             // Update color previews
             updateColorPreviews();
