@@ -266,6 +266,34 @@
                             <p class="description"><?php _e('Initial message displayed from the agent when chat is opened.', 'agentman-chat-widget'); ?></p>
                         </td>
                     </tr>
+                    <tr>
+                        <th scope="row">
+                            <label for="agentman_chat_widget_options[welcome_message]"><?php _e('Welcome Message', 'agentman-chat-widget'); ?></label>
+                        </th>
+                        <td>
+                            <input type="text" id="agentman_chat_widget_options[welcome_message]" name="agentman_chat_widget_options[welcome_message]" value="<?php echo esc_attr(isset($this->options['welcome_message']) ? $this->options['welcome_message'] : 'How can I help you today?'); ?>" class="regular-text" />
+                            <p class="description"><?php _e('Welcome message displayed above the toggle button when chat is collapsed.', 'agentman-chat-widget'); ?></p>
+                        </td>
+                    </tr>
+                    <tr>
+                        <th scope="row">
+                            <label><?php _e('Message Prompts', 'agentman-chat-widget'); ?></label>
+                        </th>
+                        <td>
+                            <div class="agentman-prompt-fields">
+                                <p>
+                                    <input type="text" id="agentman_chat_widget_options[prompt_1]" name="agentman_chat_widget_options[prompt_1]" value="<?php echo esc_attr(isset($this->options['prompt_1']) ? $this->options['prompt_1'] : 'Tell me about your services'); ?>" class="regular-text" placeholder="<?php _e('Prompt 1', 'agentman-chat-widget'); ?>" />
+                                </p>
+                                <p>
+                                    <input type="text" id="agentman_chat_widget_options[prompt_2]" name="agentman_chat_widget_options[prompt_2]" value="<?php echo esc_attr(isset($this->options['prompt_2']) ? $this->options['prompt_2'] : 'How do I get started?'); ?>" class="regular-text" placeholder="<?php _e('Prompt 2', 'agentman-chat-widget'); ?>" />
+                                </p>
+                                <p>
+                                    <input type="text" id="agentman_chat_widget_options[prompt_3]" name="agentman_chat_widget_options[prompt_3]" value="<?php echo esc_attr(isset($this->options['prompt_3']) ? $this->options['prompt_3'] : 'I need help with...'); ?>" class="regular-text" placeholder="<?php _e('Prompt 3', 'agentman-chat-widget'); ?>" />
+                                </p>
+                            </div>
+                            <p class="description"><?php _e('Quick prompt buttons displayed above the toggle button. These will be shown to users before they start a conversation. Leave empty to disable a prompt.', 'agentman-chat-widget'); ?></p>
+                        </td>
+                    </tr>
                 </table>
             </div>
             

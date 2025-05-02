@@ -119,6 +119,10 @@ class Agentman_Chat_Widget {
             'toggle_text' => 'Ask Agentman',
             'initially_open' => false,
             'initial_message' => 'Hello! How can I help you today?',
+            'welcome_message' => 'How can I help you today?',
+            'prompt_1' => 'Tell me about your services',
+            'prompt_2' => 'How do I get started?',
+            'prompt_3' => 'I need help with...',
             'initial_height' => '600px',
             'initial_width' => '400px',
             'background_color' => '#ffffff',
@@ -187,6 +191,10 @@ class Agentman_Chat_Widget {
         $sanitized['placeholder'] = sanitize_text_field($input['placeholder']);
         $sanitized['toggle_text'] = sanitize_text_field($input['toggle_text']);
         $sanitized['initial_message'] = sanitize_text_field($input['initial_message']);
+        $sanitized['welcome_message'] = sanitize_text_field(isset($input['welcome_message']) ? $input['welcome_message'] : '');
+        $sanitized['prompt_1'] = sanitize_text_field(isset($input['prompt_1']) ? $input['prompt_1'] : '');
+        $sanitized['prompt_2'] = sanitize_text_field(isset($input['prompt_2']) ? $input['prompt_2'] : '');
+        $sanitized['prompt_3'] = sanitize_text_field(isset($input['prompt_3']) ? $input['prompt_3'] : '');
         $sanitized['initial_height'] = sanitize_text_field($input['initial_height']);
         $sanitized['initial_width'] = sanitize_text_field($input['initial_width']);
         
@@ -341,6 +349,14 @@ class Agentman_Chat_Widget {
             'persistence' => array(
                 'enabled' => isset($this->options['persistence_enabled']) ? $this->options['persistence_enabled'] : true,
                 'days' => isset($this->options['persistence_days']) ? $this->options['persistence_days'] : 7
+            ),
+            'messagePrompts' => array(
+                'welcome_message' => isset($this->options['welcome_message']) ? $this->options['welcome_message'] : '',
+                'prompts' => array_filter(array(
+                    isset($this->options['prompt_1']) ? $this->options['prompt_1'] : '',
+                    isset($this->options['prompt_2']) ? $this->options['prompt_2'] : '',
+                    isset($this->options['prompt_3']) ? $this->options['prompt_3'] : ''
+                ))
             )
         );
     }
