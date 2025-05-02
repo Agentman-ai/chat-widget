@@ -139,6 +139,34 @@
             <form id="configForm" onsubmit="return false;">
                 <div class="form-row">
                     <!-- Basic Configuration -->
+
+<!-- Message Prompts Configuration -->
+<div class="form-column">
+    <h2 class="section-title">Message Prompts</h2>
+    <div class="form-group">
+        <label>
+            <input type="checkbox" id="promptsShow" checked>
+            Show Welcome Message & Prompts
+        </label>
+    </div>
+    <div class="form-group">
+        <label for="welcomeMessage">Welcome Message</label>
+        <input type="text" id="welcomeMessage" value="Welcome! How can I help you today?">
+    </div>
+    <div class="form-group">
+        <label for="prompt1">Prompt 1</label>
+        <input type="text" id="prompt1" value="What can you do?">
+    </div>
+    <div class="form-group">
+        <label for="prompt2">Prompt 2</label>
+        <input type="text" id="prompt2" value="Give me a tour.">
+    </div>
+    <div class="form-group">
+        <label for="prompt3">Prompt 3</label>
+        <input type="text" id="prompt3" value="Help me get started.">
+    </div>
+</div>
+
                     <div class="form-column">
                         <h2 class="section-title">Basic Settings</h2>
                         
@@ -540,6 +568,13 @@
         }
         
         function getFormConfig() {
+            // Read message prompts fields
+            const promptsShow = document.getElementById('promptsShow')?.checked;
+            const welcomeMessage = document.getElementById('welcomeMessage')?.value || '';
+            const prompt1 = document.getElementById('prompt1')?.value || '';
+            const prompt2 = document.getElementById('prompt2')?.value || '';
+            const prompt3 = document.getElementById('prompt3')?.value || '';
+
             return {
                 apiUrl: document.getElementById('apiUrl').value,
                 agentToken: document.getElementById('agentToken').value,
@@ -552,6 +587,17 @@
                 
                 // Initial message (if provided)
                 initialMessage: document.getElementById('initialMessage').value || undefined,
+
+                // Message Prompts (welcome + up to 3 prompts)
+                messagePrompts: {
+                    show: document.getElementById('promptsShow').checked,
+                    welcome_message: document.getElementById('welcomeMessage').value,
+                    prompts: [
+                        document.getElementById('prompt1').value,
+                        document.getElementById('prompt2').value,
+                        document.getElementById('prompt3').value
+                    ]
+                },
                 
                 // Theme settings
                 theme: {

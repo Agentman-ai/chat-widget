@@ -39,6 +39,16 @@ export interface ChatIcons {
 }
 
 export interface ChatConfig {
+  /**
+   * Optional message prompts for the welcome area.
+   * Only shown if at least one prompt is provided.
+   */
+  messagePrompts?: {
+    show: boolean;
+    welcome_message: string;
+    prompts: [string?, string?, string?];
+  };
+
   apiUrl: string;
   agentToken: string;
   variant: 'inline' | 'corner' | 'centered';

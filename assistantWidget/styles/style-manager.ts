@@ -6,6 +6,7 @@ import { animationStyles } from './animations';
 import { responsiveStyles } from './responsive';
 import { svgStyles } from './svg';
 import { loadingStyles } from './loading';
+import { promptStyles } from './prompts';
 
 export class StyleManager {
   private styleElement: HTMLStyleElement | null = null;
@@ -19,6 +20,7 @@ export class StyleManager {
       messageStyles,
       svgStyles,
       loadingStyles,
+      promptStyles,
       variantStyles[this.variant],
       animationStyles,
       responsiveStyles

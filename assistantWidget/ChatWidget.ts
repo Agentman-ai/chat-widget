@@ -509,10 +509,29 @@ export class ChatWidget {
   private updateUI(state: ChatState): void {
     const container = this.element.querySelector('.am-chat-container') as HTMLDivElement;
     const toggle = this.element.querySelector('.am-chat-toggle') as HTMLButtonElement;
+    const prompts = this.element.querySelector('.am-chat-message-prompts-container') as HTMLElement;
+
 
     if (container) {
       // For corner variant, handle show/hide
       if (this.config.variant === 'corner') {
+        console.log('[DEBUG] updateUI for corner variant', {
+          isOpen: state.isOpen,
+          messagePromptsConfig: this.config.messagePrompts
+        });
+        
+        const shouldShowCollapsedUI = !state.isOpen && !this.hasUserStartedConversation();
+        console.log('[DEBUG] shouldShowCollapsedUI:', shouldShowCollapsedUI);
+
+      // Handle prompts visibility and placement
+      if (shouldShowCollapsedUI) {
+        console.log('[DEBUG] Showing collapsed prompts');
+        this.showCollapsedPrompts();
+      } else {
+        console.log('[DEBUG] Hiding collapsed prompts');
+        this.hideCollapsedPrompts();
+      }        
+
         container.style.display = state.isOpen ? 'flex' : 'none';
         if (toggle) {
           toggle.style.display = state.isOpen ? 'none' : 'flex';
@@ -532,6 +551,173 @@ export class ChatWidget {
       this.setupForCurrentDevice();
     }
   }
+
+  // Determines if the user has started a conversation
+  private hasUserStartedConversation(): boolean {
+    const messages = this.stateManager.getState().messages;
+    
+    console.log('[DEBUG] Checking conversation status:', {
+      messageCount: messages.length,
+      hasInitialMessage: !!this.config.initialMessage,
+      messages: messages.map(m => ({ sender: m.sender, content: m.content.substring(0, 30) + '...' }))
+    });
+    
+    // If there are no messages, conversation hasn't started
+    if (messages.length === 0) {
+      console.log('[DEBUG] No messages, conversation not started');
+      return false;
+    }
+    
+    // If there's only one message and it's from the agent (system welcome), 
+    // we still consider the conversation as not started by the user
+    if (messages.length === 1 && messages[0].sender === 'agent' && 
+        this.config.initialMessage) {
+      console.log('[DEBUG] Only one message (system welcome), conversation not started');
+      return false;
+    }
+    
+    // Otherwise, if there are user messages or multiple agent messages, 
+    // the conversation has started
+    const hasStarted = messages.some(msg => msg.sender === 'user') || messages.length > 1;
+    console.log('[DEBUG] Conversation started:', hasStarted);
+    return hasStarted;
+  }
+
+  // Show prompts above the toggle button (when chat is collapsed)
+  private showCollapsedPrompts(): void {
+    console.log('[DEBUG] showCollapsedPrompts called');
+    let prompts = this.element.querySelector('.am-chat-message-prompts-container');
+    console.log('[DEBUG] Existing prompts element:', prompts);
+    
+    if (!prompts) {
+      console.log('[DEBUG] Creating new prompts container');
+      prompts = document.createElement('div');
+      prompts.className = 'am-chat-message-prompts-container';
+      
+      const promptsHTML = this.renderMessagePrompts();
+      console.log('[DEBUG] Rendered prompts HTML:', promptsHTML);
+      prompts.innerHTML = promptsHTML;
+      
+      // Insert before or after the toggle button as needed
+      const toggle = this.element.querySelector('.am-chat-toggle');
+      console.log('[DEBUG] Toggle button found:', !!toggle);
+      
+      if (toggle && toggle.parentElement) {
+        console.log('[DEBUG] Inserting prompts before toggle button');
+        toggle.parentElement.insertBefore(prompts, toggle);
+      } else {
+        console.log('[DEBUG] Could not find toggle button or its parent');
+      }
+      
+      this.attachPromptListeners();
+    } else {
+      console.log('[DEBUG] Prompts container already exists');
+    }
+    
+    console.log('[DEBUG] Setting prompts display to block');
+    (prompts as HTMLElement).style.display = 'block';
+  }
+
+// Hide the prompts container
+private hideCollapsedPrompts(): void {
+  const prompts = this.element.querySelector('.am-chat-message-prompts-container');
+  if (prompts) prompts.remove();
+}
+
+/**
+ * Render the welcome message and up to 3 prompts if enabled and present.
+ */
+private renderMessagePrompts(): string {
+  console.log('[DEBUG] renderMessagePrompts called');
+  const promptsCfg = this.config.messagePrompts;
+  console.log('[DEBUG] messagePrompts config:', promptsCfg);
+  
+  if (!promptsCfg || !promptsCfg.show) {
+    console.log('[DEBUG] Prompts not enabled or missing config');
+    return '';
+  }
+  
+  const { welcome_message, prompts } = promptsCfg;
+  const hasPrompts = Array.isArray(prompts) && prompts.some(p => !!p);
+  const hasWelcome = !!welcome_message;
+  
+  console.log('[DEBUG] Prompt details:', { 
+    hasWelcome, 
+    hasPrompts, 
+    welcomeMessage: welcome_message,
+    prompts: prompts
+  });
+  
+  if (!hasPrompts && !hasWelcome) {
+    console.log('[DEBUG] No welcome message or prompts to show');
+    return '';
+  }
+  
+  let html = '';
+  if (hasWelcome) {
+    // Create a welcome message with the structure that matches the design
+    html += `<div class="am-chat-welcome-message">
+      <div class="am-chat-welcome-header">
+        <div class="am-chat-welcome-avatar">
+          <svg viewBox="0 0 482 463" width="16" height="16">
+            <ellipse rx="195.69139" ry="195.69139" transform="matrix(1.029699 0 0 1.029699 240.53478 231.5)" fill="white" stroke-width="0"/>
+            <path d="M115.170448,367.37098l75.209552-41.95l34.570045,89.914073q-71.559193-7.964036-109.779597-47.964073Z" transform="translate(1.705203 0.000002)" fill="#059669" stroke="#059669" stroke-width="0.964"/>
+            <path d="M115.170448,367.37098l75.209552-41.95l34.570045,89.914073q-71.559193-7.964036-109.779597-47.964073Z" transform="matrix(-1 0 0 1 477.488884 0.213954)" fill="#059669" stroke="#059669" stroke-width="0.964"/>
+            <path d="M239.689307,333.842501l-11.989999,12.523368l7.640737,9.115074-9.00527,28.429999l13.354532,21.66l12.169999-21.66-8.276464-28.429999l7.683584-9.115074-11.577119-12.523368Z" transform="translate(.000003-8.207567)" fill="#059669" stroke-width="0.964"/>
+            <path d="M277.027489,313.607575c2.10968-2.124145,2.109674-7.294472,2.10968-12.616701.000001-4.924048,3.734359-8.575732,5.993261-11.785502c6.850428-9.734066,17.425154-17.270326,32.509567-28.554392c19.581659-14.648281,38.363352-37.839451,38.363352-75.004322s-15.358165-77.557662-47.326267-97.060908-100.336835-21.863731-138.616835,11.230119q-38.28,33.09385-26.47094,84.615075q2.941471,5.424961-4.109265,16.914925c-7.050736,11.489964-5.790737,10.87-13.400737,20.07q-7.61,9.2,14.77,24.588001q8.081429,8.196065,4.040692,25.931176c-4.040737,17.735111,17.930782,25.351045,58.470045,26.015934c6.315019,0,10.285402,4.016302,9.820182,13.53245c2.318232,3.860567,45.195831,4.173208,63.847265,2.124145Z" transform="translate(-4.731067 2.174968)" fill="#059669" stroke-width="0.964"/>
+          </svg>
+        </div>
+        <span class="am-chat-welcome-text">👋 ${welcome_message}</span>
+      </div>
+      <span class="am-chat-welcome-timestamp">Just now</span>
+    </div>`;
+  }
+  if (hasPrompts) {
+    html += '<div class="am-chat-message-prompts">';
+    prompts.forEach((prompt, idx) => {
+      if (prompt) {
+        html += `<button class="am-chat-message-prompt" data-action="suggest" data-idx="${idx}">${prompt}</button>`;
+      }
+    });
+    html += '</div>';
+  }
+  
+  console.log('[DEBUG] Generated HTML:', html);
+  return html;
+}
+
+/**
+ * Attach click listeners to prompt buttons.
+ */
+private attachPromptListeners(): void {
+  const promptBtns = this.element.querySelectorAll('.am-chat-message-prompt');
+  promptBtns.forEach(btn => {
+    btn.addEventListener('click', this.handlePromptClick);
+  });
+}
+
+/**
+ * Handle prompt button click: fill input and focus.
+ */
+private handlePromptClick = (e: Event): void => {
+  if (e.target instanceof HTMLButtonElement) {
+    const idx = e.target.getAttribute('data-idx');
+    if (idx !== null) {
+      const promptText = this.config.messagePrompts?.prompts[Number(idx)] || '';
+      
+      // Open the chat first
+      this.stateManager.setOpen(true);
+      this.updateUI(this.stateManager.getState());
+      
+      // Send the message directly instead of filling the input
+      if (promptText) {
+        console.log('[DEBUG] Sending prompt message:', promptText);
+        this.handleSendMessage(promptText);
+      }
+    }
+  }
+}
+
 
   public updateTheme(theme: Partial<ChatConfig['theme']>): void {
     this.config.theme = {
@@ -959,9 +1145,23 @@ export class ChatWidget {
   }
 
   // Update handleSendMessage to properly handle state
-  private async handleSendMessage(): Promise<void> {
-    const input = this.element.querySelector('.am-chat-input') as HTMLTextAreaElement;
-    const message = input.value.trim();
+  private async handleSendMessage(directMessage?: string): Promise<void> {
+    let message: string;
+    
+    if (directMessage) {
+      // Use the provided message directly
+      message = directMessage.trim();
+    } else {
+      // Get message from input field
+      const input = this.element.querySelector('.am-chat-input') as HTMLTextAreaElement;
+      message = input.value.trim();
+      
+      // Clear input field if we're using it
+      if (message) {
+        input.value = '';
+        input.style.height = 'auto';
+      }
+    }
 
     if (!message || this.state.isSending) {
       return;
@@ -971,10 +1171,6 @@ export class ChatWidget {
     this.stateManager.setSending(true);
 
     try {
-      // Clear input before sending
-      input.value = '';
-      input.style.height = 'auto';
-
       // Disable send button
       const sendButton = this.element.querySelector('.am-chat-send') as HTMLButtonElement;
       if (sendButton) {
