@@ -303,6 +303,19 @@ class Agentman_Chat_Widget {
      * Get widget configuration
      */
     private function get_widget_config() {
+        // Process prompts to handle validation and edge cases
+        $prompts = array();
+        $prompt_fields = array('prompt_1', 'prompt_2', 'prompt_3');
+        
+        foreach ($prompt_fields as $field) {
+            if (isset($this->options[$field]) && ($this->options[$field] !== '' || $this->options[$field] === '0')) {
+                // Limit prompt length to 50 characters to prevent UI issues
+                $prompt = substr($this->options[$field], 0, 50);
+                // Escape the prompt for safe output in JavaScript
+                $prompts[] = esc_js($prompt);
+            }
+        }
+        
         return array(
             // Cache busting parameters
             'version' => AGENTMAN_CHAT_WIDGET_VERSION,
@@ -351,12 +364,10 @@ class Agentman_Chat_Widget {
                 'days' => isset($this->options['persistence_days']) ? $this->options['persistence_days'] : 7
             ),
             'messagePrompts' => array(
-                'welcome_message' => isset($this->options['welcome_message']) ? $this->options['welcome_message'] : '',
-                'prompts' => array_filter(array(
-                    isset($this->options['prompt_1']) ? $this->options['prompt_1'] : '',
-                    isset($this->options['prompt_2']) ? $this->options['prompt_2'] : '',
-                    isset($this->options['prompt_3']) ? $this->options['prompt_3'] : ''
-                ))
+                // Properly escape the welcome message for JS
+                'welcome_message' => isset($this->options['welcome_message']) ? esc_js($this->options['welcome_message']) : '',
+                // Use the processed prompts array
+                'prompts' => $prompts
             )
         );
     }

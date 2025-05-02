@@ -659,13 +659,20 @@ private renderMessagePrompts(): string {
     html += `<div class="am-chat-welcome-message">
       <div class="am-chat-welcome-header">
         <div class="am-chat-welcome-avatar">
-          <svg viewBox="0 0 482 463" width="16" height="16">
-            <ellipse rx="195.69139" ry="195.69139" transform="matrix(1.029699 0 0 1.029699 240.53478 231.5)" fill="white" stroke-width="0"/>
-            <path d="M115.170448,367.37098l75.209552-41.95l34.570045,89.914073q-71.559193-7.964036-109.779597-47.964073Z" transform="translate(1.705203 0.000002)" fill="#059669" stroke="#059669" stroke-width="0.964"/>
-            <path d="M115.170448,367.37098l75.209552-41.95l34.570045,89.914073q-71.559193-7.964036-109.779597-47.964073Z" transform="matrix(-1 0 0 1 477.488884 0.213954)" fill="#059669" stroke="#059669" stroke-width="0.964"/>
-            <path d="M239.689307,333.842501l-11.989999,12.523368l7.640737,9.115074-9.00527,28.429999l13.354532,21.66l12.169999-21.66-8.276464-28.429999l7.683584-9.115074-11.577119-12.523368Z" transform="translate(.000003-8.207567)" fill="#059669" stroke-width="0.964"/>
-            <path d="M277.027489,313.607575c2.10968-2.124145,2.109674-7.294472,2.10968-12.616701.000001-4.924048,3.734359-8.575732,5.993261-11.785502c6.850428-9.734066,17.425154-17.270326,32.509567-28.554392c19.581659-14.648281,38.363352-37.839451,38.363352-75.004322s-15.358165-77.557662-47.326267-97.060908-100.336835-21.863731-138.616835,11.230119q-38.28,33.09385-26.47094,84.615075q2.941471,5.424961-4.109265,16.914925c-7.050736,11.489964-5.790737,10.87-13.400737,20.07q-7.61,9.2,14.77,24.588001q8.081429,8.196065,4.040692,25.931176c-4.040737,17.735111,17.930782,25.351045,58.470045,26.015934c6.315019,0,10.285402,4.016302,9.820182,13.53245c2.318232,3.860567,45.195831,4.173208,63.847265,2.124145Z" transform="translate(-4.731067 2.174968)" fill="#059669" stroke-width="0.964"/>
+          <svg viewBox="0 0 100 100" width="16" height="16" class="am-chat-logo-svg" aria-label="Agentman logo">
+            <!-- Optimized viewBox for better rendering at small sizes -->
+            <g transform="scale(0.2) translate(10,10)">
+              <!-- White background circle -->
+              <ellipse rx="195.69139" ry="195.69139" transform="matrix(1.029699 0 0 1.029699 240.53478 231.5)" fill="white" stroke-width="0"/>
+              <!-- Logo paths -->
+              <path d="M115.170448,367.37098l75.209552-41.95l34.570045,89.914073q-71.559193-7.964036-109.779597-47.964073Z" transform="translate(1.705203 0.000002)" fill="#059669" stroke="#059669" stroke-width="0.964"/>
+              <path d="M115.170448,367.37098l75.209552-41.95l34.570045,89.914073q-71.559193-7.964036-109.779597-47.964073Z" transform="matrix(-1 0 0 1 477.488884 0.213954)" fill="#059669" stroke="#059669" stroke-width="0.964"/>
+              <path d="M239.689307,333.842501l-11.989999,12.523368l7.640737,9.115074-9.00527,28.429999l13.354532,21.66l12.169999-21.66-8.276464-28.429999l7.683584-9.115074-11.577119-12.523368Z" transform="translate(.000003-8.207567)" fill="#059669" stroke-width="0.964"/>
+              <path d="M277.027489,313.607575c2.10968-2.124145,2.109674-7.294472,2.10968-12.616701.000001-4.924048,3.734359-8.575732,5.993261-11.785502c6.850428-9.734066,17.425154-17.270326,32.509567-28.554392c19.581659-14.648281,38.363352-37.839451,38.363352-75.004322s-15.358165-77.557662-47.326267-97.060908-100.336835-21.863731-138.616835,11.230119q-38.28,33.09385-26.47094,84.615075q2.941471,5.424961-4.109265,16.914925c-7.050736,11.489964-5.790737,10.87-13.400737,20.07q-7.61,9.2,14.77,24.588001q8.081429,8.196065,4.040692,25.931176c-4.040737,17.735111,17.930782,25.351045,58.470045,26.015934c6.315019,0,10.285402,4.016302,9.820182,13.53245c2.318232,3.860567,45.195831,4.173208,63.847265,2.124145Z" transform="translate(-4.731067 2.174968)" fill="#059669" stroke-width="0.964"/>
+            </g>
           </svg>
+          <!-- Fallback for SVG rendering issues -->
+          <span class="am-chat-logo-fallback" aria-hidden="true"></span>
         </div>
         <span class="am-chat-welcome-text">👋 ${welcome_message}</span>
       </div>
@@ -705,6 +712,15 @@ private handlePromptClick = (e: Event): void => {
     if (idx !== null) {
       const promptText = this.config.messagePrompts?.prompts[Number(idx)] || '';
       
+      // Add visual feedback that the prompt was clicked
+      const button = e.target;
+      const originalBackground = button.style.backgroundColor;
+      const originalColor = button.style.color;
+      
+      // Highlight effect
+      button.style.backgroundColor = 'var(--chat-toggle-background-color, var(--chat-header-background-color, #059669))';
+      button.style.color = 'white';
+      
       // Open the chat first
       this.stateManager.setOpen(true);
       this.updateUI(this.stateManager.getState());
@@ -712,7 +728,26 @@ private handlePromptClick = (e: Event): void => {
       // Send the message directly instead of filling the input
       if (promptText) {
         console.log('[DEBUG] Sending prompt message:', promptText);
-        this.handleSendMessage(promptText);
+        
+        // Restore original styling after a short delay
+        setTimeout(() => {
+          button.style.backgroundColor = originalBackground;
+          button.style.color = originalColor;
+        }, 200);
+        
+        try {
+          this.handleSendMessage(promptText);
+        } catch (error) {
+          console.error('[ERROR] Failed to send prompt message:', error);
+          // Show error message to user
+          this.addMessage({
+            id: this.generateUUID(),
+            sender: 'agent',
+            content: 'Sorry, I encountered an error processing your request. Please try again.',
+            timestamp: new Date().toISOString(),
+            type: 'text'
+          });
+        }
       }
     }
   }
@@ -1027,28 +1062,30 @@ private handlePromptClick = (e: Event): void => {
       return;
     }
 
-    let lastAIMessage: APIResponse | undefined;
-    for (let i = responseData.length - 1; i >= 0; i--) {
-      const msg = responseData[i];
-      if (this.isValidMessage(msg) && msg.type === 'ai' && msg.content.trim()) {
-        lastAIMessage = msg;
-        break;
+    // If this.lastMessageCount is undefined (e.g., not yet set), initialize it
+    if (typeof this.lastMessageCount === 'undefined') {
+      this.lastMessageCount = 0;
+    }
+
+    // Get only the new messages that appear after the last known count
+    const newMessages = responseData.slice(this.lastMessageCount);
+
+    for (const msg of newMessages) {
+      // Skip human messages since we already display them when sending
+      if (msg.type !== 'ai') continue;
+
+      if (this.isValidMessage(msg) && msg.content.trim()) {
+        this.addMessage({
+          id: msg.id ?? this.generateUUID(),
+          sender: 'agent',
+          content: msg.content,
+          timestamp: new Date().toISOString(),
+          type: 'text'
+        });
       }
     }
 
-    if (lastAIMessage) {
-      this.addMessage({
-        id: lastAIMessage.id ?? this.generateUUID(),
-        sender: 'agent',
-        content: lastAIMessage.content,
-        timestamp: new Date().toISOString(),
-        type: 'text'
-      });
-    } else {
-      console.warn('No valid AI message found in the initial response');
-    }
-
-    // After processing the initial response, update lastMessageCount
+    // Update lastMessageCount to reflect the total messages processed
     this.lastMessageCount = responseData.length;
   }
 

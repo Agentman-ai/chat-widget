@@ -74,6 +74,7 @@ export const promptStyles = `
     display: flex;
     align-items: center;
     justify-content: center;
+    position: relative;
   }
   
   /* SVG styling */
@@ -91,6 +92,24 @@ export const promptStyles = `
   .am-chat-welcome-avatar svg path {
     fill: var(--chat-toggle-background-color, var(--chat-header-background-color, #059669));
     stroke: var(--chat-toggle-background-color, var(--chat-header-background-color, #059669));
+  }
+  
+  /* Fallback styling if SVG fails to render */
+  .am-chat-logo-fallback {
+    display: none;
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    background-color: white;
+  }
+  
+  /* Show fallback only if SVG is hidden or fails */
+  .am-chat-welcome-avatar svg:not(:visible) + .am-chat-logo-fallback {
+    display: block;
   }
   
   /* Welcome text */

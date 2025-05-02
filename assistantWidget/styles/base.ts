@@ -46,8 +46,8 @@ export const baseStyles = `
   }
 
   .am-chat-logo {
-    width: 32px;
-    height: 32px;
+    width: 38px;
+    height: 38px;
     display: flex;
     align-items: center;
     justify-content: center;
