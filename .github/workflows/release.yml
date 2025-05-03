@@ -41,6 +41,10 @@ jobs:
           npm ci
           npm run build
 
+      - name: Build WordPress bundle
+        run: |
+          node wp-bundle.js
+
       - name: Build WP plugin ZIP
         run: |
           zip -r agentman-chat-widget-${{ steps.vars.outputs.VERSION }}.zip wordpress
