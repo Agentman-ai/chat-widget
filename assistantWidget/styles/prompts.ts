@@ -27,16 +27,10 @@ export const promptStyles = `
     right: 12px !important;
   }
   
-  /* Ensure the container is visible on smaller screens */
-  @media (max-width: 480px) {
+  /* Hide prompts on mobile devices */
+  @media (max-width: 768px) {
     .am-chat-message-prompts-container {
-      left: 0;
-      width: 250px;
-    }
-    
-    .am-chat-bottom-right .am-chat-message-prompts-container {
-      right: 0;
-      left: auto;
+      display: none !important; /* Hide on mobile devices */
     }
   }
 

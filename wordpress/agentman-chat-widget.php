@@ -120,6 +120,7 @@ class Agentman_Chat_Widget {
             'initially_open' => false,
             'initial_message' => 'Hello! How can I help you today?',
             'welcome_message' => 'How can I help you today?',
+            'show_prompts' => true,
             'prompt_1' => 'Tell me about your services',
             'prompt_2' => 'How do I get started?',
             'prompt_3' => 'I need help with...',
@@ -183,6 +184,7 @@ class Agentman_Chat_Widget {
         $sanitized['initially_open'] = isset($input['initially_open']) ? (bool) $input['initially_open'] : false;
         $sanitized['persistence_enabled'] = isset($input['persistence_enabled']) ? (bool) $input['persistence_enabled'] : true;
         $sanitized['hide_branding'] = isset($input['hide_branding']) ? (bool) $input['hide_branding'] : true;
+        $sanitized['show_prompts'] = isset($input['show_prompts']) ? (bool) $input['show_prompts'] : true;
         
         // Text options
         $sanitized['agent_token'] = sanitize_text_field($input['agent_token']);
@@ -364,6 +366,8 @@ class Agentman_Chat_Widget {
                 'days' => isset($this->options['persistence_days']) ? $this->options['persistence_days'] : 7
             ),
             'messagePrompts' => array(
+                // Include the show option to toggle visibility
+                'show' => isset($this->options['show_prompts']) ? (bool)$this->options['show_prompts'] : true,
                 // Properly escape the welcome message for JS
                 'welcome_message' => isset($this->options['welcome_message']) ? esc_js($this->options['welcome_message']) : '',
                 // Use the processed prompts array

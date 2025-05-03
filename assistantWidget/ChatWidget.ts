@@ -627,10 +627,25 @@ private hideCollapsedPrompts(): void {
 /**
  * Render the welcome message and up to 3 prompts if enabled and present.
  */
+/**
+ * Check if the current device is a desktop
+ * @returns {boolean} true if device is desktop, false otherwise
+ */
+private isDesktopDevice(): boolean {
+  // Check if window width is greater than 768px (standard tablet breakpoint)
+  return window.innerWidth > 768;
+}
+
 private renderMessagePrompts(): string {
   console.log('[DEBUG] renderMessagePrompts called');
   const promptsCfg = this.config.messagePrompts;
   console.log('[DEBUG] messagePrompts config:', promptsCfg);
+  
+  // First check if we're on a desktop device
+  if (!this.isDesktopDevice()) {
+    console.log('[DEBUG] Not a desktop device, hiding prompts');
+    return '';
+  }
   
   if (!promptsCfg || !promptsCfg.show) {
     console.log('[DEBUG] Prompts not enabled or missing config');
@@ -923,7 +938,24 @@ private handlePromptClick = (e: Event): void => {
       expandButton.addEventListener('click', this.handleExpandClick);
     }
 
-    window.addEventListener('resize', this.handleResize.bind(this));
+    // Use a single resize handler that also updates prompt visibility
+    window.addEventListener('resize', () => {
+      this.handleResize();
+      // Update prompts visibility based on screen size
+      if (this.isDesktopDevice()) {
+        // Show prompts only on desktop
+        const promptsContainer = document.querySelector('.am-chat-message-prompts-container') as HTMLElement;
+        if (promptsContainer) {
+          promptsContainer.style.display = '';
+        }
+      } else {
+        // Hide prompts on mobile
+        const promptsContainer = document.querySelector('.am-chat-message-prompts-container') as HTMLElement;
+        if (promptsContainer) {
+          promptsContainer.style.display = 'none';
+        }
+      }
+    });
   }
 
 

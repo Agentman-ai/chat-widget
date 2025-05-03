@@ -277,6 +277,15 @@
                     </tr>
                     <tr>
                         <th scope="row">
+                            <label for="agentman_chat_widget_options[show_prompts]"><?php _e('Show Message Prompts', 'agentman-chat-widget'); ?></label>
+                        </th>
+                        <td>
+                            <input type="checkbox" id="agentman_chat_widget_options[show_prompts]" name="agentman_chat_widget_options[show_prompts]" value="1" <?php checked(1, isset($this->options['show_prompts']) ? $this->options['show_prompts'] : 1); ?> />
+                            <p class="description"><?php _e('Enable or disable the welcome message and prompt buttons. Note: Prompts will only be shown on desktop devices.', 'agentman-chat-widget'); ?></p>
+                        </td>
+                    </tr>
+                    <tr>
+                        <th scope="row">
                             <label><?php _e('Message Prompts', 'agentman-chat-widget'); ?></label>
                         </th>
                         <td>
