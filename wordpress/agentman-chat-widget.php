@@ -3,13 +3,13 @@
  * Plugin Name: Agentman AI Agents
  * Plugin URI: https://github.com/Agentman-ai/chat-widget/tree/main/wordpress
  * Description: Integrates the Agentman AI Agents into your WordPress site with admin customization options.
- * Version: 0.22.2
+ * Version: 0.22.5
  * Author: Agentman
  * Author URI: https://agentman.ai
  * License: MIT
  * Text Domain: agentman-chat-widget
  * Requires at least: 5.6
- * Requires PHP: 7.2
+ * Requires PHP: 7.2ls -lrt
  * Tested up to: 6.5
  */
 
@@ -19,7 +19,7 @@ if (!defined('ABSPATH')) {
 }
 
 // Define plugin constants
-define('AGENTMAN_CHAT_WIDGET_VERSION', '0.22.2');
+define('AGENTMAN_CHAT_WIDGET_VERSION', '0.22.5');
 define('AGENTMAN_CHAT_WIDGET_PATH', plugin_dir_path(__FILE__));
 define('AGENTMAN_CHAT_WIDGET_URL', plugin_dir_url(__FILE__));
 define('AGENTMAN_CHAT_WIDGET_BASENAME', plugin_basename(__FILE__));
@@ -55,9 +55,14 @@ class Agentman_Chat_Widget {
      * Constructor
      */
     private function __construct() {
-        // Load plugin options
-        $this->options = get_option('agentman_chat_widget_options', $this->get_default_options());
-
+        // Load plugin options, merging with defaults for missing keys
+        $this->options = wp_parse_args(
+            get_option('agentman_chat_widget_options', array()),
+            $this->get_default_options()
+        );
+        // Persist merged options to include any new default keys for existing installs
+        update_option('agentman_chat_widget_options', $this->options);
+        
         // Register activation and deactivation hooks
         register_activation_hook(__FILE__, array($this, 'activate'));
         register_deactivation_hook(__FILE__, array($this, 'deactivate'));
