@@ -3,7 +3,7 @@ Contributors: Agentman.ai
 Tags: chatbot, agent, sales, support, assistant
 Requires at least: 5.6
 Tested up to: 6.5
-Stable tag: 0.21.11
+Stable tag: 0.22.1
 Requires PHP: 7.2
 License: MIT
 License URI: https://opensource.org/licenses/MIT
@@ -110,6 +110,11 @@ We recommend that website owners using this plugin update their privacy policies
 4. Mobile view of the chat widget
 
 == Changelog ==
+
+= 0.22.1 =
+* Fixed toggle button display issues on various WordPress themes
+* Enhanced mobile responsiveness with improved CSS for desktop-only elements
+* Fixed edge cases
 
 = 0.21.11 =
 * Added independent toggle button styling options to prevent theme conflicts
