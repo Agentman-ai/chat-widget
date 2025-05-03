@@ -72,6 +72,16 @@ export interface ChatConfig {
   agentIconColor?: string;
   userIconColor?: string;
   toggleText?: string;
+  /** Custom toggle button colors from WordPress settings */
+  toggleStyle?: {
+    /** Background color for the toggle button */
+    backgroundColor?: string;
+    /** Text color for the toggle button */
+    textColor?: string;
+    /** Icon color for the toggle button */
+    iconColor?: string;
+  };
+  /** Initial message displayed by the agent */
   initialMessage?: string;
   placeholder?: string;
   persistence?: PersistenceConfig;

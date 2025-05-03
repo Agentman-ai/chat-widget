@@ -46,6 +46,7 @@ export const promptStyles = `
     flex-direction: column;
     background-color: white;
     border-radius: 16px;
+    border: 1px solid rgba(0, 0, 0, 0.1);    
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
     margin-right: 0; /* Ensure right alignment with toggle button */
   }

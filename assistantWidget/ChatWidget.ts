@@ -34,6 +34,8 @@ export class ChatWidget {
   private isOffline: boolean = false;
   private lastMessageCount: number = 0;
   private persistenceManager: PersistenceManager | null = null;
+  // Timer handle for delayed prompt display
+  private promptTimer: number | null = null;
 
   private static readonly defaultIcons = {
     closeIcon: close,
@@ -91,6 +93,10 @@ export class ChatWidget {
     if (config.theme?.toggleBackgroundColor) themeProperties.toggleBackgroundColor = config.theme.toggleBackgroundColor;
     if (config.theme?.toggleTextColor) themeProperties.toggleTextColor = config.theme.toggleTextColor;
     if (config.theme?.toggleIconColor) themeProperties.toggleIconColor = config.theme.toggleIconColor;
+    // Pull in PHP-provided toggleStyle overrides
+    if (config.toggleStyle?.backgroundColor) themeProperties.toggleBackgroundColor = config.toggleStyle.backgroundColor;
+    if (config.toggleStyle?.textColor) themeProperties.toggleTextColor = config.toggleStyle.textColor;
+    if (config.toggleStyle?.iconColor) themeProperties.toggleIconColor = config.toggleStyle.iconColor;
 
     const configWithTheme: ChatConfig = {
       ...config,
@@ -386,6 +392,9 @@ export class ChatWidget {
     if (this.loadingAnimationInterval) {
       window.clearInterval(this.loadingAnimationInterval);
     }
+    if (this.promptTimer) {
+      window.clearTimeout(this.promptTimer);
+    }
 
     // Remove event listeners
     window.removeEventListener('resize', this.handleResize.bind(this));
@@ -525,10 +534,20 @@ export class ChatWidget {
 
       // Handle prompts visibility and placement
       if (shouldShowCollapsedUI) {
-        console.log('[DEBUG] Showing collapsed prompts');
-        this.showCollapsedPrompts();
+        console.log('[DEBUG] Scheduling collapsed prompts to show after delay');
+        if (!this.promptTimer) {
+          this.promptTimer = window.setTimeout(() => {
+            console.log('[DEBUG] Delayed showCollapsedPrompts');
+            this.showCollapsedPrompts();
+            this.promptTimer = null;
+          }, 5000);
+        }
       } else {
-        console.log('[DEBUG] Hiding collapsed prompts');
+        console.log('[DEBUG] Hiding collapsed prompts and clearing scheduled show');
+        if (this.promptTimer) {
+          clearTimeout(this.promptTimer);
+          this.promptTimer = null;
+        }
         this.hideCollapsedPrompts();
       }        
 
@@ -691,7 +710,6 @@ private renderMessagePrompts(): string {
         </div>
         <span class="am-chat-welcome-text">👋 ${welcome_message}</span>
       </div>
-      <span class="am-chat-welcome-timestamp">Just now</span>
     </div>`;
   }
   if (hasPrompts) {
@@ -1122,6 +1140,24 @@ private handlePromptClick = (e: Event): void => {
   }
 
 
+  private isValidMessage(msg: APIResponse): boolean {
+    return (
+      typeof msg === 'object' &&
+      msg !== null &&
+      'type' in msg &&
+      'content' in msg &&
+      typeof msg.content === 'string'
+    );
+  }
+
+  private generateUUID(): string {
+    return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, (c) => {
+      const r = Math.random() * 16 | 0;
+      const v = c === 'x' ? r : (r & 0x3 | 0x8);
+      return v.toString(16);
+    });
+  }
+
   private showInitializingMessage(show: boolean): void {
     const initializingElement = this.element.querySelector('.am-chat-initializing') as HTMLElement;
     const sendButton = this.element.querySelector('.am-chat-send') as HTMLButtonElement;
@@ -1336,24 +1372,6 @@ private handlePromptClick = (e: Event): void => {
     this.lastMessageCount = responseData.length;
   }
 
-
-  private isValidMessage(msg: APIResponse): boolean {
-    return (
-      typeof msg === 'object' &&
-      msg !== null &&
-      'type' in msg &&
-      'content' in msg &&
-      typeof msg.content === 'string'
-    );
-  }
-
-  private generateUUID(): string {
-    return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, (c) => {
-      const r = Math.random() * 16 | 0;
-      const v = c === 'x' ? r : (r & 0x3 | 0x8);
-      return v.toString(16);
-    });
-  }
 
   private showLoadingIndicator(): void {
     if (this.loadingMessageElement) {

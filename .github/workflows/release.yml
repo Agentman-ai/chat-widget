@@ -47,7 +47,8 @@ jobs:
 
       - name: Build WP plugin ZIP
         run: |
-          zip -r agentman-chat-widget-${{ steps.vars.outputs.VERSION }}.zip wordpress
+          cd wordpress
+          zip -r ../agentman-chat-widget-${{ steps.vars.outputs.VERSION }}.zip .
 
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v1
