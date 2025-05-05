@@ -1,5 +1,12 @@
 // styles/base.ts
 export const baseStyles = `
+  :root{
+    --am-bg-item-hover:#eef3ff;
+    --am-bg-item-active:#dbeafe;
+    --am-text-muted:#6b7280;
+    --am-bg-badge:#ef4444;
+  }
+
   .am-chat-widget {
     font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
     z-index: 1000;
@@ -41,8 +48,21 @@ export const baseStyles = `
   .am-chat-logo-title {
     display: flex;
     align-items: center;
-    gap: 8px;
+    gap: 4px;
     font-size: 16px;
+  }
+
+  /* Hamburger menu button */
+  .am-hamburger {
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 4px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: inherit;
+    margin-right: 4px;
   }
 
   .am-chat-logo {
@@ -128,12 +148,125 @@ export const baseStyles = `
   .am-chat-messages {
     flex: 1 1 auto;
     overflow-y: auto;
-    padding: 16px;
-    min-height: 0;
-    background: white;
+    padding: 1rem;
     display: flex;
     flex-direction: column;
-    gap: 16px;
+    gap: 1rem;
+  }
+
+  /* Stage-2 conversation drawer */
+  .am-drawer {
+    position: absolute;
+    left: 0;
+    top: 0;
+    height: 100%;
+    width: 240px;
+    transform: translateX(-100%);
+    transition: transform .2s ease-out;
+    background: #f5f5f5;
+    box-shadow: 2px 0 6px rgba(0,0,0,.08);
+    display: flex;
+    flex-direction: column;
+    z-index: 3;
+  }
+  .am-drawer.open {
+    transform: translateX(0);
+  }
+
+  .am-drawer header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-weight: 600;
+    padding: .6rem 1rem;
+    border-bottom: 1px solid #e5e7eb;
+  }
+  .am-drawer header button.am-new {
+    font-size: 1.1rem;
+    line-height: 1;
+    border: none;
+    background: var(--chat-header-background-color, #059669);
+    color: var(--chat-header-text-color, #FFFFFF);
+    cursor: pointer;
+    border-radius: 4px;
+    padding: 4px 8px;
+    font-weight: bold;
+  }
+  
+  .am-drawer button.am-close {
+    width: 100%;
+    padding: 8px;
+    margin-top: auto;
+    border: none;
+    background: #f0f0f0;
+    cursor: pointer;
+    border-top: 1px solid #e5e7eb;
+    font-size: 0.9rem;
+    text-align: center;
+  }
+
+  .am-drawer ul {
+    list-style: none;
+    margin: 0;
+    padding: .4rem 0;
+    flex: 1;
+    overflow-y: auto;
+  }
+  
+  /* drawer list styling */
+  .am-drawer li {
+    display: flex;
+    align-items: center;
+    gap: .5rem;
+    position: relative;
+    padding: .45rem 1rem;
+    cursor: pointer;
+  }
+  
+  .am-drawer li:hover {
+    background: var(--am-bg-item-hover);
+  }
+  
+  .am-drawer li.active {
+    background: var(--am-bg-item-active);
+  }
+  
+  .am-drawer li .title {
+    flex: 1;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  
+  .am-drawer li .time {
+    font-size: .72rem;
+    color: var(--am-text-muted);
+  }
+  
+  .am-drawer li .badge {
+    background: var(--am-bg-badge);
+    color: #fff;
+    border-radius: 9999px;
+    font-size: .65rem;
+    padding: 0 .4em;
+    min-width: 1.2em;
+    text-align: center;
+  }
+
+  /* swipe hint overlay (mobile) */
+  @media(max-width:479px){
+    .am-drawer{
+      touch-action:pan-y;
+    }
+  }
+  
+  .am-drawer .am-close {
+    border: none;
+    background: none;
+    padding: .6rem 1rem;
+    text-align: left;
+    cursor: pointer;
+    border-top: 1px solid #e5e7eb;
   }
 
   .am-chat-avatar {

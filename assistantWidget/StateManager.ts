@@ -75,7 +75,14 @@ export class StateManager {
   }
 
   public clearMessages(): void {
-    this.setState({ messages: [] });
+    this.setState({
+      ...this.state,
+      messages: []
+    });
+  }
+  
+  public setMessages(msgs: Message[]) {
+    this.setState({ ...this.state, messages: msgs });
   }
 
   public updateMessage(messageId: string, updates: Partial<Message>): void {

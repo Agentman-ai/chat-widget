@@ -451,22 +451,60 @@
         
         function showStorage() {
             try {
-                const key = chatWidget?.persistenceManager?.getStorageKey() || STORAGE_KEY;
-                const raw = localStorage.getItem(key);
                 const storageInfo = document.getElementById('storageInfo');
+                const containerPrefix = 'chatwidget_chat-container_';
                 
-                if (raw) {
-                    const data = JSON.parse(raw);
-                    const prettyData = JSON.stringify(data, null, 2);
-                    storageInfo.textContent = prettyData;
-                    
-                    // Show message count
-                    console.log(`Storage contains ${data.messages.length} messages`);
-                } else {
-                    storageInfo.textContent = 'No data in storage';
+                // Get all localStorage keys that start with the widget prefix
+                const widgetKeys = [];
+                for (let i = 0; i < localStorage.length; i++) {
+                    const key = localStorage.key(i);
+                    if (key && key.startsWith(containerPrefix)) {
+                        widgetKeys.push(key);
+                    }
                 }
-            } catch (e) {
-                console.error('Error showing storage:', e);
+                
+                if (widgetKeys.length === 0) {
+                    storageInfo.textContent = 'No storage data found for chat widget';
+                    return;
+                }
+                
+                // Sort keys to put index first, then sort by conversation ID
+                widgetKeys.sort((a, b) => {
+                    if (a.endsWith('_index')) return -1;
+                    if (b.endsWith('_index')) return 1;
+                    return a.localeCompare(b);
+                });
+                
+                // Create formatted output for each key
+                let outputText = '';
+                
+                widgetKeys.forEach(key => {
+                    const raw = localStorage.getItem(key);
+                    try {
+                        const data = JSON.parse(raw);
+                        const prettyData = JSON.stringify(data, null, 2);
+                        
+                        // Add a section header for each key
+                        outputText += `\n=== ${key} ===\n${prettyData}\n\n`;
+                        
+                        // Add conversation title information if this is the index
+                        if (key.endsWith('_index') && data.conversations) {
+                            outputText += '--- Active Conversations ---\n';
+                            data.conversations.forEach(conv => {
+                                const isActive = data.currentId === conv.id ? '* ' : '  ';
+                                outputText += `${isActive}${conv.id} - ${conv.title} (Updated: ${new Date(conv.lastUpdated).toLocaleString()})\n`;
+                            });
+                            outputText += '\n';
+                        }
+                    } catch (error) {
+                        outputText += `\n=== ${key} ===\nError parsing JSON: ${error.message}\nRaw data: ${raw}\n\n`;
+                    }
+                });
+                
+                storageInfo.textContent = outputText;
+            } catch (error) {
+                console.error('Error reading storage:', error);
+                document.getElementById('storageInfo').textContent = 'Error: ' + error.message;
             }
         }
         

@@ -20,7 +20,6 @@ export class ChatWidget {
   private element!: HTMLElement; // Mark as definitely assigned
   private containerId: string;
   private conversationId: string;
-  private workflowId!: string; // Mark as definitely assigned
   private theme: ChatTheme;
   private assets: ChatAssets;
   private configManager: ConfigManager;
@@ -128,22 +127,17 @@ export class ChatWidget {
     // Initialize persistence if enabled
     if (this.config.persistence?.enabled) {
       this.persistenceManager = new PersistenceManager(
-        this.config.persistence,
+        this.containerId,
         this.stateManager,
-        this.containerId
+        true // enabled
       );
       
-      // Check if we have a stored conversation ID
-      const storedId = this.persistenceManager.getConversationId();
-      if (storedId) {
-        this.conversationId = storedId;
-      }
+      // Migrate any legacy data
+      this.persistenceManager.migrateLegacy();
       
-      // Tell PersistenceManager about our current conversation ID
-      this.persistenceManager.setConversationId(this.conversationId);
-      
-      // Cross-tab sync disabled to prevent refresh loops
-      // TODO: Re-enable with proper debouncing/throttling mechanism
+      // Get the first conversation ID or create a new one
+      const firstId = this.persistenceManager.getCurrentId() ?? this.persistenceManager.create();
+      this.conversationId = firstId;
     }
 
     this.init();
@@ -359,6 +353,11 @@ export class ChatWidget {
     this.updateUI(this.stateManager.getState());
 
     this.updateColors(this.theme);
+    
+    // Now that the DOM is initialized, load messages from persistence if available
+    if (this.persistenceManager) {
+      this.stateManager.setMessages(this.persistenceManager.loadMessages());
+    }
 
     this.isInitialized = true;
   }
@@ -883,9 +882,22 @@ private handlePromptClick = (e: Event): void => {
         </button>
       ` : ''}
       <div class="am-chat-container">
+        <aside class="am-drawer" aria-label="Conversations">
+          <header>Chats <button class="am-new" aria-label="New chat">＋</button></header>
+          <ul>
+            ${this.persistenceManager?.list().map(m =>
+              `<li data-id="${m.id}" class="${m.id === this.conversationId ? "active" : ""}">${m.title}</li>`).join("") || ''}
+          </ul>
+          <button class="am-close">Close ▸</button>
+        </aside>
         <div class="am-chat-header">
           <div class="am-chat-header-content">
             <div class="am-chat-logo-title">
+              <button class="am-hamburger" aria-label="Menu">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <path d="M3 12H21M3 6H21M3 18H21" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+              </button>
               <div class="am-chat-header-logo">${this.assets.headerLogo}</div>
               <span>${this.config.title}</span>
             </div>
@@ -901,10 +913,7 @@ private handlePromptClick = (e: Event): void => {
         </div>
         <div class="am-chat-messages"></div>
         <div class="am-chat-input-container">
-          <textarea
-            class="am-chat-input"
-            placeholder="${this.config.placeholder || 'Type your message...'}">
-          </textarea>
+          <textarea class="am-chat-input" placeholder="${this.config.placeholder || 'Type your message...'}"></textarea>
           <button class="am-chat-send" disabled>
             ${this.config.icons?.sendIcon || send}
           </button>
@@ -927,6 +936,67 @@ private handlePromptClick = (e: Event): void => {
         }
       });
     }
+    
+    // Conversation drawer handlers
+    const drawer = this.element.querySelector('.am-drawer') as HTMLElement;
+    const hamburger = this.element.querySelector('.am-hamburger');
+    const newConversationBtn = this.element.querySelector('.am-new');
+    const closeDrawerBtn = this.element.querySelector('.am-close');
+    
+    // Open drawer with hamburger menu
+    if (hamburger) {
+      hamburger.addEventListener('click', () => {
+        if (drawer) drawer.classList.add('open');
+      });
+    }
+    
+    // Create new conversation
+    if (newConversationBtn) {
+      newConversationBtn.addEventListener('click', () => {
+        this.newConversation();
+        if (drawer) drawer.classList.remove('open');
+      });
+    }
+    
+    // Close drawer with button
+    if (closeDrawerBtn) {
+      closeDrawerBtn.addEventListener('click', () => {
+        if (drawer) drawer.classList.remove('open');
+      });
+    }
+    
+    // Close drawer when clicking outside of it
+    const messagesContainer = this.element.querySelector('.am-chat-messages');
+    const headerContent = this.element.querySelector('.am-chat-header-content');
+    const inputContainer = this.element.querySelector('.am-chat-input-container');
+    
+    // Add click handlers to main UI elements
+    [messagesContainer, headerContent, inputContainer].forEach(element => {
+      if (element) {
+        element.addEventListener('click', (e: Event) => {
+          // Only close if drawer is open and click didn't originate from hamburger button
+          if (e instanceof MouseEvent && drawer && drawer.classList.contains('open')) {
+            const target = e.target as HTMLElement;
+            if (target && !target.closest('.am-hamburger') && !target.closest('.am-drawer')) {
+              drawer.classList.remove('open');
+              e.stopPropagation(); // Prevent other click handlers
+            }
+          }
+        });
+      }
+    });
+    
+    // Switch conversation on click
+    const conversationItems = this.element.querySelectorAll('.am-drawer li');
+    conversationItems.forEach(li => {
+      li.addEventListener('click', () => {
+        const id = li.getAttribute('data-id');
+        if (id) {
+          this.switchConversation(id);
+          if (drawer) drawer.classList.remove('open');
+        }
+      });
+    });
 
     if (minimize) {
       minimize.addEventListener('click', (e: Event) => {
@@ -1059,17 +1129,22 @@ private handlePromptClick = (e: Event): void => {
   }
 
   private async initializeChat(): Promise<void> {
+    console.log('🌟 initializeChat() called');
     if (this.state.isInitialized || this.isInitializing) {
+      console.log('⏭️ initializeChat() aborted - already initialized or initializing');
       return;
     }
 
     this.isInitializing = true;
     this.showInitializingMessage(true);
     this.lastMessageCount = 0;
+    console.log('🚧 Starting chat initialization');
 
     try {
       // Use the initialMessage if provided, otherwise default to 'Hello'
       const initialMessage = this.config.initialMessage || 'Hello';
+      console.log(`💬 Using initial message: "${initialMessage}"`);
+      console.log(`🔗 Conversation ID: ${this.conversationId}`);
       
       const response = await fetch(`${this.config.apiUrl}/v2/agentman_runtime/agent`, {
         method: 'POST',
@@ -1089,11 +1164,18 @@ private handlePromptClick = (e: Event): void => {
       }
 
       const data = await response.json();
-      this.workflowId = data.workflow_id;
       
       // Handle the response directly
       if (data.response) {
+        console.log('📡 Received initial response data');
         this.handleInitialResponse(data.response);
+        
+        // Check if persistenceManager is saving after welcome message
+        if (this.persistenceManager) {
+          console.log('🔍 Checking if welcome message is saved to persistence');
+          const currentMessages = this.stateManager.getState().messages;
+          console.log(`📊 Current message count after welcome: ${currentMessages.length}`);
+        }
       }
 
       this.stateManager.setInitialized(true);
@@ -1107,6 +1189,7 @@ private handlePromptClick = (e: Event): void => {
   }
 
   private handleInitialResponse(responseData: APIResponse[]): void {
+    console.log('👋 handleInitialResponse() called');
     if (!Array.isArray(responseData)) {
       console.error('Invalid response format:', responseData);
       return;
@@ -1119,12 +1202,17 @@ private handlePromptClick = (e: Event): void => {
 
     // Get only the new messages that appear after the last known count
     const newMessages = responseData.slice(this.lastMessageCount);
+    console.log(`💬 Processing ${newMessages.length} new messages from initial response`);
 
     for (const msg of newMessages) {
       // Skip human messages since we already display them when sending
-      if (msg.type !== 'ai') continue;
+      if (msg.type !== 'ai') {
+        console.log('⏭️ Skipping human message in initial response');
+        continue;
+      }
 
       if (this.isValidMessage(msg) && msg.content.trim()) {
+        console.log('➕ Adding welcome message to UI');
         this.addMessage({
           id: msg.id ?? this.generateUUID(),
           sender: 'agent',
@@ -1218,18 +1306,21 @@ private handlePromptClick = (e: Event): void => {
       // Hide loading before showing response
       this.hideLoadingIndicator();
 
-      // Store workflow ID if present
-      if (data.workflow_id) {
-        this.workflowId = data.workflow_id;
-      }
+
 
       // Process the response array
       if (Array.isArray(data.response)) {
         await this.handleResponse(data.response);
         
         // Save messages after response is processed
-        if (this.persistenceManager) {
+        if (this.persistenceManager && !this.isLoadingConversation) {
+          console.log('💾 Saving messages after response processed');
           this.persistenceManager.saveMessages();
+          
+          // Update the conversation drawer to reflect new titles
+          this.updateConversationDrawer();
+        } else if (this.isLoadingConversation) {
+          console.log('⏭️ Skipping save during conversation loading');
         }
       } else {
         console.error('Invalid response format:', data);
@@ -1300,8 +1391,11 @@ private handlePromptClick = (e: Event): void => {
     this.stateManager.addMessage(message);
     
     // Save message to persistence storage
-    if (this.persistenceManager) {
+    if (this.persistenceManager && !this.isLoadingConversation) {
+      console.log('💾 Saving message in addMessage() method');
       this.persistenceManager.saveMessages();
+    } else if (this.isLoadingConversation) {
+      console.log('⏭️ Skipping save in addMessage() during conversation loading');
     }
 
     const messageElement = document.createElement('div');
@@ -1349,19 +1443,38 @@ private handlePromptClick = (e: Event): void => {
     if (typeof this.lastMessageCount === 'undefined') {
       this.lastMessageCount = 0;
     }
+    
+    console.log(`🔍 handleResponse: Processing response with ${responseData.length} messages, lastMessageCount=${this.lastMessageCount}`);
 
     // Get only the new messages that appear after the last known count
     const newMessages = responseData.slice(this.lastMessageCount);
-
+    console.log(`🔄 handleResponse: Found ${newMessages.length} new messages`);
+    
+    // Get current messages to check for duplicates
+    const currentMessages = this.stateManager.getState().messages;
+    const existingContents = currentMessages.map(m => m.content.trim());
+    
     for (const msg of newMessages) {
       // Skip human messages since we already display them when sending
-      if (msg.type !== 'ai') continue;
+      if (msg.type !== 'ai') {
+        console.log('⏭️ handleResponse: Skipping human message');
+        continue;
+      }
+      
+      const content = msg.content.trim();
+      
+      // Skip if this message content already exists in the UI
+      if (existingContents.includes(content)) {
+        console.log('⏭️ handleResponse: Skipping duplicate message: ' + content.substring(0, 30) + '...');
+        continue;
+      }
 
-      if (this.isValidMessage(msg) && msg.content.trim()) {
+      if (this.isValidMessage(msg) && content) {
+        console.log('➕ handleResponse: Adding new message');
         this.addMessage({
           id: msg.id ?? this.generateUUID(),
           sender: 'agent',
-          content: msg.content,
+          content: content,
           timestamp: new Date().toISOString(),
           type: 'text'
         });
@@ -1370,6 +1483,7 @@ private handlePromptClick = (e: Event): void => {
 
     // Update lastMessageCount to reflect the total messages processed
     this.lastMessageCount = responseData.length;
+    console.log(`✅ handleResponse: Updated lastMessageCount to ${this.lastMessageCount}`);
   }
 
 
@@ -1427,6 +1541,213 @@ private handlePromptClick = (e: Event): void => {
       window.clearInterval(this.loadingAnimationInterval);
       this.loadingAnimationInterval = null;
     }
+  }
+  
+  // Conversation management methods for Stage 2
+  public newConversation(): void {
+    console.log('⭐ newConversation() called');
+    
+    if (!this.persistenceManager) {
+      console.error('😱 persistenceManager is not available');
+      return;
+    }
+    
+    console.log('📝 Current conversation ID before new:', this.conversationId);
+    
+    // Explicitly clear the chat UI first
+    console.log('🚮 Clearing chat UI messages');
+    const messagesContainer = this.element.querySelector('.am-chat-messages');
+    if (messagesContainer) {
+      messagesContainer.innerHTML = '';
+    }
+    
+    console.log('🧹 Clearing messages from state manager');
+    // Clear memory state
+    this.stateManager.setMessages([]);
+    this.stateManager.clearMessages();
+    
+    // Create new conversation with empty message array
+    console.log('🆕 Creating new conversation');
+    const id = this.persistenceManager.create();
+    console.log('✅ New conversation created with ID:', id);
+    
+    // Switch to the new conversation
+    console.log('🔄 Switching to new conversation');
+    this.switchConversation(id);
+    
+    // Update just the conversation drawer instead of rebuilding entire UI
+    console.log('🔄 Updating conversation drawer');
+    this.updateConversationDrawer();
+    
+    // Initialize the new conversation with a welcome message
+    console.log('📡 Initializing new conversation with welcome message');
+    this.initializeChat();
+    
+    console.log('✨ newConversation() complete');
+  }
+  
+  private updateConversationDrawer(): void {
+    if (!this.persistenceManager) return;
+    
+    // Find the conversation list in the drawer
+    const drawerList = this.element.querySelector('.am-drawer ul');
+    if (!drawerList) return;
+    
+    // Get all conversations and generate the list items
+    const conversations = this.persistenceManager.list();
+    const listHTML = conversations.map(conv => {
+      // Format the timestamp as a relative time (e.g., "2 min ago")
+      const timeAgo = this.getRelativeTimeString(conv.lastUpdated);
+      
+      // Check if this conversation has unread messages (for badge)
+      // This is a placeholder - implement actual unread count logic as needed
+      const unreadCount = 0; // Replace with actual unread count
+      const badgeHtml = unreadCount > 0 ? `<span class="badge">${unreadCount}</span>` : '';
+      
+      return `<li data-id="${conv.id}" class="${conv.id === this.conversationId ? 'active' : ''}">
+        <span class="title">${conv.title}</span>
+        <span class="time">${timeAgo}</span>
+        ${badgeHtml}
+      </li>`;
+    }).join('');
+    
+    // Update the drawer list
+    drawerList.innerHTML = listHTML;
+    
+    // Re-attach event listeners just for the conversation items
+    const conversationItems = drawerList.querySelectorAll('li');
+    conversationItems.forEach(li => {
+      // Remove any existing click listeners to prevent duplicates
+      const newLi = li.cloneNode(true) as HTMLElement;
+      li.parentNode?.replaceChild(newLi, li);
+      
+      // Add click event listener with proper binding
+      newLi.addEventListener('click', (e: Event) => {
+        e.preventDefault(); // Prevent any default behavior
+        e.stopPropagation(); // Stop event bubbling
+        
+        const id = newLi.getAttribute('data-id');
+        console.log('🖱️ Conversation item clicked:', id);
+        
+        if (id) {
+          // Close drawer first
+          const drawer = this.element.querySelector('.am-drawer');
+          if (drawer) drawer.classList.remove('open');
+          
+          // Then switch conversation
+          setTimeout(() => {
+            this.switchConversation(id);
+          }, 50); // Small delay to ensure UI updates properly
+        }
+      });
+    });
+  }
+  
+  private isLoadingConversation = false;
+  
+  /**
+   * Formats a timestamp into a relative time string (e.g., "2m ago", "5h ago")
+   * @param timestamp The timestamp to format
+   * @returns A formatted relative time string
+   */
+  private getRelativeTimeString(timestamp: number): string {
+    const now = Date.now();
+    const diff = now - timestamp;
+    
+    // Convert to seconds
+    const seconds = Math.floor(diff / 1000);
+    
+    if (seconds < 60) {
+      return 'just now';
+    }
+    
+    // Convert to minutes
+    const minutes = Math.floor(seconds / 60);
+    if (minutes < 60) {
+      return `${minutes}m ago`;
+    }
+    
+    // Convert to hours
+    const hours = Math.floor(minutes / 60);
+    if (hours < 24) {
+      return `${hours}h ago`;
+    }
+    
+    // Convert to days
+    const days = Math.floor(hours / 24);
+    if (days < 30) {
+      return `${days}d ago`;
+    }
+    
+    // Format as date for older timestamps
+    const date = new Date(timestamp);
+    return date.toLocaleDateString();
+  }
+
+  public switchConversation(id: string): void {
+    console.log('🔁 switchConversation() called with ID:', id);
+    
+    if (!this.persistenceManager) {
+      console.error('😱 persistenceManager is not available');
+      return;
+    }
+    
+    if (id === this.conversationId) {
+      console.log('⏸️ Already in this conversation, skipping switch');
+      return;
+    }
+    
+    console.log('🔄 Switching to conversation:', id);
+    // Switch to new conversation
+    this.persistenceManager.switchTo(id);
+    this.conversationId = id;
+    
+    console.log('🗑 Clearing message DOM elements');
+    // Clear both DOM and state - use innerHTML for complete clearing
+    const messagesContainer = this.element.querySelector('.am-chat-messages');
+    if (messagesContainer) {
+      messagesContainer.innerHTML = '';
+    } else {
+      // Fallback to individual element removal if container not found
+      this.element.querySelectorAll('.am-chat-message').forEach(el => el.remove());
+    }
+    
+    console.log('🗑️ Clearing message state');
+    this.stateManager.clearMessages();
+    this.stateManager.setMessages([]);
+    
+    // Set loading flag to prevent saveMessages() from updating timestamps
+    console.log('🚧 Setting isLoadingConversation flag to true');
+    this.isLoadingConversation = true;
+    
+    console.log('📚 Loading messages for conversation:', id);
+    // Reload messages from persistence
+    const messages = this.persistenceManager.loadMessages();
+    console.log('📃 Found', messages.length, 'messages to restore');
+    
+    console.log('📄 Updating state manager with messages');
+    // Update state manager first
+    messages.forEach(m => {
+      this.stateManager.addMessage(m);
+    });
+    
+    console.log('💬 Rendering messages in DOM');
+    // Then update DOM
+    messages.forEach(m => this.addMessage(m));
+    
+    console.log('🔄 Forcing UI refresh');
+    // Force UI refresh
+    this.init();
+    
+    // Update the conversation drawer to highlight the active conversation
+    console.log('🔄 Updating conversation drawer to highlight active conversation');
+    this.updateConversationDrawer();
+    
+    // Reset loading flag after everything is done
+    console.log('🚧 Setting isLoadingConversation flag to false');
+    this.isLoadingConversation = false;
+    
+    console.log('✨ switchConversation() complete');
   }
 
   private startLoadingAnimation(): void {
