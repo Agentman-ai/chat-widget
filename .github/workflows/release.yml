@@ -51,7 +51,7 @@ jobs:
           zip -r ../agentman-chat-widget-${{ steps.vars.outputs.VERSION }}.zip .
 
       - name: Create GitHub Release
-        uses: softprops/action-gh-release@v1
+        uses: softprops/action-gh-release@v2
         with:
           tag_name: ${{ github.ref_name }}
           release_name: Release ${{ github.ref_name }}
