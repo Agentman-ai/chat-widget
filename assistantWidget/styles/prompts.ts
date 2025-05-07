@@ -1,8 +1,26 @@
 // styles/prompts.ts
 export const promptStyles = `
+  /* Safe hover zone container that wraps both toggle button and prompts */
+  .am-chat-hover-zone {
+    position: fixed !important;
+    bottom: 0 !important;
+    right: 0 !important;
+    /* Size optimized to cover just the toggle button and prompts */
+    width: 180px !important; /* Reduced from 320px to minimize leftward extension */
+    height: 300px !important;
+    /* Create padding only where needed (right and bottom) */
+    padding: 20px 20px 20px 10px; /* Less padding on the left */
+    /* For debugging only - enable to see the hover zone */
+    /* background-color: rgba(255, 0, 0, 0.1); */
+    /* Ensure it doesn't interfere with other elements */
+    pointer-events: none;
+    /* Make sure it's above other elements but below the actual interactive elements */
+    z-index: 10000;
+  }
+
   /* Message Prompts Container - Using fixed positioning to match toggle button */
   .am-chat-message-prompts-container {
-    position: fixed !important; /* Match the toggle button's fixed positioning */
+    position: absolute !important; /* Position within the hover zone */
     bottom: 70px !important; /* Position above the toggle button */
     right: 12px !important; /* Match the toggle's right position */
     width: 280px; /* Fixed width */
@@ -13,6 +31,25 @@ export const promptStyles = `
     border: none; /* Remove border for cleaner look */
     word-wrap: break-word; /* Ensure text wraps properly */
     font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+    /* Add transition properties for smooth animation */
+    opacity: 0;
+    transform: translateY(10px);
+    transition: opacity 0.3s ease, transform 0.3s ease;
+    /* Re-enable pointer events for the actual prompts */
+    pointer-events: auto;
+    /* Add a small buffer area around the prompts */
+    margin: 5px;
+  }
+  
+  /* Class added when prompts should be visible */
+  .am-chat-message-prompts-container.am-chat-prompts-visible {
+    opacity: 1;
+    transform: translateY(0);
+  }
+  
+  /* Make sure the toggle button has pointer events enabled */
+  .am-chat-toggle {
+    pointer-events: auto !important;
   }
   
   /* Adjust position for bottom-left corner widget */

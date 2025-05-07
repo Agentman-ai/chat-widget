@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ChatWidget Hover Test</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 20px;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        #chat-container {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            z-index: 1000;
+        }
+        h1 {
+            color: #10b981;
+        }
+        .test-instructions {
+            background-color: #f3f4f6;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+        .test-instructions h2 {
+            margin-top: 0;
+            color: #10b981;
+        }
+        .test-instructions ul {
+            padding-left: 20px;
+        }
+        .test-instructions li {
+            margin-bottom: 10px;
+        }
+    </style>
+</head>
+<body>
+    <h1>ChatWidget Hover Test</h1>
+    
+    <div class="test-instructions">
+        <h2>Testing Instructions</h2>
+        <p>This page is set up to test the hover behavior for prompt suggestions in the ChatWidget.</p>
+        <ul>
+            <li><strong>Desktop:</strong> Hover over the chat button to see prompt suggestions appear with a smooth animation.</li>
+            <li><strong>Mobile:</strong> Prompt suggestions should appear automatically (time-based) as in the original implementation.</li>
+            <li><strong>Behavior:</strong> Suggestions should disappear when clicked or when the cursor moves away from the button.</li>
+        </ul>
+    </div>
+
+    <div id="chat-container"></div>
+
+    <!-- Include the bundled widget -->
+    <script src="dist/index.js"></script>
+    <script>
+        let chatWidget;
+        
+        // Define the configuration
+        const config = {
+            apiUrl: 'https://run.agentman.ai',
+            agentToken: '.eJyrVipJzUvMK4nPTFGyMjHTUUosKMjJTE4syczPQ4ilp0JVGBqa1wIAxoEQ6Q.Z32csg.xbR3NqyuNlDpt-Dafp1O2GpKw5U',
+            variant: 'corner',
+            containerId: 'chat-container',
+            initiallyOpen: false,
+            title: 'Hover Test',
+            placeholder: 'Type a message...',
+            position: 'bottom-right',
+            initialHeight: '600px',
+            initialWidth: '400px',
+            // Add message prompts configuration
+            messagePrompts: {
+                show: true,
+                welcome_message: "How can I help you today?",
+                prompts: [
+                    "What is this test for?",
+                    "How does the hover behavior work?",
+                    "Show me the implementation details"
+                ]
+            },
+            theme: {
+                backgroundColor: '#ffffff',
+                textColor: '#1f2937',
+                buttonColor: '#10b981',
+                buttonTextColor: '#ffffff',
+                agentBackgroundColor: '#f3f4f6',
+                userBackgroundColor: '#10b981',
+                agentForegroundColor: '#000000',
+                userForegroundColor: '#ffffff',
+                headerBackgroundColor: '#059669',
+                headerTextColor: '#ffffff',
+                agentIconColor: '#059669',
+                userIconColor: '#059669',
+                sendIconColor: '#ffffff'
+            }
+        };
+        
+        function initializeWidget() {
+            try {
+                console.log('Initializing ChatWidget with config:', config);
+                const ChatWidget = window['@agentman/chat-widget'].ChatWidget;
+                chatWidget = new ChatWidget(config);
+                console.log('ChatWidget initialized successfully');
+            } catch (error) {
+                console.error('Failed to initialize ChatWidget:', error);
+                console.error('Error details:', {
+                    name: error.name,
+                    message: error.message,
+                    stack: error.stack
+                });
+            }
+        }
+        
+        // Initialize when the document is fully loaded
+        document.addEventListener('DOMContentLoaded', function() {
+            // Add error event listener
+            window.addEventListener('unhandledrejection', function(event) {
+                console.error('Unhandled promise rejection:', event.reason);
+            });
+            
+            // Initialize the widget
+            initializeWidget();
+            
+            // Cleanup on page unload
+            window.addEventListener('unload', function() {
+                if (chatWidget) {
+                    chatWidget.destroy();
+                }
+            });
+        });
+    </script>
+</body>
+</html>

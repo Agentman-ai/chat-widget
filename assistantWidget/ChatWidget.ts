@@ -33,8 +33,8 @@ export class ChatWidget {
   private isOffline: boolean = false;
   private lastMessageCount: number = 0;
   private persistenceManager: PersistenceManager | null = null;
-  // Timer handle for delayed prompt display
-  private promptTimer: number | null = null;
+  // Track whether prompts are currently visible
+  private promptsVisible: boolean = false;
 
   private static readonly defaultIcons = {
     closeIcon: close,
@@ -378,36 +378,50 @@ export class ChatWidget {
   }
 
   public destroy(): void {
-    // Clean up styles
-    this.styleManager.cleanup();
-
-    // Clean up ALL timeouts
-    if (this.resizeTimeout) {
-      window.clearTimeout(this.resizeTimeout);
-    }
-    if (this.resizeDebounceTimeout) {
-      window.clearTimeout(this.resizeDebounceTimeout);
-    }
-    if (this.loadingAnimationInterval) {
-      window.clearInterval(this.loadingAnimationInterval);
-    }
-    if (this.promptTimer) {
-      window.clearTimeout(this.promptTimer);
-    }
-
-    // Remove event listeners
-    window.removeEventListener('resize', this.handleResize.bind(this));
-
-    // Remove DOM elements
-    const widgetElement = document.querySelector(`.am-chat-widget[data-container="${this.containerId}"]`);
-    widgetElement?.remove();
-
-    // Clean up state manager
-    this.stateManager.clearListeners();
-    this.styleManager.cleanup();
-
+    console.log(`[DEBUG] Destroying widget instance for container ${this.containerId}`);
+    
     // Remove from instances map
     ChatWidget.instances.delete(this.containerId);
+    
+    // Clear any timers
+    if (this.resizeTimeout) {
+      clearTimeout(this.resizeTimeout);
+    }
+    
+    if (this.resizeDebounceTimeout) {
+      clearTimeout(this.resizeDebounceTimeout);
+    }
+    
+    if (this.loadingAnimationInterval) {
+      clearInterval(this.loadingAnimationInterval);
+    }
+    
+    // Remove event listeners for hover behavior
+    const toggle = this.element.querySelector('.am-chat-toggle') as HTMLButtonElement;
+    if (toggle) {
+      toggle.removeEventListener('mouseenter', this.handleToggleHover);
+      toggle.removeEventListener('mouseleave', this.handleToggleLeave);
+    }
+    
+    // Remove event listeners from hover zone if it exists
+    const hoverZone = this.element.querySelector('.am-chat-hover-zone');
+    if (hoverZone) {
+      hoverZone.removeEventListener('mouseenter', this.handleHoverZoneEnter);
+      hoverZone.removeEventListener('mouseleave', this.handleHoverZoneLeave);
+    }
+    
+    // No need to remove event listeners from prompts container as we're using the hover zone approach
+    
+    // Remove element from DOM if it exists
+    if (this.element && this.element.parentNode) {
+      this.element.parentNode.removeChild(this.element);
+    }
+    
+    // Clean up state manager
+    this.stateManager.clearListeners();
+    
+    // Clean up any other resources
+    this.isInitialized = false;
   }
 
   /**
@@ -518,7 +532,18 @@ export class ChatWidget {
     const container = this.element.querySelector('.am-chat-container') as HTMLDivElement;
     const toggle = this.element.querySelector('.am-chat-toggle') as HTMLButtonElement;
     const prompts = this.element.querySelector('.am-chat-message-prompts-container') as HTMLElement;
+    let hoverZone = this.element.querySelector('.am-chat-hover-zone') as HTMLElement;
 
+    // Create hover zone if it doesn't exist for corner variant
+    if (this.config.variant === 'corner' && this.isDesktopDevice() && !hoverZone) {
+      hoverZone = document.createElement('div');
+      hoverZone.className = 'am-chat-hover-zone';
+      this.element.appendChild(hoverZone);
+      
+      // Add hover event listeners to the hover zone
+      hoverZone.addEventListener('mouseenter', this.handleHoverZoneEnter);
+      hoverZone.addEventListener('mouseleave', this.handleHoverZoneLeave);
+    }
 
     if (container) {
       // For corner variant, handle show/hide
@@ -531,28 +556,38 @@ export class ChatWidget {
         const shouldShowCollapsedUI = !state.isOpen && !this.hasUserStartedConversation();
         console.log('[DEBUG] shouldShowCollapsedUI:', shouldShowCollapsedUI);
 
-      // Handle prompts visibility and placement
-      if (shouldShowCollapsedUI) {
-        console.log('[DEBUG] Scheduling collapsed prompts to show after delay');
-        if (!this.promptTimer) {
-          this.promptTimer = window.setTimeout(() => {
-            console.log('[DEBUG] Delayed showCollapsedPrompts');
+        // Handle prompts visibility and placement
+        if (shouldShowCollapsedUI) {
+          // For both mobile and desktop, show prompts when they should be visible
+          console.log('[DEBUG] Showing collapsed prompts');
+          if (!this.isDesktopDevice() || !this.promptsVisible) {
+            // For mobile, always show. For desktop, only show if not already visible
             this.showCollapsedPrompts();
-            this.promptTimer = null;
-          }, 5000);
+          }
+        } else {
+          // Hide prompts when they shouldn't be shown
+          console.log('[DEBUG] Hiding collapsed prompts');
+          if (this.promptsVisible) {
+            this.hideCollapsedPrompts();
+          }
         }
-      } else {
-        console.log('[DEBUG] Hiding collapsed prompts and clearing scheduled show');
-        if (this.promptTimer) {
-          clearTimeout(this.promptTimer);
-          this.promptTimer = null;
-        }
-        this.hideCollapsedPrompts();
-      }        
 
         container.style.display = state.isOpen ? 'flex' : 'none';
         if (toggle) {
           toggle.style.display = state.isOpen ? 'none' : 'flex';
+          
+          // Always add hover listeners to the toggle button for both desktop and mobile
+          if (shouldShowCollapsedUI) {
+            // Remove existing listeners first to prevent duplicates
+            toggle.removeEventListener('mouseenter', this.handleToggleHover);
+            toggle.removeEventListener('mouseleave', this.handleToggleLeave);
+            
+            // Add the hover listeners
+            toggle.addEventListener('mouseenter', this.handleToggleHover);
+            toggle.addEventListener('mouseleave', this.handleToggleLeave);
+            
+            console.log('[DEBUG] Added hover listeners to toggle button');
+          }
         }
       } else {
         // For centered and inline variants, always show container
@@ -602,44 +637,123 @@ export class ChatWidget {
   }
 
   // Show prompts above the toggle button (when chat is collapsed)
-  private showCollapsedPrompts(): void {
-    console.log('[DEBUG] showCollapsedPrompts called');
-    let prompts = this.element.querySelector('.am-chat-message-prompts-container');
-    console.log('[DEBUG] Existing prompts element:', prompts);
-    
-    if (!prompts) {
-      console.log('[DEBUG] Creating new prompts container');
-      prompts = document.createElement('div');
-      prompts.className = 'am-chat-message-prompts-container';
-      
-      const promptsHTML = this.renderMessagePrompts();
-      console.log('[DEBUG] Rendered prompts HTML:', promptsHTML);
-      prompts.innerHTML = promptsHTML;
-      
-      // Insert before or after the toggle button as needed
-      const toggle = this.element.querySelector('.am-chat-toggle');
-      console.log('[DEBUG] Toggle button found:', !!toggle);
-      
-      if (toggle && toggle.parentElement) {
-        console.log('[DEBUG] Inserting prompts before toggle button');
-        toggle.parentElement.insertBefore(prompts, toggle);
-      } else {
-        console.log('[DEBUG] Could not find toggle button or its parent');
-      }
-      
-      this.attachPromptListeners();
+private showCollapsedPrompts(): void {
+  console.log('[DEBUG] showCollapsedPrompts called, current state:', this.promptsVisible);
+  
+  // If prompts are already shown according to our state, don't do anything
+  if (this.promptsVisible) {
+    console.log('[DEBUG] Prompts already visible according to state, checking DOM');
+    // Double-check if the element actually exists in the DOM
+    const existingPrompts = this.element.querySelector('.am-chat-message-prompts-container');
+    if (existingPrompts) {
+      console.log('[DEBUG] Prompts element exists in DOM, nothing to do');
+      return;
     } else {
-      console.log('[DEBUG] Prompts container already exists');
+      console.log('[DEBUG] State says prompts visible but element not found in DOM - fixing state inconsistency');
+    }
+  }
+  
+  // First, ensure any existing prompts are removed to avoid duplicates
+  this.hideCollapsedPrompts();
+  
+  // Now create new prompts
+  console.log('[DEBUG] Creating new prompts container');
+  const prompts = document.createElement('div');
+  prompts.className = 'am-chat-message-prompts-container';
+  
+  const promptsHTML = this.renderMessagePrompts();
+  console.log('[DEBUG] Rendered prompts HTML:', promptsHTML);
+  prompts.innerHTML = promptsHTML;
+  
+  // For desktop, insert into the hover zone
+  if (this.isDesktopDevice()) {
+    // Remove any existing hover zone first to ensure clean state
+    const existingHoverZone = this.element.querySelector('.am-chat-hover-zone');
+    if (existingHoverZone) {
+      console.log('[DEBUG] Removing existing hover zone for clean recreation');
+      existingHoverZone.removeEventListener('mouseenter', this.handleHoverZoneEnter);
+      existingHoverZone.removeEventListener('mouseleave', this.handleHoverZoneLeave);
+      if (existingHoverZone.parentElement) {
+        existingHoverZone.parentElement.removeChild(existingHoverZone);
+      }
     }
     
-    console.log('[DEBUG] Setting prompts display to block');
-    (prompts as HTMLElement).style.display = 'block';
+    // Create a new hover zone
+    console.log('[DEBUG] Creating new hover zone');
+    const hoverZone = document.createElement('div');
+    hoverZone.className = 'am-chat-hover-zone';
+    this.element.appendChild(hoverZone);
+    hoverZone.appendChild(prompts);
+    
+    // Add hover event listeners to the hover zone
+    hoverZone.addEventListener('mouseenter', this.handleHoverZoneEnter);
+    hoverZone.addEventListener('mouseleave', this.handleHoverZoneLeave);
+  } else {
+    // For mobile, use the original approach
+    const toggle = this.element.querySelector('.am-chat-toggle');
+    console.log('[DEBUG] Toggle button found for mobile:', !!toggle);
+    
+    if (toggle && toggle.parentElement) {
+      console.log('[DEBUG] Inserting prompts before toggle button');
+      toggle.parentElement.insertBefore(prompts, toggle);
+    } else {
+      console.log('[DEBUG] Could not find toggle button or its parent');
+      return; // Exit if we can't find the toggle button
+    }
   }
+  
+  this.attachPromptListeners();
+  
+  console.log('[DEBUG] Setting prompts display to block');
+  (prompts as HTMLElement).style.display = 'block';
+  
+  // Add animation class for smooth appearance
+  setTimeout(() => {
+    (prompts as HTMLElement).classList.add('am-chat-prompts-visible');
+  }, 10);
+  
+  // Update state AFTER all DOM operations
+  this.promptsVisible = true;
+  console.log('[DEBUG] Prompts now visible, state updated');
+}
 
 // Hide the prompts container
 private hideCollapsedPrompts(): void {
+  console.log('[DEBUG] hideCollapsedPrompts called, current state:', this.promptsVisible);
   const prompts = this.element.querySelector('.am-chat-message-prompts-container');
-  if (prompts) prompts.remove();
+  
+  // Set state immediately to prevent race conditions
+  this.promptsVisible = false;
+  
+  if (prompts) {
+    // First remove the visible class to trigger the fade-out animation
+    (prompts as HTMLElement).classList.remove('am-chat-prompts-visible');
+    
+    // Then remove the element after the animation completes
+    setTimeout(() => {
+      console.log('[DEBUG] Removing prompts element after animation');
+      if (prompts.parentElement) {
+        prompts.parentElement.removeChild(prompts);
+      }
+      
+      // If we're using the hover zone and it's now empty, we can remove it
+      if (this.isDesktopDevice()) {
+        const hoverZone = this.element.querySelector('.am-chat-hover-zone');
+        if (hoverZone && (!hoverZone.hasChildNodes() || hoverZone.childNodes.length === 0)) {
+          console.log('[DEBUG] Removing empty hover zone');
+          hoverZone.removeEventListener('mouseenter', this.handleHoverZoneEnter);
+          hoverZone.removeEventListener('mouseleave', this.handleHoverZoneLeave);
+          if (hoverZone.parentElement) {
+            hoverZone.parentElement.removeChild(hoverZone);
+          }
+        } else if (hoverZone) {
+          console.log('[DEBUG] Hover zone still has children, not removing');
+        }
+      }
+    }, 300); // Match this with the CSS transition duration
+  } else {
+    console.log('[DEBUG] No prompts element found to hide');
+  }
 }
 
 /**
@@ -753,6 +867,9 @@ private handlePromptClick = (e: Event): void => {
       button.style.backgroundColor = 'var(--chat-toggle-background-color, var(--chat-header-background-color, #059669))';
       button.style.color = 'white';
       
+      // Hide prompts immediately when a prompt is clicked
+      this.hideCollapsedPrompts();
+      
       // Open the chat first
       this.stateManager.setOpen(true);
       this.updateUI(this.stateManager.getState());
@@ -786,7 +903,58 @@ private handlePromptClick = (e: Event): void => {
 }
 
 
-  public updateTheme(theme: Partial<ChatConfig['theme']>): void {
+  // This method has been moved below
+
+// Handle mouse enter on hover zone (includes both toggle and prompts)
+private handleHoverZoneEnter = (): void => {
+  if (this.isDesktopDevice() && !this.stateManager.getState().isOpen && !this.hasUserStartedConversation()) {
+    console.log('[DEBUG] Hover zone entered - showing prompts');
+    this.showCollapsedPrompts();
+  }
+}
+
+// Handle mouse leave on hover zone
+private handleHoverZoneLeave = (): void => {
+  if (this.isDesktopDevice() && this.promptsVisible) {
+    console.log('[DEBUG] Hover zone left - hiding prompts');
+    this.hideCollapsedPrompts();
+  }
+}
+
+// Handle toggle button hover (used for both desktop and mobile)
+private handleToggleHover = (): void => {
+  const state = this.stateManager.getState();
+  console.log('[DEBUG] Toggle button hover - state:', {
+    isOpen: state.isOpen,
+    hasStartedConversation: this.hasUserStartedConversation(),
+    promptsVisible: this.promptsVisible
+  });
+  
+  // Show prompts if chat is closed and conversation not started
+  if (!state.isOpen && !this.hasUserStartedConversation()) {
+    console.log('[DEBUG] Toggle button hover - showing prompts');
+    
+    // Force recreation of prompts if not visible
+    if (this.promptsVisible) {
+      console.log('[DEBUG] Prompts already visible, not showing again');
+    } else {
+      // Always show prompts on hover, regardless of device type
+      this.showCollapsedPrompts();
+    }
+  } else {
+    console.log('[DEBUG] Toggle hover - not showing prompts due to conditions');
+  }
+}
+
+// Handle toggle button mouse leave (only used for non-desktop now)
+private handleToggleLeave = (): void => {
+  if (!this.isDesktopDevice() && this.promptsVisible) {
+    console.log('[DEBUG] Toggle button mouse leave - hiding prompts');
+    this.hideCollapsedPrompts();
+  }
+}
+
+public updateTheme(theme: Partial<ChatConfig['theme']>): void {
     this.config.theme = {
       ...this.config.theme,
       ...theme
