@@ -48,15 +48,20 @@ A customizable, open-source chat widget that can be easily integrated into any w
 
 ## Demo
 
-Try out the chat widget with our interactive demo:
+Try out the chat widget with our interactive demos:
 - [Live Demo](https://agentman.ai/chat-widget-demo)
 - [Configuration Playground](https://agentman.ai/chat-widget-playground)
+- [CDN Integration Demo](cdn-demo.html) - See how to use the widget from CDN without npm
+- [Iframe Example](iframe-example.html) - Example of embedding the widget in an iframe
 
-To run the demo locally:
+To run the demos locally:
 ```bash
 npm install
 npm run build
-# Open unified-demo.html in your browser
+# Open any of the demo HTML files in your browser:
+# - unified-demo.html (configuration playground)
+# - cdn-demo.html (CDN integration)
+# - iframe-example.html (iframe embedding)
 ```
 
 ## Installation
@@ -72,8 +77,52 @@ yarn add @agentman/chat-widget
 ```
 
 ### CDN
+
+You can load the chat widget directly from a CDN without any installation:
+
 ```html
+<!-- unpkg (recommended) -->
 <script src="https://unpkg.com/@agentman/chat-widget@latest/dist/index.js"></script>
+
+<!-- jsDelivr -->
+<script src="https://cdn.jsdelivr.net/npm/@agentman/chat-widget@latest/dist/index.js"></script>
+
+<!-- Specific version (recommended for production) -->
+<script src="https://unpkg.com/@agentman/chat-widget@0.23.0/dist/index.js"></script>
+```
+
+**Benefits of CDN usage:**
+- No installation or build process required
+- Perfect for embedding in iframes
+- Automatic updates with `@latest` tag
+- Global CDN with fast delivery
+- Browser caching for better performance
+
+**Iframe Integration Example:**
+```html
+<!-- parent-page.html -->
+<iframe src="chat-iframe.html" width="100%" height="600"></iframe>
+
+<!-- chat-iframe.html -->
+<!DOCTYPE html>
+<html>
+<head>
+  <script src="https://unpkg.com/@agentman/chat-widget@latest/dist/index.js"></script>
+</head>
+<body>
+  <div id="chat-widget"></div>
+  <script>
+    // When using CDN, access ChatWidget from the global
+    const ChatWidget = window['@agentman/chat-widget'].ChatWidget;
+    
+    const chatWidget = new ChatWidget({
+      agentToken: 'YOUR_AGENT_TOKEN',
+      containerId: 'chat-widget',
+      variant: 'inline' // Best for iframes
+    });
+  </script>
+</body>
+</html>
 ```
 
 ## Quick Start
@@ -91,6 +140,9 @@ yarn add @agentman/chat-widget
 <body>
   <div id="chat-widget"></div>
   <script>
+    // When using CDN, access ChatWidget from the global
+    const ChatWidget = window['@agentman/chat-widget'].ChatWidget;
+    
     const chatWidget = new ChatWidget({
       agentToken: 'YOUR_AGENT_TOKEN',
       containerId: 'chat-widget'
@@ -449,7 +501,7 @@ npm run build:wordpress
 
 ```bash
 # Clone the repository
-git clone https://github.com/agentman-ai/chat-widget.git
+git clone https://github.com/Agentman-ai/chat-widget.git
 cd chat-widget
 
 # Install dependencies

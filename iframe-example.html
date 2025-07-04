@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Agentman Chat Widget - Iframe Example</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 20px;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            background: #f5f5f5;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            padding: 40px;
+            border-radius: 12px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #059669;
+            margin-bottom: 10px;
+        }
+        .subtitle {
+            color: #6b7280;
+            margin-bottom: 30px;
+            font-size: 18px;
+        }
+        .iframe-container {
+            width: 100%;
+            height: 600px;
+            border: 2px solid #e5e7eb;
+            border-radius: 8px;
+            overflow: hidden;
+            margin: 20px 0;
+        }
+        iframe {
+            width: 100%;
+            height: 100%;
+            border: none;
+        }
+        .code-block {
+            background: #1f2937;
+            color: #f3f4f6;
+            padding: 20px;
+            border-radius: 6px;
+            overflow-x: auto;
+            margin: 15px 0;
+            font-family: 'Courier New', monospace;
+            font-size: 14px;
+            line-height: 1.5;
+        }
+        .info-section {
+            margin: 30px 0;
+            padding: 25px;
+            background: #f9fafb;
+            border-radius: 8px;
+            border: 1px solid #e5e7eb;
+        }
+        .info-section h2 {
+            margin-top: 0;
+            color: #374151;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Agentman Chat Widget - Iframe Integration</h1>
+        <p class="subtitle">Example of embedding the chat widget inside an iframe</p>
+
+        <div class="info-section">
+            <h2>Live Iframe Demo</h2>
+            <p>The chat widget below is loaded inside an iframe using the CDN version:</p>
+            <div class="iframe-container">
+                <iframe src="chat-iframe-content.html"></iframe>
+            </div>
+        </div>
+
+        <div class="info-section">
+            <h2>Implementation Code</h2>
+            <p>Here's how to embed the chat widget in an iframe:</p>
+            
+            <h3>Parent Page (this page):</h3>
+            <div class="code-block">
+                <code>&lt;iframe src="chat-iframe-content.html" width="100%" height="600"&gt;&lt;/iframe&gt;</code>
+            </div>
+
+            <h3>Iframe Content Page:</h3>
+            <div class="code-block">
+                <code>&lt;!DOCTYPE html&gt;
+&lt;html&gt;
+&lt;head&gt;
+    &lt;!-- Load widget from CDN --&gt;
+    &lt;script src="https://unpkg.com/@agentman/chat-widget@latest/dist/index.js"&gt;&lt;/script&gt;
+    &lt;style&gt;
+        body { margin: 0; padding: 0; }
+        #chat-widget { height: 100vh; }
+    &lt;/style&gt;
+&lt;/head&gt;
+&lt;body&gt;
+    &lt;div id="chat-widget"&gt;&lt;/div&gt;
+    &lt;script&gt;
+        new ChatWidget({
+            agentToken: "eJyrVipJzUvMK4nPTFGyMjHTUUosKMjJTE4syczPQ4ilp0JVGBqa1wIAxoEQ6Q.Z32csg.xbR3NqyuNlDpt-Dafp1O2GpKw5U",
+            apiUrl: 'https://studio-api.agentman.ai',
+            containerId: 'chat-widget',
+            variant: 'inline', // Best for iframes
+            title: 'Iframe Chat Demo'
+        });
+    &lt;/script&gt;
+&lt;/body&gt;
+&lt;/html&gt;</code>
+            </div>
+        </div>
+
+        <div class="info-section">
+            <h2>Benefits of Iframe Integration</h2>
+            <ul>
+                <li><strong>Isolation:</strong> The widget runs in a separate context, preventing CSS/JS conflicts</li>
+                <li><strong>Security:</strong> Enhanced security through iframe sandboxing</li>
+                <li><strong>Easy Integration:</strong> No need to modify existing page styles or scripts</li>
+                <li><strong>CDN Loading:</strong> Widget loads directly from CDN, no local files needed</li>
+                <li><strong>Cross-Domain:</strong> Can be hosted on different domains</li>
+            </ul>
+        </div>
+
+        <div class="info-section">
+            <h2>Configuration Tips</h2>
+            <ul>
+                <li>Use <code>variant: 'inline'</code> for best iframe experience</li>
+                <li>Set appropriate iframe dimensions based on your layout</li>
+                <li>Consider using <code>sandbox</code> attribute for additional security</li>
+                <li>Test responsiveness on different screen sizes</li>
+            </ul>
+        </div>
+    </div>
+</body>
+</html>

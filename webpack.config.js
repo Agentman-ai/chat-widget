@@ -35,7 +35,7 @@ module.exports = {
     filename: 'index.js',
     path: path.resolve(__dirname, 'dist'),
     library: {
-      name: '@agentman/chat-widget',
+      name: 'AgentmanChatWidget',
       type: 'umd'
     },
     globalObject: 'typeof self !== "undefined" ? self : this',
