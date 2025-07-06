@@ -86,6 +86,22 @@ export interface ChatConfig {
   placeholder?: string;
   persistence?: PersistenceConfig;
   hideBranding?: boolean;
+  /** Enable/disable file attachments (disabled by default) */
+  enableAttachments?: boolean;
+}
+
+export interface FileAttachment {
+  file_id: string;
+  filename: string;
+  content_type: string;
+  file_type: 'image' | 'document' | 'audio' | 'video' | 'text' | 'data';
+  size_bytes: number;
+  url?: string;
+  upload_status: 'pending' | 'uploading' | 'success' | 'error';
+  upload_progress?: number;
+  error_message?: string;
+  created_at?: string;
+  expires_at?: string;
 }
 
 export interface Message {
@@ -95,6 +111,7 @@ export interface Message {
   timestamp: string;
   type: 'text' | 'html' | 'custom' | 'svg';
   data?: any;
+  attachments?: FileAttachment[];
 }
 
 export interface ChatState {
@@ -104,6 +121,8 @@ export interface ChatState {
   isSending: boolean;
   messages: Message[];
   error?: string;
+  pendingAttachments: FileAttachment[];
+  isUploadingFiles: boolean;
 }
 
 export interface APIResponse {

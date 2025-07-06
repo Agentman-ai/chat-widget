@@ -119,13 +119,14 @@
                 }
                 
                 widgetInstance = new ChatWidget({
-                    agentToken: 'demo-token-123',
-                    apiUrl: 'https://studio-api.agentman.ai',
+                    agentToken: '.eJyrVipJzUvMK4nPTFGyMtRRSiwoyMlMTizJzM-DC6WnQuXNjWoBmfsQRw.aGdvKA.gM2XYb7-SdnG2CmBqHaWoGDR4zM',
+                    apiUrl: 'http://localhost:8000',
                     containerId: 'chat-container',
                     variant: 'corner',
                     title: 'Local Build Demo',
                     placeholder: 'Type your message...',
                     initialMessage: 'Hello! This chat widget is loaded from the local build. How can I help you today?',
+                    enableAttachments: true, // Enable file attachments
                     theme: {
                         headerBackgroundColor: '#059669',
                         headerTextColor: '#ffffff',

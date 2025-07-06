@@ -20,8 +20,8 @@ export const baseStyles = `
     flex-direction: column;
     overflow: hidden;
     display: flex;
-    width: 360px;
-    height: 700px;
+    width: 480px;
+    height: 600px;
     border-radius: 8px;
     box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
     flex: 1;
@@ -443,7 +443,7 @@ export const baseStyles = `
 
   .am-chat-expanded .am-chat-container {
     width: 66.67vw !important;
-    max-width: 700px !important;
+    max-width: 600px !important;
     height: calc(95vh - 24px) !important;
     border-radius: 8px !important;
     transition: all 0.3s ease-in-out !important;

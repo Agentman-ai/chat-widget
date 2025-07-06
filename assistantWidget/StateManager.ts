@@ -1,5 +1,5 @@
 // state-manager.ts
-import type { Message, ChatState } from './types/types';
+import type { Message, ChatState, FileAttachment } from './types/types';
 
 export class StateManager {
   private state: ChatState;
@@ -12,7 +12,9 @@ export class StateManager {
       isInitialized: false,
       isSending: false,
       messages: [],
-      error: undefined
+      error: undefined,
+      pendingAttachments: [],
+      isUploadingFiles: false
     };
     this.listeners = new Set();
   }
@@ -112,5 +114,48 @@ export class StateManager {
 
   public clearListeners(): void {
     this.listeners.clear();
+  }
+
+  // File attachment methods
+  public addPendingAttachment(attachment: FileAttachment): void {
+    this.setState({
+      ...this.state,
+      pendingAttachments: [...this.state.pendingAttachments, attachment]
+    });
+  }
+
+  public updatePendingAttachment(attachmentId: string, updates: Partial<FileAttachment>): void {
+    this.setState({
+      ...this.state,
+      pendingAttachments: this.state.pendingAttachments.map(att =>
+        att.file_id === attachmentId ? { ...att, ...updates } : att
+      )
+    });
+  }
+
+  public updateAttachmentStatus(fileId: string, updates: Partial<FileAttachment>): void {
+    const updatedAttachments = this.state.pendingAttachments.map(attachment =>
+      attachment.file_id === fileId ? { ...attachment, ...updates } : attachment
+    );
+    this.setState({ pendingAttachments: updatedAttachments });
+  }
+
+  public removePendingAttachment(fileId: string): void {
+    const updatedAttachments = this.state.pendingAttachments.filter(
+      attachment => attachment.file_id !== fileId
+    );
+    this.setState({ pendingAttachments: updatedAttachments });
+  }
+
+  public clearPendingAttachments(): void {
+    this.setState({ pendingAttachments: [] });
+  }
+
+  public getPendingAttachments(): FileAttachment[] {
+    return [...this.state.pendingAttachments];
+  }
+
+  public setUploadingFiles(uploading: boolean): void {
+    this.setState({ isUploadingFiles: uploading });
   }
 }

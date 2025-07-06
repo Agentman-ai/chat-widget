@@ -1,7 +1,7 @@
 // ChatWidget.ts
-import type { ChatConfig, Message, APIResponse, ChatState, ChatTheme, ChatAssets, PersistenceConfig } from './types/types';
+import type { ChatConfig, Message, APIResponse, ChatState, ChatTheme, ChatAssets, PersistenceConfig, FileAttachment } from './types/types';
 import { PersistenceManager } from './PersistenceManager';
-
+import { FileUploadManager } from './FileUploadManager';
 import { ConfigManager } from './ConfigManager';
 import { StateManager } from './StateManager';
 import { StyleManager } from './styles/style-manager';
@@ -10,6 +10,7 @@ import { OfflineParser } from './message-renderer/offline-parser';
 import { user, agent, close, send, minimize, maximize, resize, expand, collapse } from './assets/icons';
 import { logo, logo as headerLogo } from './assets/logo';
 import { isImageUrl, getIconHtml } from './utils/icon-utils';
+import { attachmentStyles, attachmentIcons } from './styles/attachments';
 
 export class ChatWidget {
   // Track instances by containerId
@@ -25,6 +26,7 @@ export class ChatWidget {
   private configManager: ConfigManager;
   private stateManager: StateManager;
   private messageRenderer: MessageRenderer;
+  private fileUploadManager: FileUploadManager;
   private resizeTimeout: number | null = null;
   private isInitializing: boolean = false;
   private styleManager: StyleManager;
@@ -35,6 +37,10 @@ export class ChatWidget {
   private persistenceManager: PersistenceManager | null = null;
   // Timer handle for delayed prompt display
   private promptTimer: number | null = null;
+  // Agent capabilities
+  private supportedMimeTypes: string[] = [];
+  private supportsAttachments: boolean = false;
+  private agentCapabilities: any = null;
 
   private static readonly defaultIcons = {
     closeIcon: close,
@@ -111,7 +117,9 @@ export class ChatWidget {
       isInitialized: false,
       isSending: false,
       messages: [],
-      error: undefined
+      error: undefined,
+      pendingAttachments: [],
+      isUploadingFiles: false
     };
 
     this.stateManager = new StateManager(this.state);
@@ -121,6 +129,11 @@ export class ChatWidget {
 
     this.configManager = new ConfigManager(this.config);
     this.messageRenderer = new MessageRenderer();
+    this.fileUploadManager = new FileUploadManager(
+      this.config.apiUrl,
+      this.config.agentToken,
+      this.conversationId
+    );
 
     this.styleManager = new StyleManager(config.variant);
     
@@ -155,6 +168,11 @@ export class ChatWidget {
 
     // Always initialize, regardless of online/offline status
     this.initialize();
+  
+    // Fetch agent capabilities after initialization (only if attachments are enabled)
+    if (this.config.enableAttachments) {
+      this.fetchAgentCapabilities();
+    }
   }
 
   async loadDependencies() {
@@ -475,8 +493,8 @@ export class ChatWidget {
         document.body.style.overflow = 'hidden';
       }
     } else {
-      container.style.width = this.config.initialWidth || '360px';
-      container.style.height = this.config.initialHeight || '700px';
+      container.style.width = this.config.initialWidth || '480px';
+      container.style.height = this.config.initialHeight || '600px';
       container.style.borderRadius = '12px';
       container.style.bottom = '20px';
       container.style.right = '20px';
@@ -912,9 +930,12 @@ private handlePromptClick = (e: Event): void => {
           </div>
         </div>
         <div class="am-chat-messages"></div>
+        ${this.config.enableAttachments ? '<div class="chat-attachments-preview" style="display: none;"></div>' : ''}
         <div class="am-chat-input-container">
+          ${this.config.enableAttachments ? '<input type="file" class="chat-file-input" multiple accept="*/*" style="display: none;" />' : ''}
+          ${this.config.enableAttachments ? `<button class="chat-attachment-button" title="Attach files">${attachmentIcons.paperclip}</button>` : ''}
           <textarea class="am-chat-input" placeholder="${this.config.placeholder || 'Type your message...'}"></textarea>
-          <button class="am-chat-send" disabled>
+          <button class="am-chat-send" ${this.config.enableAttachments && this.stateManager.getPendingAttachments().length > 0 ? '' : 'disabled'}>
             ${this.config.icons?.sendIcon || send}
           </button>
         </div>
@@ -1026,6 +1047,27 @@ private handlePromptClick = (e: Event): void => {
       expandButton.addEventListener('click', this.handleExpandClick);
     }
 
+    // File attachment handlers (only if attachments are enabled)
+    if (this.config.enableAttachments) {
+      const attachmentButton = this.element.querySelector('.chat-attachment-button');
+      const fileInput = this.element.querySelector('.chat-file-input') as HTMLInputElement;
+
+      if (attachmentButton && fileInput) {
+        attachmentButton.addEventListener('click', () => {
+          fileInput.click();
+        });
+
+        fileInput.addEventListener('change', (e) => {
+          const target = e.target as HTMLInputElement;
+          if (target.files && target.files.length > 0) {
+            this.handleFileSelection(Array.from(target.files));
+            // Reset the input so the same file can be selected again
+            target.value = '';
+          }
+        });
+      }
+    }
+
     // Use a single resize handler that also updates prompt visibility
     window.addEventListener('resize', () => {
       this.handleResize();
@@ -1077,7 +1119,9 @@ private handlePromptClick = (e: Event): void => {
     // Update send button state immediately
     const sendButton = this.element.querySelector('.am-chat-send') as HTMLButtonElement;
     if (sendButton) {
-      sendButton.disabled = !input.value.trim();
+      const hasText = input.value.trim().length > 0;
+      const hasAttachments = this.config.enableAttachments && this.stateManager.getPendingAttachments().length > 0;
+      sendButton.disabled = !hasText && !hasAttachments;
     }
 
     // Debounce resize calculations
@@ -1266,21 +1310,55 @@ private handlePromptClick = (e: Event): void => {
 
   private async sendMessage(message: string): Promise<void> {
     const messageId = this.generateUUID();
+    
+    // Get pending attachments that have been successfully uploaded (only if attachments are enabled)
+    const pendingAttachments = this.config.enableAttachments ? this.stateManager.getPendingAttachments() : [];
+    const successfulAttachments = pendingAttachments.filter(a => a.upload_status === 'success' && a.file_id);
+    
+    // Create user message with attachments if any
     const newMessage: Message = {
       id: messageId,
       sender: 'user',
       content: message,
       timestamp: new Date().toISOString(),
-      type: 'text'
+      type: 'text',
+      attachments: successfulAttachments.length > 0 ? successfulAttachments : undefined
     };
 
     // Add user message
     this.addMessage(newMessage);
 
+    // Clear pending attachments after adding to message
+    if (successfulAttachments.length > 0) {
+      this.stateManager.clearPendingAttachments();
+      this.updateAttachmentPreview();
+    }
+
     // Show loading indicator
     this.showLoadingIndicator();
 
     try {
+      // Prepare request body
+      const requestBody: any = {
+        agent_token: this.config.agentToken,
+        force_load: false,
+        conversation_id: this.conversationId,
+        user_input: message
+      };
+      
+      // Add attachment file IDs if available
+      if (successfulAttachments.length > 0) {
+        requestBody.attachment_file_ids = successfulAttachments.map(a => a.file_id);
+        
+        // Fallback to URLs if needed (though file_ids are preferred)
+        const attachmentUrls = successfulAttachments
+          .filter(a => a.url)
+          .map(a => a.url!);
+        if (attachmentUrls.length > 0) {
+          requestBody.attachment_urls = attachmentUrls;
+        }
+      }
+      
       const response = await fetch(
         `${this.config.apiUrl}/v2/agentman_runtime/agent`,
         {
@@ -1288,12 +1366,7 @@ private handlePromptClick = (e: Event): void => {
           headers: {
             'Content-Type': 'application/json',
           },
-          body: JSON.stringify({
-            agent_token: this.config.agentToken,
-            force_load: false,
-            conversation_id: this.conversationId,
-            user_input: message
-          }),
+          body: JSON.stringify(requestBody),
         }
       );
 
@@ -1329,10 +1402,37 @@ private handlePromptClick = (e: Event): void => {
       console.error('Message sending error:', error);
       this.hideLoadingIndicator();
 
+      let errorContent = 'Sorry, I encountered an error. Please try again.';
+      
+      // Parse API errors for unsupported file types
+      if (error instanceof Error) {
+        const errorMessage = error.message;
+        
+        // Check for unsupported file type errors
+        if (errorMessage.includes('does not support the following file types')) {
+          errorContent = `${errorMessage}\n\nSupported file types: ${this.getSupportedFileTypesDisplay()}`;
+        } else if (errorMessage.includes('file type') || errorMessage.includes('mime type')) {
+          errorContent = `File type not supported. ${errorMessage}\n\nSupported file types: ${this.getSupportedFileTypesDisplay()}`;
+        } else if (errorMessage.includes('422') || errorMessage.includes('validation')) {
+          // Try to extract validation error details
+          try {
+            const match = errorMessage.match(/"detail":"([^"]+)"/);
+            if (match && match[1]) {
+              errorContent = match[1];
+              if (match[1].includes('file') || match[1].includes('attachment')) {
+                errorContent += `\n\nSupported file types: ${this.getSupportedFileTypesDisplay()}`;
+              }
+            }
+          } catch (parseError) {
+            console.warn('Could not parse validation error:', parseError);
+          }
+        }
+      }
+
       const errorMessage: Message = {
         id: this.generateUUID(),
         sender: 'agent',
-        content: 'Sorry, I encountered an error. Please try again.',
+        content: errorContent,
         timestamp: new Date().toISOString(),
         type: 'text'
       };
@@ -1411,11 +1511,15 @@ private handlePromptClick = (e: Event): void => {
       ? getIconHtml(icon, `${message.sender} avatar`)
       : icon; // If it's already an SVG object, use it directly
 
+    // Render attachments if present
+    const attachmentsHtml = message.attachments ? this.renderMessageAttachments(message.attachments) : '';
+
     // Only show avatar for agent messages, not for user messages
     if (message.sender === 'user') {
       messageElement.innerHTML = `
         <div class="am-message-content">
           ${renderedContent}
+          ${attachmentsHtml}
         </div>
       `;
     } else {
@@ -1425,6 +1529,7 @@ private handlePromptClick = (e: Event): void => {
         </div>
         <div class="am-message-content">
           ${renderedContent}
+          ${attachmentsHtml}
         </div>
       `;
     }
@@ -1786,5 +1891,322 @@ private handlePromptClick = (e: Event): void => {
         expandButton.innerHTML = this.config.icons?.collapseIcon || collapse;
       }
     }
+  }
+
+  // File attachment handling methods
+  private async handleFileSelection(files: File[]): Promise<void> {
+    // First, validate file types
+    const fileArray = Array.from(files);
+    const { valid, invalid } = this.validateFileTypes(files);
+    
+    // Show error for invalid files
+    if (invalid.length > 0) {
+      this.showUnsupportedFileError(invalid);
+    }
+    
+    // Process only valid files
+    for (let i = 0; i < valid.length; i++) {
+      const file = valid[i];
+      
+      // Validate file size (100MB limit)
+      if (file.size > 100 * 1024 * 1024) {
+        this.showError(`File "${file.name}" is too large. Maximum size is 100MB.`);
+        continue;
+      }
+
+      // Create attachment object
+      const attachment: FileAttachment = {
+        file_id: `file-${Date.now()}-${i}`,
+        filename: file.name,
+        content_type: file.type,
+        file_type: this.fileUploadManager.getFileType(file),
+        size_bytes: file.size,
+        upload_status: 'pending'
+      };
+
+      // Add to pending attachments
+      this.stateManager.addPendingAttachment(attachment);
+      this.updateAttachmentPreview();
+
+      // Start upload
+      try {
+        this.stateManager.setUploadingFiles(true);
+        const uploadedFile = await this.fileUploadManager.uploadFile(
+          file,
+          (progress) => {
+            this.stateManager.updatePendingAttachment(attachment.file_id, {
+              upload_progress: progress
+            });
+            this.updateAttachmentPreview();
+          }
+        );
+
+        // Update attachment with uploaded file info
+        this.stateManager.updatePendingAttachment(attachment.file_id, {
+          file_id: uploadedFile.file_id,
+          url: uploadedFile.url,
+          upload_status: 'success'
+        });
+        this.updateAttachmentPreview();
+      } catch (error) {
+        console.error('File upload failed:', error);
+        this.stateManager.updatePendingAttachment(attachment.file_id, {
+          upload_status: 'error',
+          error_message: error instanceof Error ? error.message : 'Upload failed'
+        });
+        this.updateAttachmentPreview();
+        this.showError(`Failed to upload "${file.name}": ${error instanceof Error ? error.message : 'Unknown error'}`);
+      } finally {
+        // Check if all uploads are complete
+        const pendingAttachments = this.stateManager.getPendingAttachments();
+        const hasUploading = pendingAttachments.some(a => a.upload_status === 'uploading');
+        if (!hasUploading) {
+          this.stateManager.setUploadingFiles(false);
+        }
+      }
+    }
+  }
+
+  private updateAttachmentPreview(): void {
+    // Only update attachment preview if attachments are enabled
+    if (!this.config.enableAttachments) return;
+    
+    const previewContainer = this.element.querySelector('.chat-attachments-preview');
+    if (!previewContainer) return;
+
+    const attachments = this.stateManager.getPendingAttachments();
+    
+    // Update send button state based on attachments
+    const sendButton = this.element.querySelector('.am-chat-send') as HTMLButtonElement;
+    const input = this.element.querySelector('.am-chat-input') as HTMLTextAreaElement;
+    if (sendButton && input) {
+      const hasText = input.value.trim().length > 0;
+      const hasAttachments = attachments.length > 0;
+      sendButton.disabled = !hasText && !hasAttachments;
+    }
+    
+    if (attachments.length === 0) {
+      previewContainer.innerHTML = '';
+      (previewContainer as HTMLElement).style.display = 'none';
+      return;
+    }
+
+    (previewContainer as HTMLElement).style.display = 'block';
+    previewContainer.innerHTML = attachments.map(attachment => {
+      const isImage = attachment.file_type === 'image';
+      const thumbnailHtml = isImage && attachment.url 
+        ? `<img src="${attachment.url}" alt="${attachment.filename}" class="chat-attachment-thumbnail" />` 
+        : `<div class="chat-attachment-icon">${attachmentIcons[attachment.file_type as keyof typeof attachmentIcons] || attachmentIcons.file}</div>`;
+
+      const sizeStr = FileUploadManager.formatFileSize(attachment.size_bytes);
+      const statusClass = attachment.upload_status === 'error' ? 'error' : '';
+
+      return `
+        <div class="chat-attachment-item ${statusClass}" data-id="${attachment.file_id}">
+          ${thumbnailHtml}
+          <div class="chat-attachment-info">
+            <div class="chat-attachment-name">${attachment.filename}</div>
+            <div class="chat-attachment-size">${sizeStr}</div>
+            ${attachment.upload_status === 'uploading' ? `
+              <div class="chat-attachment-progress">
+                <div class="chat-attachment-progress-bar" style="width: ${attachment.upload_progress || 0}%"></div>
+              </div>
+            ` : ''}
+            ${attachment.upload_status === 'error' ? `
+              <div class="chat-attachment-error">${attachment.error_message || 'Upload failed'}</div>
+            ` : ''}
+          </div>
+          <button class="chat-attachment-remove" data-id="${attachment.file_id}" title="Remove attachment">
+            ${attachmentIcons.close}
+          </button>
+        </div>
+      `;
+    }).join('');
+
+    // Attach remove handlers
+    previewContainer.querySelectorAll('.chat-attachment-remove').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        const id = (e.currentTarget as HTMLElement).getAttribute('data-id');
+        if (id) this.removeAttachment(id);
+      });
+    });
+  }
+
+  private async removeAttachment(id: string): Promise<void> {
+    const attachment = this.stateManager.getPendingAttachments().find(a => a.file_id === id);
+    if (!attachment) return;
+
+    // If file was uploaded, delete it from server
+    if (attachment.file_id && attachment.upload_status === 'success') {
+      try {
+        await this.fileUploadManager.deleteFile(attachment.file_id);
+      } catch (error) {
+        console.error('Failed to delete file from server:', error);
+      }
+    }
+
+    // Remove from state
+    this.stateManager.removePendingAttachment(id);
+    this.updateAttachmentPreview();
+  }
+
+  private renderMessageAttachments(attachments: FileAttachment[]): string {
+    if (!attachments || attachments.length === 0) return '';
+
+    return `
+      <div class="chat-message-attachments">
+        ${attachments.map(attachment => {
+          const isImage = attachment.file_type === 'image';
+          const thumbnailHtml = isImage && attachment.url
+            ? `<img src="${attachment.url}" alt="${attachment.filename}" class="chat-attachment-thumbnail" />`
+            : `<div class="chat-attachment-icon">${attachmentIcons[attachment.file_type as keyof typeof attachmentIcons] || attachmentIcons.file}</div>`;
+
+          return `
+            <a href="${attachment.url}" target="_blank" rel="noopener noreferrer" class="chat-message-attachment" title="${attachment.filename}">
+              ${thumbnailHtml}
+              <div class="chat-attachment-info">
+                <div class="chat-attachment-name">${attachment.filename}</div>
+                <div class="chat-attachment-size">${FileUploadManager.formatFileSize(attachment.size_bytes)}</div>
+              </div>
+            </a>
+          `;
+        }).join('')}
+      </div>
+    `;
+  }
+
+  private showError(message: string): void {
+    const errorDiv = document.createElement('div');
+    errorDiv.className = 'chat-error-message';
+    errorDiv.textContent = message;
+    errorDiv.style.cssText = 'position: fixed; top: 20px; right: 20px; background: #ef4444; color: white; padding: 12px 20px; border-radius: 6px; z-index: 10000;';
+    document.body.appendChild(errorDiv);
+    setTimeout(() => errorDiv.remove(), 5000);
+  }
+
+  private async fetchAgentCapabilities(): Promise<void> {
+    try {
+      const response = await fetch(`${this.config.apiUrl}/v2/agentman_runtime/capabilities`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'agent_token': this.config.agentToken
+        },
+        body: JSON.stringify({
+          agent_token: this.config.agentToken
+        })
+      });
+
+      if (response.ok) {
+        const capabilities = await response.json();
+        this.agentCapabilities = capabilities;
+        this.supportedMimeTypes = capabilities.supported_mime_types || [];
+        this.supportsAttachments = capabilities.capabilities?.supports_attachments || false;
+        
+        // Update file input accept attribute
+        this.updateFileInputAccept();
+        
+        console.log('Agent capabilities loaded:', {
+          supportedMimeTypes: this.supportedMimeTypes,
+          supportsAttachments: this.supportsAttachments
+        });
+      } else {
+        console.warn('Failed to fetch agent capabilities:', response.status);
+        // Set default fallback values
+        this.supportedMimeTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
+        this.supportsAttachments = true;
+      }
+    } catch (error) {
+      console.warn('Error fetching agent capabilities:', error);
+      // Set default fallback values
+      this.supportedMimeTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
+      this.supportsAttachments = true;
+    }
+  }
+
+  private updateFileInputAccept(): void {
+    const fileInput = this.element?.querySelector('.chat-file-input') as HTMLInputElement;
+    
+    if (fileInput && this.supportedMimeTypes.length > 0) {
+      fileInput.accept = this.supportedMimeTypes.join(',');
+    }
+    
+    // Update attachment button tooltip with supported types
+    const attachmentButton = this.element?.querySelector('.chat-attachment-button') as HTMLButtonElement;
+    if (attachmentButton) {
+      if (this.supportedMimeTypes.length > 0) {
+        const typesDisplay = this.getSupportedFileTypesDisplay();
+        attachmentButton.title = `Attach files\nSupported: ${typesDisplay}`;
+      } else {
+        attachmentButton.title = 'Attach files';
+      }
+    }
+  }
+
+  private validateFileTypes(files: FileList | File[]): { valid: File[], invalid: File[] } {
+    const valid: File[] = [];
+    const invalid: File[] = [];
+
+    const fileArray = Array.isArray(files) ? files : Array.from(files);
+    
+    for (const file of fileArray) {
+      if (this.supportedMimeTypes.length === 0 || this.supportedMimeTypes.includes(file.type)) {
+        valid.push(file);
+      } else {
+        invalid.push(file);
+      }
+    }
+
+    return { valid, invalid };
+  }
+
+  private showUnsupportedFileError(invalidFiles: File[]): void {
+    const fileList = invalidFiles.map(f => `${f.name} (${f.type})`).join(', ');
+    const supportedTypes = this.getSupportedFileTypesDisplay();
+    const message = `Unsupported file types: ${fileList}. This agent supports: ${supportedTypes}`;
+    this.showError(message);
+  }
+
+  private getSupportedFileTypesDisplay(): string {
+    if (this.supportedMimeTypes.length === 0) {
+      return 'all file types';
+    }
+    
+    const typeGroups: { [key: string]: string[] } = {};
+    
+    this.supportedMimeTypes.forEach(mimeType => {
+      const [category] = mimeType.split('/');
+      if (!typeGroups[category]) {
+        typeGroups[category] = [];
+      }
+      typeGroups[category].push(mimeType.split('/')[1].toUpperCase());
+    });
+    
+    const descriptions: string[] = [];
+    
+    if (typeGroups.image) {
+      descriptions.push(`Images (${typeGroups.image.join(', ')})`);
+    }
+    if (typeGroups.application) {
+      descriptions.push(`Documents (${typeGroups.application.join(', ')})`);
+    }
+    if (typeGroups.text) {
+      descriptions.push(`Text files (${typeGroups.text.join(', ')})`);
+    }
+    if (typeGroups.audio) {
+      descriptions.push(`Audio (${typeGroups.audio.join(', ')})`);
+    }
+    if (typeGroups.video) {
+      descriptions.push(`Video (${typeGroups.video.join(', ')})`);
+    }
+    
+    // Handle any other categories
+    Object.keys(typeGroups).forEach(category => {
+      if (!['image', 'application', 'text', 'audio', 'video'].includes(category)) {
+        descriptions.push(`${category} (${typeGroups[category].join(', ')})`);
+      }
+    });
+    
+    return descriptions.join(', ');
   }
 }

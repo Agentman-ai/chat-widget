@@ -12,8 +12,8 @@ export const variantStyles = {
         position: fixed;
         bottom: var(--chat-container-bottom, 20px);
         right: var(--chat-container-right, 20px);
-        width: var(--chat-container-width, 360px);
-        height: var(--chat-container-height, 700px);
+        width: var(--chat-container-width, 480px);
+        height: var(--chat-container-height, 600px);
       }
 
       .am-chat-widget--corner .am-chat-toggle {
@@ -124,7 +124,7 @@ export const variantStyles = {
       .am-chat-widget--centered .am-chat-container {
         width: var(--chat-container-width, 100%);
         max-width: var(--chat-container-max-width, 500px);
-        height: var(--chat-container-height, 700px);
+        height: var(--chat-container-height, 600px);
         margin: auto;
         border-radius: var(--chat-container-radius, 8px);
         display: flex !important;
