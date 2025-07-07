@@ -1,0 +1,1106 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ChatAgent Unified Demo - Testing Refactored Widget</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 20px;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            max-width: 1200px;
+            margin: 0 auto;
+            background: #f8f9fa;
+        }
+        
+        .header {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        
+        .header h1 {
+            margin: 0 0 10px 0;
+            color: #059669;
+        }
+        
+        .header p {
+            margin: 0;
+            color: #666;
+        }
+        
+        .status-bar {
+            background: #d1ecf1;
+            border: 1px solid #bee5eb;
+            color: #0c5460;
+            padding: 10px;
+            border-radius: 4px;
+            margin-bottom: 20px;
+            font-weight: 500;
+        }
+        
+        .status-bar.success {
+            background: #d4edda;
+            border-color: #c3e6cb;
+            color: #155724;
+        }
+        
+        .status-bar.error {
+            background: #f8d7da;
+            border-color: #f5c6cb;
+            color: #721c24;
+        }
+        
+        #chat-container {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            z-index: 1000;
+        }
+        .config-panel {
+            margin: 20px 0;
+            padding: 20px;
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .form-group {
+            margin-bottom: 15px;
+        }
+        .form-row {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 20px;
+        }
+        .form-column {
+            flex: 1;
+            min-width: 300px;
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: 500;
+        }
+        input, select {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            box-sizing: border-box;
+        }
+        input[type="checkbox"] {
+            width: auto;
+        }
+        input[type="color"] {
+            height: 40px;
+            padding: 2px;
+        }
+        .color-preview {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 1px solid #ccc;
+            border-radius: 3px;
+            vertical-align: middle;
+            margin-left: 5px;
+        }
+        .actions {
+            margin-top: 20px;
+            padding-top: 20px;
+            border-top: 1px solid #ddd;
+            display: flex;
+            justify-content: space-between;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+        button {
+            padding: 10px 20px;
+            margin-right: 10px;
+            background: #059669;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: 500;
+        }
+        button:hover {
+            background: #047857;
+        }
+        button.secondary {
+            background: #6b7280;
+        }
+        button.secondary:hover {
+            background: #4b5563;
+        }
+        button.danger {
+            background: #dc2626;
+        }
+        button.danger:hover {
+            background: #b91c1c;
+        }
+        .section-title {
+            margin-top: 0;
+            border-bottom: 1px solid #ddd;
+            padding-bottom: 10px;
+            color: #059669;
+        }
+        .storage-info {
+            margin-top: 15px;
+            font-family: monospace;
+            font-size: 12px;
+            padding: 10px;
+            background: #f8f9fa;
+            border: 1px solid #e9ecef;
+            border-radius: 4px;
+            max-height: 300px;
+            overflow: auto;
+            white-space: pre;
+        }
+        .tabs {
+            display: flex;
+            margin-bottom: 20px;
+            border-bottom: 1px solid #ddd;
+            background: white;
+            border-radius: 8px 8px 0 0;
+            overflow: hidden;
+        }
+        .tab {
+            padding: 15px 25px;
+            cursor: pointer;
+            border: none;
+            background: #f8f9fa;
+            border-bottom: 3px solid transparent;
+            margin: 0;
+            font-weight: 500;
+            transition: all 0.2s;
+        }
+        .tab:hover {
+            background: #e9ecef;
+        }
+        .tab.active {
+            background: white;
+            border-bottom-color: #059669;
+            color: #059669;
+        }
+        .tab-content {
+            display: none;
+        }
+        .tab-content.active {
+            display: block;
+        }
+        .test-results {
+            background: white;
+            border-radius: 8px;
+            padding: 20px;
+            margin-top: 20px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .test-item {
+            padding: 10px;
+            border-radius: 4px;
+            margin: 10px 0;
+            border-left: 4px solid;
+        }
+        .test-item.success {
+            background: #d4edda;
+            border-color: #28a745;
+            color: #155724;
+        }
+        .test-item.error {
+            background: #f8d7da;
+            border-color: #dc3545;
+            color: #721c24;
+        }
+        .test-item.info {
+            background: #d1ecf1;
+            border-color: #17a2b8;
+            color: #0c5460;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>🧪 ChatAgent Unified Demo</h1>
+        <p>Testing the refactored ChatAgent component with full configuration options</p>
+    </div>
+    
+    <div id="status-display" class="status-bar">
+        Initializing ChatAgent test environment...
+    </div>
+    
+    <div class="tabs">
+        <div class="tab active" data-tab="config">Configuration</div>
+        <div class="tab" data-tab="testing">Testing</div>
+        <div class="tab" data-tab="persistence">Persistence</div>
+        <div class="tab" data-tab="debug">Debug</div>
+    </div>
+    
+    <!-- Configuration Tab -->
+    <div class="tab-content active" id="config-tab">
+        <div class="config-panel">
+            <form id="configForm" onsubmit="return false;">
+                <div class="form-row">
+                    <!-- Basic Configuration -->
+                    <div class="form-column">
+                        <h2 class="section-title">Basic Settings</h2>
+                        
+                        <div class="form-group">
+                            <label for="apiUrl">API URL</label>
+                            <input type="text" id="apiUrl" value="http://localhost:8000">
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="agentToken">Agent Token</label>
+                            <input type="text" id="agentToken" value=".eJyrVipJzUvMK4nPTFGyMtRRSiwoyMlMTizJzM-DC6WnQuXNjWoBmfsQRw.aGdvKA.gM2XYb7-SdnG2CmBqHaWoGDR4zM" placeholder="Your agent token">
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="title">Widget Title</label>
+                            <input type="text" id="title" value="ChatAgent Test">
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="placeholder">Placeholder Text</label>
+                            <input type="text" id="placeholder" value="Type your message..." />
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="initialMessage">Initial Message</label>
+                            <input type="text" id="initialMessage" value="Hello! I'm ChatAgent, the refactored version. How can I help you?" />
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="variant">Widget Variant</label>
+                            <select id="variant">
+                                <option value="corner" selected>Corner (Floating Button)</option>
+                                <option value="inline">Inline (Embedded)</option>
+                                <option value="centered">Centered</option>
+                            </select>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="position">Widget Position</label>
+                            <select id="position">
+                                <option value="bottom-right">Bottom Right</option>
+                                <option value="bottom-left">Bottom Left</option>
+                                <option value="top-right">Top Right</option>
+                                <option value="top-left">Top Left</option>
+                            </select>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label>
+                                <input type="checkbox" id="initiallyOpen"> Initially Open
+                            </label>
+                        </div>
+                    </div>
+                    
+                    <!-- Message Prompts Configuration -->
+                    <div class="form-column">
+                        <h2 class="section-title">Message Prompts</h2>
+                        <div class="form-group">
+                            <label>
+                                <input type="checkbox" id="promptsShow" checked>
+                                Show Welcome Message & Prompts
+                            </label>
+                        </div>
+                        <div class="form-group">
+                            <label for="welcomeMessage">Welcome Message</label>
+                            <input type="text" id="welcomeMessage" value="Hello! I'm ChatAgent. How can I help you today?">
+                        </div>
+                        <div class="form-group">
+                            <label for="prompt1">Prompt 1</label>
+                            <input type="text" id="prompt1" value="What can you do?">
+                        </div>
+                        <div class="form-group">
+                            <label for="prompt2">Prompt 2</label>
+                            <input type="text" id="prompt2" value="Give me a tour">
+                        </div>
+                        <div class="form-group">
+                            <label for="prompt3">Prompt 3</label>
+                            <input type="text" id="prompt3" value="Help me get started">
+                        </div>
+                    </div>
+                    
+                    <!-- Theme Configuration -->
+                    <div class="form-column">
+                        <h2 class="section-title">Theme Settings</h2>
+                        
+                        <div class="form-group">
+                            <label for="headerBackgroundColor">Header Background</label>
+                            <input type="color" id="headerBackgroundColor" value="#059669">
+                            <span class="color-preview" style="background-color: #059669;"></span>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="headerTextColor">Header Text</label>
+                            <input type="color" id="headerTextColor" value="#FFFFFF">
+                            <span class="color-preview" style="background-color: #FFFFFF;"></span>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="backgroundColor">Widget Background</label>
+                            <input type="color" id="backgroundColor" value="#FFFFFF">
+                            <span class="color-preview" style="background-color: #FFFFFF;"></span>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="textColor">Text Color</label>
+                            <input type="color" id="textColor" value="#111827">
+                            <span class="color-preview" style="background-color: #111827;"></span>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="buttonColor">Button Color</label>
+                            <input type="color" id="buttonColor" value="#059669">
+                            <span class="color-preview" style="background-color: #059669;"></span>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="buttonTextColor">Button Text</label>
+                            <input type="color" id="buttonTextColor" value="#FFFFFF">
+                            <span class="color-preview" style="background-color: #FFFFFF;"></span>
+                        </div>
+                        
+                        <h3 style="margin-top: 20px; padding-top: 10px; border-top: 1px solid #ddd;">Toggle Button</h3>
+                        
+                        <div class="form-group">
+                            <label for="toggleText">Toggle Button Text</label>
+                            <input type="text" id="toggleText" value="Ask ChatAgent">
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="toggleBackgroundColor">Toggle Background</label>
+                            <input type="color" id="toggleBackgroundColor" value="#059669">
+                            <span class="color-preview" style="background-color: #059669;"></span>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="toggleTextColor">Toggle Text</label>
+                            <input type="color" id="toggleTextColor" value="#FFFFFF">
+                            <span class="color-preview" style="background-color: #FFFFFF;"></span>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="toggleIconColor">Toggle Icon</label>
+                            <input type="color" id="toggleIconColor" value="#FFFFFF">
+                            <span class="color-preview" style="background-color: #FFFFFF;"></span>
+                        </div>
+                    </div>
+                    
+                    <!-- Message Styling -->
+                    <div class="form-column">
+                        <h2 class="section-title">Message Styling</h2>
+                        
+                        <div class="form-group">
+                            <label for="userBackgroundColor">User Message Background</label>
+                            <input type="color" id="userBackgroundColor" value="#059669">
+                            <span class="color-preview" style="background-color: #059669;"></span>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="userForegroundColor">User Message Text</label>
+                            <input type="color" id="userForegroundColor" value="#FFFFFF">
+                            <span class="color-preview" style="background-color: #FFFFFF;"></span>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="agentBackgroundColor">Agent Message Background</label>
+                            <input type="color" id="agentBackgroundColor" value="#f3f4f6">
+                            <span class="color-preview" style="background-color: #f3f4f6;"></span>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="agentForegroundColor">Agent Message Text</label>
+                            <input type="color" id="agentForegroundColor" value="#111827">
+                            <span class="color-preview" style="background-color: #111827;"></span>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="userIconColor">User Icon Color</label>
+                            <input type="color" id="userIconColor" value="#059669">
+                            <span class="color-preview" style="background-color: #059669;"></span>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="agentIconColor">Agent Icon Color</label>
+                            <input type="color" id="agentIconColor" value="#059669">
+                            <span class="color-preview" style="background-color: #059669;"></span>
+                        </div>
+                        
+                        <h2 class="section-title">Other Settings</h2>
+                        
+                        <div class="form-group">
+                            <label>
+                                <input type="checkbox" id="persistenceEnabled" checked> Enable Persistence
+                            </label>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label>
+                                <input type="checkbox" id="enableAttachments"> Enable File Attachments
+                            </label>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="persistenceDays">Days to Keep Messages</label>
+                            <input type="number" id="persistenceDays" value="7" min="1" max="30">
+                        </div>
+                        
+                        <div class="form-group">
+                            <label>
+                                <input type="checkbox" id="hideBranding"> Hide Branding Links
+                            </label>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="actions">
+                    <div>
+                        <button type="button" onclick="resetConfig()" class="secondary">Reset to Defaults</button>
+                        <button type="button" onclick="applyConfig()">Apply Configuration</button>
+                    </div>
+                    <div>
+                        <button type="button" onclick="testBasicFunctionality()">Quick Test</button>
+                        <button type="button" onclick="runAllTests()">Run All Tests</button>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+    
+    <!-- Testing Tab -->
+    <div class="tab-content" id="testing-tab">
+        <div class="config-panel">
+            <h2 class="section-title">ChatAgent Testing Suite</h2>
+            
+            <div class="form-row">
+                <div class="form-column">
+                    <h3>Individual Tests</h3>
+                    <button onclick="testInitialization()">Test Initialization</button>
+                    <button onclick="testToggleChat()">Test Toggle Chat</button>
+                    <button onclick="testSendMessage()">Test Send Message</button>
+                    <button onclick="testUIManager()">Test UI Manager</button>
+                    <button onclick="testThemeUpdate()">Test Theme Update</button>
+                    <button onclick="testDestroy()">Test Destroy</button>
+                </div>
+                <div class="form-column">
+                    <h3>Component Tests</h3>
+                    <button onclick="testComponentArchitecture()">Test Component Architecture</button>
+                    <button onclick="testEventHandling()">Test Event Handling</button>
+                    <button onclick="testStateManagement()">Test State Management</button>
+                    <button onclick="testCleanup()">Test Cleanup</button>
+                </div>
+            </div>
+            
+            <div class="test-results">
+                <h3>Test Results</h3>
+                <div id="test-results-container">
+                    <div class="test-item info">No tests run yet. Click a test button above to begin.</div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Persistence Tab -->
+    <div class="tab-content" id="persistence-tab">
+        <div class="config-panel">
+            <h2 class="section-title">Persistence Controls</h2>
+            
+            <div class="form-row">
+                <div class="form-column">
+                    <button onclick="reloadPage()">Reload Page</button>
+                    <button onclick="clearStorage()" class="danger">Clear Storage</button>
+                    <button onclick="showStorage()">Show Storage</button>
+                    <button onclick="showConversationId()">Show Conversation ID</button>
+                </div>
+            </div>
+            
+            <div class="storage-info" id="storageInfo"></div>
+        </div>
+    </div>
+    
+    <!-- Debug Tab -->
+    <div class="tab-content" id="debug-tab">
+        <div class="config-panel">
+            <h2 class="section-title">Debug Information</h2>
+            
+            <div class="form-row">
+                <div class="form-column">
+                    <button onclick="showWidgetState()">Show Widget State</button>
+                    <button onclick="showWidgetMethods()">Show Widget Methods</button>
+                    <button onclick="showUIManager()">Show UI Manager</button>
+                    <button onclick="showComponentInfo()">Show Component Info</button>
+                </div>
+            </div>
+            
+            <div class="storage-info" id="debugInfo"></div>
+        </div>
+    </div>
+    
+    <div id="chat-container"></div>
+    
+    <!-- Include the bundled widget -->
+    <script src="dist/index.js"></script>
+    
+    <script>
+        let chatAgent;
+        let testResults = [];
+        
+        function updateStatus(message, type = 'info') {
+            const statusEl = document.getElementById('status-display');
+            statusEl.textContent = message;
+            statusEl.className = `status-bar ${type}`;
+        }
+        
+        function addTestResult(testName, passed, details = '') {
+            testResults.push({
+                testName,
+                passed,
+                details,
+                timestamp: new Date()
+            });
+            updateTestResultsDisplay();
+        }
+        
+        function updateTestResultsDisplay() {
+            const container = document.getElementById('test-results-container');
+            if (testResults.length === 0) {
+                container.innerHTML = '<div class="test-item info">No tests run yet. Click a test button above to begin.</div>';
+                return;
+            }
+            
+            container.innerHTML = testResults.map(result => `
+                <div class="test-item ${result.passed ? 'success' : 'error'}">
+                    <strong>${result.testName}</strong>: ${result.passed ? 'PASSED ✅' : 'FAILED ❌'}
+                    ${result.details ? `<br><small>${result.details}</small>` : ''}
+                    <br><small>${result.timestamp.toLocaleTimeString()}</small>
+                </div>
+            `).join('');
+        }
+        
+        // Initialize the widget with ChatAgent
+        function initWidget() {
+            console.log('🚀 Initializing ChatAgent...');
+            
+            // Get the ChatAgent class
+            const ChatAgent = window.AgentmanChatWidget?.ChatAgent;
+            
+            if (!ChatAgent) {
+                updateStatus('❌ ChatAgent class not found! Make sure the build includes ChatAgent.', 'error');
+                console.error('ChatAgent not available in AgentmanChatWidget:', window.AgentmanChatWidget);
+                return;
+            }
+            
+            console.log('✅ ChatAgent class found');
+            updateStatus('✅ ChatAgent class loaded successfully', 'success');
+            
+            try {
+                // Create ChatAgent instance
+                chatAgent = new ChatAgent(getFormConfig());
+                console.log('✅ ChatAgent initialized:', chatAgent);
+                updateStatus('✅ ChatAgent initialized and ready for testing', 'success');
+            } catch (error) {
+                console.error('❌ Failed to initialize ChatAgent:', error);
+                updateStatus(`❌ Failed to initialize ChatAgent: ${error.message}`, 'error');
+            }
+        }
+        
+        function getFormConfig() {
+            return {
+                apiUrl: document.getElementById('apiUrl').value,
+                agentToken: document.getElementById('agentToken').value,
+                title: document.getElementById('title').value,
+                placeholder: document.getElementById('placeholder').value,
+                variant: document.getElementById('variant').value,
+                position: document.getElementById('position').value,
+                initiallyOpen: document.getElementById('initiallyOpen').checked,
+                containerId: 'chat-container',
+                initialMessage: document.getElementById('initialMessage').value || undefined,
+                toggleText: document.getElementById('toggleText').value,
+                
+                // Message Prompts
+                messagePrompts: {
+                    show: document.getElementById('promptsShow').checked,
+                    welcome_message: document.getElementById('welcomeMessage').value,
+                    prompts: [
+                        document.getElementById('prompt1').value,
+                        document.getElementById('prompt2').value,
+                        document.getElementById('prompt3').value
+                    ]
+                },
+                
+                theme: {
+                    headerBackgroundColor: document.getElementById('headerBackgroundColor').value,
+                    headerTextColor: document.getElementById('headerTextColor').value,
+                    backgroundColor: document.getElementById('backgroundColor').value,
+                    textColor: document.getElementById('textColor').value,
+                    buttonColor: document.getElementById('buttonColor').value,
+                    buttonTextColor: document.getElementById('buttonTextColor').value,
+                    toggleBackgroundColor: document.getElementById('toggleBackgroundColor').value,
+                    toggleTextColor: document.getElementById('toggleTextColor').value,
+                    toggleIconColor: document.getElementById('toggleIconColor').value,
+                    userBackgroundColor: document.getElementById('userBackgroundColor').value,
+                    userForegroundColor: document.getElementById('userForegroundColor').value,
+                    agentBackgroundColor: document.getElementById('agentBackgroundColor').value,
+                    agentForegroundColor: document.getElementById('agentForegroundColor').value,
+                    userIconColor: document.getElementById('userIconColor').value,
+                    agentIconColor: document.getElementById('agentIconColor').value,
+                },
+                
+                hideBranding: document.getElementById('hideBranding').checked,
+                enableAttachments: document.getElementById('enableAttachments').checked,
+                
+                persistence: {
+                    enabled: document.getElementById('persistenceEnabled').checked,
+                    days: parseInt(document.getElementById('persistenceDays').value, 10)
+                }
+            };
+        }
+        
+        function applyConfig() {
+            console.log('🔄 Applying new configuration...');
+            updateStatus('🔄 Applying new configuration...', 'info');
+            
+            // Remove existing widget
+            if (chatAgent) {
+                console.log('🗑️ Destroying existing ChatAgent instance');
+                chatAgent.destroy();
+                chatAgent = null;
+            }
+            
+            // Small delay to ensure cleanup is complete
+            setTimeout(() => {
+                const newConfig = getFormConfig();
+                console.log('📋 New configuration:', newConfig);
+                
+                const ChatAgent = window.AgentmanChatWidget?.ChatAgent;
+                if (!ChatAgent) {
+                    updateStatus('❌ ChatAgent class not found!', 'error');
+                    return;
+                }
+                
+                try {
+                    chatAgent = new ChatAgent(newConfig);
+                    updateStatus('✅ Configuration applied successfully', 'success');
+                    console.log('✅ ChatAgent configuration applied successfully');
+                } catch (error) {
+                    console.error('❌ Error creating new ChatAgent:', error);
+                    updateStatus(`❌ Error applying configuration: ${error.message}`, 'error');
+                }
+            }, 100);
+        }
+        
+        function resetConfig() {
+            console.log('🔄 Resetting configuration to defaults...');
+            
+            // Reset form to defaults
+            // document.getElementById('apiUrl').value = 'https://studio-api.agentman.ai';
+            // document.getElementById('agentToken').value = 'test-token-123';
+
+            document.getElementById('agentToken').value = '.eJyrVipJzUvMK4nPTFGyMtRRSiwoyMlMTizJzM-DC6WnQuXNjWoBmfsQRw.aGdvKA.gM2XYb7-SdnG2CmBqHaWoGDR4zM';
+            document.getElementById('apiUrl').value = 'http://localhost:8000';
+            
+            document.getElementById('title').value = 'ChatAgent Test';
+            document.getElementById('placeholder').value = 'Type your message...';
+            document.getElementById('variant').value = 'corner';
+            document.getElementById('position').value = 'bottom-right';
+            document.getElementById('initiallyOpen').checked = false;
+            document.getElementById('initialMessage').value = 'Hello! I\'m ChatAgent, the refactored version. How can I help you?';
+            document.getElementById('toggleText').value = 'Ask ChatAgent';
+            
+            // Message Prompts
+            document.getElementById('promptsShow').checked = true;
+            document.getElementById('welcomeMessage').value = 'Hello! I\'m ChatAgent. How can I help you today?';
+            document.getElementById('prompt1').value = 'What can you do?';
+            document.getElementById('prompt2').value = 'Give me a tour';
+            document.getElementById('prompt3').value = 'Help me get started';
+            
+            // Theme settings
+            document.getElementById('headerBackgroundColor').value = '#059669';
+            document.getElementById('headerTextColor').value = '#FFFFFF';
+            document.getElementById('backgroundColor').value = '#FFFFFF';
+            document.getElementById('textColor').value = '#111827';
+            document.getElementById('buttonColor').value = '#059669';
+            document.getElementById('buttonTextColor').value = '#FFFFFF';
+            document.getElementById('toggleBackgroundColor').value = '#059669';
+            document.getElementById('toggleTextColor').value = '#FFFFFF';
+            document.getElementById('toggleIconColor').value = '#FFFFFF';
+            
+            // Message styling
+            document.getElementById('userBackgroundColor').value = '#059669';
+            document.getElementById('userForegroundColor').value = '#FFFFFF';
+            document.getElementById('agentBackgroundColor').value = '#f3f4f6';
+            document.getElementById('agentForegroundColor').value = '#111827';
+            document.getElementById('userIconColor').value = '#059669';
+            document.getElementById('agentIconColor').value = '#059669';
+            
+            // Other settings
+            document.getElementById('persistenceEnabled').checked = true;
+            document.getElementById('persistenceDays').value = '7';
+            document.getElementById('hideBranding').checked = false;
+            document.getElementById('enableAttachments').checked = false;
+            
+            updateColorPreviews();
+            updateStatus('🔄 Configuration reset to defaults', 'info');
+        }
+        
+        // Testing functions
+        function testInitialization() {
+            console.log('🧪 Testing ChatAgent initialization...');
+            
+            try {
+                const ChatAgent = window.AgentmanChatWidget?.ChatAgent;
+                if (!ChatAgent) {
+                    throw new Error('ChatAgent class not available');
+                }
+                
+                // Check if current instance exists and is properly initialized
+                if (!chatAgent) {
+                    throw new Error('No ChatAgent instance found');
+                }
+                
+                // Check if widget element was created
+                const widgetElement = document.querySelector('.am-chat-widget');
+                if (!widgetElement) {
+                    throw new Error('Widget element not created in DOM');
+                }
+                
+                addTestResult('Initialization', true, 'ChatAgent instance created and DOM element present');
+                updateStatus('✅ Initialization test passed', 'success');
+                
+            } catch (error) {
+                addTestResult('Initialization', false, error.message);
+                updateStatus(`❌ Initialization test failed: ${error.message}`, 'error');
+            }
+        }
+        
+        function testToggleChat() {
+            console.log('🧪 Testing chat toggle functionality...');
+            
+            try {
+                if (!chatAgent) {
+                    throw new Error('ChatAgent not initialized');
+                }
+                
+                if (typeof chatAgent.toggleChat !== 'function') {
+                    throw new Error('toggleChat method not available');
+                }
+                
+                chatAgent.toggleChat();
+                addTestResult('Toggle Chat', true, 'toggleChat() method executed successfully');
+                updateStatus('✅ Toggle chat test passed', 'success');
+                
+            } catch (error) {
+                addTestResult('Toggle Chat', false, error.message);
+                updateStatus(`❌ Toggle chat test failed: ${error.message}`, 'error');
+            }
+        }
+        
+        function testSendMessage() {
+            console.log('🧪 Testing message sending...');
+            
+            try {
+                if (!chatAgent) {
+                    throw new Error('ChatAgent not initialized');
+                }
+                
+                // Find input field and send button
+                const input = document.querySelector('.am-chat-input');
+                const sendButton = document.querySelector('.am-chat-send');
+                
+                if (!input || !sendButton) {
+                    throw new Error('Input field or send button not found in DOM');
+                }
+                
+                // Simulate typing a message
+                input.value = 'Hello ChatAgent! This is a test message from the testing suite.';
+                
+                // Trigger input event
+                input.dispatchEvent(new Event('input'));
+                
+                // Check if send button is enabled
+                if (sendButton.disabled) {
+                    throw new Error('Send button is still disabled after adding text');
+                }
+                
+                // Click send button
+                sendButton.click();
+                
+                addTestResult('Send Message', true, 'Message input simulation and send button click successful');
+                updateStatus('✅ Send message test passed', 'success');
+                
+            } catch (error) {
+                addTestResult('Send Message', false, error.message);
+                updateStatus(`❌ Send message test failed: ${error.message}`, 'error');
+            }
+        }
+        
+        function testUIManager() {
+            console.log('🧪 Testing UI Manager component...');
+            
+            try {
+                if (!chatAgent) {
+                    throw new Error('ChatAgent not initialized');
+                }
+                
+                // Check if UIManager is available
+                if (!chatAgent.uiManager) {
+                    throw new Error('UIManager component not found');
+                }
+                
+                // Test UIManager methods
+                const rootElement = chatAgent.uiManager.getRootElement();
+                if (!rootElement) {
+                    throw new Error('UIManager.getRootElement() returned null');
+                }
+                
+                const testElement = chatAgent.uiManager.getElement('.am-chat-messages');
+                if (!testElement) {
+                    throw new Error('UIManager.getElement() failed to find messages container');
+                }
+                
+                addTestResult('UI Manager', true, 'UIManager component is working and methods are accessible');
+                updateStatus('✅ UI Manager test passed', 'success');
+                
+            } catch (error) {
+                addTestResult('UI Manager', false, error.message);
+                updateStatus(`❌ UI Manager test failed: ${error.message}`, 'error');
+            }
+        }
+        
+        function testThemeUpdate() {
+            console.log('🧪 Testing theme update functionality...');
+            
+            try {
+                if (!chatAgent) {
+                    throw new Error('ChatAgent not initialized');
+                }
+                
+                // Test theme update through UIManager
+                if (!chatAgent.uiManager || typeof chatAgent.uiManager.updateTheme !== 'function') {
+                    throw new Error('UIManager.updateTheme method not available');
+                }
+                
+                // Apply a test theme
+                chatAgent.uiManager.updateTheme({
+                    headerBackgroundColor: '#ff6b6b',
+                    headerTextColor: '#ffffff'
+                });
+                
+                addTestResult('Theme Update', true, 'Theme update through UIManager executed successfully');
+                updateStatus('✅ Theme update test passed', 'success');
+                
+            } catch (error) {
+                addTestResult('Theme Update', false, error.message);
+                updateStatus(`❌ Theme update test failed: ${error.message}`, 'error');
+            }
+        }
+        
+        function testDestroy() {
+            console.log('🧪 Testing widget destruction...');
+            
+            try {
+                if (!chatAgent) {
+                    throw new Error('ChatAgent not initialized');
+                }
+                
+                // Get widget element before destruction
+                const widgetElement = document.querySelector('.am-chat-widget');
+                if (!widgetElement) {
+                    throw new Error('Widget element not found before destruction');
+                }
+                
+                chatAgent.destroy();
+                
+                // Check if widget element was removed
+                const elementAfterDestroy = document.querySelector('.am-chat-widget');
+                if (elementAfterDestroy) {
+                    throw new Error('Widget element still exists after destroy');
+                }
+                
+                addTestResult('Destroy', true, 'Widget properly destroyed and cleaned up from DOM');
+                updateStatus('✅ Destroy test passed', 'success');
+                
+                chatAgent = null; // Clear reference
+                
+            } catch (error) {
+                addTestResult('Destroy', false, error.message);
+                updateStatus(`❌ Destroy test failed: ${error.message}`, 'error');
+            }
+        }
+        
+        function testBasicFunctionality() {
+            console.log('🧪 Running basic functionality test...');
+            updateStatus('🧪 Running basic functionality test...', 'info');
+            testResults = []; // Clear previous results
+            
+            setTimeout(() => testInitialization(), 100);
+            setTimeout(() => testToggleChat(), 500);
+            setTimeout(() => testSendMessage(), 1000);
+            setTimeout(() => {
+                const passed = testResults.filter(r => r.passed).length;
+                const total = testResults.length;
+                updateStatus(`✅ Basic test complete: ${passed}/${total} tests passed`, passed === total ? 'success' : 'error');
+            }, 1500);
+        }
+        
+        function runAllTests() {
+            console.log('🧪 Running complete test suite...');
+            updateStatus('🧪 Running complete test suite...', 'info');
+            testResults = []; // Clear previous results
+            
+            // Run tests in sequence
+            setTimeout(() => testInitialization(), 100);
+            setTimeout(() => testToggleChat(), 500);
+            setTimeout(() => testSendMessage(), 1000);
+            setTimeout(() => testUIManager(), 1500);
+            setTimeout(() => testThemeUpdate(), 2000);
+            setTimeout(() => testDestroy(), 2500);
+            setTimeout(() => {
+                const passed = testResults.filter(r => r.passed).length;
+                const total = testResults.length;
+                updateStatus(`🎉 All tests complete: ${passed}/${total} tests passed`, passed === total ? 'success' : 'error');
+                
+                // Reinitialize widget after destroy test
+                if (passed === total) {
+                    setTimeout(() => {
+                        initWidget();
+                        updateStatus('✅ Widget reinitialized after successful test suite', 'success');
+                    }, 1000);
+                }
+            }, 3000);
+        }
+        
+        // Placeholder functions for other tabs (copied from original)
+        function reloadPage() { window.location.reload(); }
+        function clearStorage() { 
+            if (chatAgent && chatAgent.clearStorage) {
+                chatAgent.clearStorage();
+                updateStatus('🗑️ Storage cleared', 'info');
+            }
+        }
+        function showStorage() { 
+            document.getElementById('storageInfo').textContent = 'Storage inspection not yet implemented for ChatAgent';
+        }
+        function showConversationId() {
+            document.getElementById('storageInfo').textContent = chatAgent ? `Conversation ID: ${chatAgent.conversationId || 'Not available'}` : 'ChatAgent not initialized';
+        }
+        function showWidgetState() {
+            const debugInfo = document.getElementById('debugInfo');
+            if (chatAgent && chatAgent.stateManager) {
+                debugInfo.textContent = JSON.stringify(chatAgent.stateManager.getState(), null, 2);
+            } else {
+                debugInfo.textContent = 'State Manager not available';
+            }
+        }
+        function showWidgetMethods() {
+            const debugInfo = document.getElementById('debugInfo');
+            if (chatAgent) {
+                const methods = Object.getOwnPropertyNames(Object.getPrototypeOf(chatAgent))
+                    .filter(prop => typeof chatAgent[prop] === 'function');
+                debugInfo.textContent = JSON.stringify(methods, null, 2);
+            } else {
+                debugInfo.textContent = 'ChatAgent not initialized';
+            }
+        }
+        function showUIManager() {
+            const debugInfo = document.getElementById('debugInfo');
+            if (chatAgent && chatAgent.uiManager) {
+                const info = {
+                    hasUIManager: true,
+                    rootElement: !!chatAgent.uiManager.getRootElement(),
+                    methods: Object.getOwnPropertyNames(Object.getPrototypeOf(chatAgent.uiManager))
+                        .filter(prop => typeof chatAgent.uiManager[prop] === 'function')
+                };
+                debugInfo.textContent = JSON.stringify(info, null, 2);
+            } else {
+                debugInfo.textContent = 'UIManager not available';
+            }
+        }
+        function showComponentInfo() {
+            const debugInfo = document.getElementById('debugInfo');
+            if (chatAgent) {
+                const info = {
+                    hasUIManager: !!chatAgent.uiManager,
+                    hasStateManager: !!chatAgent.stateManager,
+                    hasMessageRenderer: !!chatAgent.messageRenderer,
+                    hasStyleManager: !!chatAgent.styleManager,
+                    conversationId: chatAgent.conversationId,
+                    isInitialized: chatAgent.isInitialized
+                };
+                debugInfo.textContent = JSON.stringify(info, null, 2);
+            } else {
+                debugInfo.textContent = 'ChatAgent not initialized';
+            }
+        }
+        
+        // Update color previews
+        function updateColorPreviews() {
+            document.querySelectorAll('input[type="color"]').forEach(input => {
+                const preview = input.nextElementSibling;
+                if (preview && preview.classList.contains('color-preview')) {
+                    preview.style.backgroundColor = input.value;
+                }
+            });
+        }
+        
+        // Tab switching
+        function setupTabs() {
+            document.querySelectorAll('.tab').forEach(tab => {
+                tab.addEventListener('click', () => {
+                    // Remove active class from all tabs
+                    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+                    document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+                    
+                    // Add active class to clicked tab
+                    tab.classList.add('active');
+                    
+                    // Show corresponding content
+                    const tabId = tab.getAttribute('data-tab');
+                    document.getElementById(`${tabId}-tab`).classList.add('active');
+                });
+            });
+        }
+        
+        // Initialize color preview updates
+        document.querySelectorAll('input[type="color"]').forEach(input => {
+            input.addEventListener('input', function() {
+                const preview = this.nextElementSibling;
+                if (preview && preview.classList.contains('color-preview')) {
+                    preview.style.backgroundColor = this.value;
+                }
+            });
+        });
+        
+        // Initialize on page load
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('📄 Page loaded, initializing ChatAgent test environment...');
+            updateStatus('📄 Page loaded, checking ChatAgent availability...', 'info');
+            
+            setupTabs();
+            updateColorPreviews();
+            
+            // Check if AgentmanChatWidget is available
+            if (typeof window.AgentmanChatWidget !== 'undefined') {
+                console.log('✅ AgentmanChatWidget library found');
+                
+                if (window.AgentmanChatWidget.ChatAgent) {
+                    console.log('✅ ChatAgent class is available!');
+                    updateStatus('✅ ChatAgent class found, initializing...', 'success');
+                    initWidget();
+                } else {
+                    console.error('❌ ChatAgent class not found in library');
+                    updateStatus('❌ ChatAgent class not found. Was the build successful?', 'error');
+                }
+            } else {
+                console.error('❌ AgentmanChatWidget library not loaded');
+                updateStatus('❌ AgentmanChatWidget library not loaded', 'error');
+            }
+        });
+    </script>
+</body>
+</html>

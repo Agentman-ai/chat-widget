@@ -88,6 +88,12 @@ export interface ChatConfig {
   hideBranding?: boolean;
   /** Enable/disable file attachments (disabled by default) */
   enableAttachments?: boolean;
+  /** Client metadata to send with API requests */
+  clientMetadata?: Partial<ClientMetadata>;
+  /** Enable automatic client metadata collection */
+  collectClientMetadata?: boolean;
+  /** Enable IP address collection (requires external API call) */
+  collectIPAddress?: boolean;
 }
 
 export interface FileAttachment {
@@ -135,4 +141,32 @@ export interface PersistenceConfig {
   enabled?: boolean;
   days?: number;
   key?: string;
+}
+
+export interface AgentMetadata {
+  supported_mime_types?: string[];
+  supports_attachments?: boolean;
+  model_name?: string;
+  model_version?: string;
+  capabilities?: string[];
+  max_file_size?: number;
+  max_attachments?: number;
+  [key: string]: any;
+}
+
+export interface ClientMetadata {
+  user_id?: string | number;
+  user_email_address?: string;
+  device_id?: string;
+  browser_language?: string;
+  browser_device?: string;
+  browser_timezone?: string;
+  ip_address?: string;
+  session_id?: string;
+  user_agent?: string;
+  referer_url?: string;
+  page_url?: string;
+  geo_location?: string;
+  is_authenticated?: boolean;
+  custom_tags?: Record<string, any>;
 }

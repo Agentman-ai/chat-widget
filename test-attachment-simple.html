@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Simple Attachment Test</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            background: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            max-width: 800px;
+            margin: 0 auto;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        #output {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 4px;
+            font-family: monospace;
+            font-size: 12px;
+            white-space: pre-wrap;
+            border: 1px solid #ddd;
+            margin: 10px 0;
+        }
+        button {
+            background: #059669;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        button:hover {
+            background: #047857;
+        }
+        #chat-container {
+            width: 100%;
+            height: 400px;
+            border: 1px solid #ddd;
+            margin: 20px 0;
+            border-radius: 4px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Simple Attachment Test</h1>
+        <p>Testing attachment rendering in chat widget</p>
+        
+        <button onclick="createWidget()">Create Widget</button>
+        <button onclick="addTestMessage()">Add Message with Attachments</button>
+        <button onclick="inspectDOM()">Inspect DOM</button>
+        <button onclick="clearOutput()">Clear Output</button>
+        
+        <div id="output">Ready...</div>
+        
+        <div id="chat-container"></div>
+    </div>
+    
+    <!-- Include the bundled widget -->
+    <script src="dist/index.js"></script>
+    
+    <script>
+        let widget = null;
+        
+        function log(message) {
+            const output = document.getElementById('output');
+            output.textContent += new Date().toLocaleTimeString() + ': ' + message + '\n';
+            console.log(message);
+        }
+        
+        function clearOutput() {
+            document.getElementById('output').textContent = 'Cleared.\n';
+        }
+        
+        function createWidget() {
+            log('Creating chat widget...');
+            
+            try {
+                if (widget) {
+                    widget.destroy();
+                    widget = null;
+                }
+                
+                const { ChatWidget } = window.AgentmanChatWidget;
+                if (!ChatWidget) {
+                    throw new Error('ChatWidget not found');
+                }
+                
+                const config = {
+                    apiUrl: 'http://localhost:8000',
+                    agentToken: 'test-token',
+                    variant: 'inline',
+                    containerId: 'chat-container',
+                    enableAttachments: true,
+                    title: 'Attachment Test'
+                };
+                
+                widget = new ChatWidget(config);
+                log('✅ Widget created successfully');
+                
+                // Wait for initialization
+                setTimeout(() => {
+                    const container = document.querySelector('.am-chat-container');
+                    if (container) {
+                        log('✅ Widget container found in DOM');
+                    } else {
+                        log('❌ Widget container not found');
+                    }
+                }, 1000);
+                
+            } catch (error) {
+                log('❌ Error creating widget: ' + error.message);
+            }
+        }
+        
+        function addTestMessage() {
+            log('Adding test message with attachments...');
+            
+            if (!widget) {
+                log('❌ Widget not created yet');
+                return;
+            }
+            
+            try {
+                const testMessage = {
+                    id: 'test-msg-' + Date.now(),
+                    sender: 'user',
+                    content: 'Here are my files for the project:',
+                    timestamp: new Date().toISOString(),
+                    type: 'text',
+                    attachments: [
+                        {
+                            file_id: 'file-1',
+                            filename: 'document.pdf',
+                            content_type: 'application/pdf',
+                            file_type: 'document',
+                            size_bytes: 1024000,
+                            url: 'https://example.com/file1.pdf',
+                            upload_status: 'success'
+                        },
+                        {
+                            file_id: 'file-2',
+                            filename: 'sample-image.jpg',
+                            content_type: 'image/jpeg',
+                            file_type: 'image',
+                            size_bytes: 512000,
+                            url: 'https://picsum.photos/200/150',
+                            upload_status: 'success'
+                        }
+                    ]
+                };
+                
+                log('Adding message: ' + JSON.stringify(testMessage.attachments, null, 2));
+                widget.addMessage(testMessage);
+                log('✅ Test message added');
+                
+                // Check if attachments are rendered
+                setTimeout(() => {
+                    inspectDOM();
+                }, 500);
+                
+            } catch (error) {
+                log('❌ Error adding message: ' + error.message);
+            }
+        }
+        
+        function inspectDOM() {
+            log('Inspecting DOM for attachment elements...');
+            
+            const messagesContainer = document.querySelector('.am-chat-messages');
+            if (!messagesContainer) {
+                log('❌ Messages container not found');
+                return;
+            }
+            
+            log('✅ Messages container found');
+            log('Messages HTML length: ' + messagesContainer.innerHTML.length);
+            
+            // Look for attachment-related classes
+            const attachmentContainers = messagesContainer.querySelectorAll('.chat-message-attachments');
+            log('Found ' + attachmentContainers.length + ' attachment containers');
+            
+            const attachmentItems = messagesContainer.querySelectorAll('.chat-message-attachment');
+            log('Found ' + attachmentItems.length + ' attachment items');
+            
+            const attachmentIcons = messagesContainer.querySelectorAll('.chat-attachment-icon');
+            log('Found ' + attachmentIcons.length + ' attachment icons');
+            
+            const attachmentThumbnails = messagesContainer.querySelectorAll('.chat-attachment-thumbnail');
+            log('Found ' + attachmentThumbnails.length + ' attachment thumbnails');
+            
+            // Show the actual HTML of the last message
+            const messages = messagesContainer.querySelectorAll('.am-message');
+            if (messages.length > 0) {
+                const lastMessage = messages[messages.length - 1];
+                log('Last message HTML:');
+                log(lastMessage.innerHTML);
+            } else {
+                log('No messages found');
+            }
+            
+            // Check for attachment styles
+            const styles = document.querySelectorAll('style');
+            let foundAttachmentStyles = false;
+            styles.forEach((style, index) => {
+                if (style.textContent.includes('chat-message-attachments')) {
+                    foundAttachmentStyles = true;
+                    log('✅ Found attachment styles in style element ' + index);
+                }
+            });
+            
+            if (!foundAttachmentStyles) {
+                log('❌ No attachment styles found');
+            }
+        }
+        
+        // Initialize
+        document.addEventListener('DOMContentLoaded', function() {
+            log('Page loaded');
+            log('AgentmanChatWidget available: ' + (typeof window.AgentmanChatWidget !== 'undefined'));
+            
+            if (window.AgentmanChatWidget) {
+                log('Available exports: ' + Object.keys(window.AgentmanChatWidget).join(', '));
+            }
+        });
+    </script>
+</body>
+</html>

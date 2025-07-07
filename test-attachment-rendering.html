@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Attachment Rendering</title>
+</head>
+<body>
+    <div id="chat-container"></div>
+    
+    <script src="./dist/index.js"></script>
+    <script>
+        // Initialize chat widget with attachments enabled
+        window.ChatAgent.init({
+            apiUrl: 'https://test-api.example.com',
+            agentToken: 'test-token-123',
+            variant: 'inline',
+            containerId: 'chat-container',
+            title: 'Test Chat with Attachments',
+            enableAttachments: true,
+            theme: {
+                textColor: '#000000',
+                backgroundColor: '#ffffff'
+            }
+        });
+
+        // Test attachment rendering after 2 seconds
+        setTimeout(() => {
+            const chatInstance = window.ChatAgent.getInstance('chat-container');
+            if (chatInstance) {
+                // Test message with image attachment
+                const messageWithImage = {
+                    id: 'test-msg-1',
+                    sender: 'user',
+                    content: 'Here is my screenshot:',
+                    timestamp: new Date().toISOString(),
+                    type: 'text',
+                    attachments: [{
+                        file_id: 'test-image-1',
+                        filename: 'screenshot.png',
+                        content_type: 'image/png',
+                        file_type: 'image',
+                        size_bytes: 245760,
+                        url: 'https://via.placeholder.com/300x200/0066cc/ffffff?text=Test+Image',
+                        upload_status: 'success'
+                    }]
+                };
+
+                // Test message with document attachment
+                const messageWithDocument = {
+                    id: 'test-msg-2',
+                    sender: 'agent',
+                    content: 'Here is the document you requested:',
+                    timestamp: new Date().toISOString(),
+                    type: 'text',
+                    attachments: [{
+                        file_id: 'test-doc-1',
+                        filename: 'report.pdf',
+                        content_type: 'application/pdf',
+                        file_type: 'document',
+                        size_bytes: 1048576,
+                        url: 'https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf',
+                        upload_status: 'success'
+                    }]
+                };
+
+                // Test message with multiple attachments
+                const messageWithMultiple = {
+                    id: 'test-msg-3',
+                    sender: 'user',
+                    content: 'Multiple files attached:',
+                    timestamp: new Date().toISOString(),
+                    type: 'text',
+                    attachments: [
+                        {
+                            file_id: 'test-audio-1',
+                            filename: 'recording.mp3',
+                            content_type: 'audio/mpeg',
+                            file_type: 'audio',
+                            size_bytes: 512000,
+                            url: '#',
+                            upload_status: 'success'
+                        },
+                        {
+                            file_id: 'test-video-1',
+                            filename: 'demo.mp4',
+                            content_type: 'video/mp4',
+                            file_type: 'video',
+                            size_bytes: 5242880,
+                            url: '#',
+                            upload_status: 'success'
+                        }
+                    ]
+                };
+
+                // Add messages to test attachment rendering
+                chatInstance.addMessage(messageWithImage);
+                setTimeout(() => chatInstance.addMessage(messageWithDocument), 1000);
+                setTimeout(() => chatInstance.addMessage(messageWithMultiple), 2000);
+                
+                console.log('Test messages with attachments added!');
+            }
+        }, 2000);
+    </script>
+</body>
+</html>

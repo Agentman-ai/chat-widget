@@ -1,12 +1,13 @@
 // PersistenceManager.ts
 import { v4 as uuid } from "uuid";
-import type { Message } from "./types/types";
+import type { Message, AgentMetadata } from "./types/types";
 import { StateManager } from "./StateManager";
 
 export interface ConversationMeta {
   id: string;
   title: string;
   lastUpdated: number;
+  metadata?: AgentMetadata;
 }
 
 interface IndexPayload {
@@ -19,6 +20,7 @@ interface ConversationPayload {
   version: 2;
   messages: Message[];
   timestamp: number;
+  metadata?: AgentMetadata;
 }
 
 export class PersistenceManager {
@@ -86,8 +88,100 @@ export class PersistenceManager {
   loadMessages(): Message[] {
     const id = this.getCurrentId();
     if (!id) return [];
-    const raw = localStorage.getItem(this.convKey(id));
-    return raw ? (JSON.parse(raw) as ConversationPayload).messages : [];
+    
+    try {
+      const raw = localStorage.getItem(this.convKey(id));
+      if (!raw) return [];
+      
+      const payload = this.parseAndValidatePayload(raw);
+      return payload?.messages || [];
+    } catch (error) {
+      console.error('Failed to load messages:', error);
+      return [];
+    }
+  }
+
+  loadMetadata(): AgentMetadata | null {
+    const id = this.getCurrentId();
+    if (!id) return null;
+    
+    try {
+      const raw = localStorage.getItem(this.convKey(id));
+      if (!raw) return null;
+      
+      const payload = this.parseAndValidatePayload(raw);
+      return payload?.metadata || null;
+    } catch (error) {
+      console.error('Failed to load metadata:', error);
+      return null;
+    }
+  }
+
+  saveMetadata(metadata: AgentMetadata) {
+    console.log('💾 saveMetadata() called', metadata);
+    if (!this.enabled) {
+      console.log('⏭️ saveMetadata() aborted - persistence not enabled');
+      return;
+    }
+    
+    const id = this.getCurrentId();
+    if (!id) {
+      console.log('⏭️ saveMetadata() aborted - no current conversation ID');
+      return;
+    }
+
+    try {
+      this.saveMetadataAtomic(id, metadata);
+    } catch (error) {
+      console.error('Failed to save metadata:', error);
+    }
+  }
+  
+  /**
+   * Atomically save metadata to prevent corruption
+   */
+  private saveMetadataAtomic(id: string, metadata: AgentMetadata): void {
+    const key = this.convKey(id);
+    
+    // Get current payload safely
+    let payload: ConversationPayload;
+    const existingRaw = localStorage.getItem(key);
+    
+    if (existingRaw) {
+      payload = this.parseAndValidatePayload(existingRaw) || this.createDefaultPayload();
+    } else {
+      payload = this.createDefaultPayload();
+      payload.messages = this.stateManager.getState().messages;
+    }
+    
+    // Update metadata
+    payload.metadata = metadata;
+    payload.timestamp = Date.now();
+    
+    // Save atomically
+    const serialized = JSON.stringify(payload);
+    localStorage.setItem(key, serialized);
+    
+    // Update index
+    this.updateIndexMetadata(id, metadata);
+    
+    console.log('✅ Metadata saved atomically');
+  }
+  
+  /**
+   * Update index with metadata
+   */
+  private updateIndexMetadata(id: string, metadata: AgentMetadata): void {
+    try {
+      const ix = this.readIndex();
+      const meta = ix.conversations.find(c => c.id === id);
+      if (meta) {
+        meta.metadata = metadata;
+        this.writeIndex(ix);
+      }
+    } catch (error) {
+      console.error('Failed to update index metadata:', error);
+    }
   }
 
   saveMessages() {
@@ -121,8 +215,30 @@ export class PersistenceManager {
     
     console.log('💾 Saving messages - changes detected');
     
-    const payload: ConversationPayload = { version: 2, messages: msgs, timestamp: Date.now() };
-    localStorage.setItem(key, JSON.stringify(payload));
+    // Preserve existing metadata when saving messages
+    let existingMetadata: AgentMetadata | undefined;
+    if (existingRaw) {
+      try {
+        const existingPayload = this.parseAndValidatePayload(existingRaw);
+        existingMetadata = existingPayload?.metadata;
+      } catch (error) {
+        console.warn('Failed to parse existing metadata, continuing without it:', error);
+      }
+    }
+    
+    const payload: ConversationPayload = { 
+      version: 2, 
+      messages: msgs, 
+      timestamp: Date.now(),
+      metadata: existingMetadata
+    };
+    
+    try {
+      localStorage.setItem(key, JSON.stringify(payload));
+    } catch (error) {
+      console.error('Failed to save messages:', error);
+      throw error;
+    }
 
     // Update index meta only when messages have changed
     const ix = this.readIndex();
@@ -176,5 +292,48 @@ export class PersistenceManager {
   clearStorage(): void {
     const id = this.getCurrentId();
     if (id) this.delete(id);
+  }
+  
+  /**
+   * Safely parse and validate conversation payload
+   */
+  private parseAndValidatePayload(raw: string): ConversationPayload | null {
+    try {
+      const data = JSON.parse(raw);
+      
+      // Validate payload structure
+      if (typeof data !== 'object' || data === null) {
+        throw new Error('Invalid payload format');
+      }
+      
+      // Validate required fields
+      if (typeof data.version !== 'number' || data.version !== 2) {
+        throw new Error('Invalid or unsupported payload version');
+      }
+      
+      if (!Array.isArray(data.messages)) {
+        throw new Error('Invalid messages format');
+      }
+      
+      if (typeof data.timestamp !== 'number') {
+        throw new Error('Invalid timestamp format');
+      }
+      
+      return data as ConversationPayload;
+    } catch (error) {
+      console.warn('Failed to parse conversation payload:', error);
+      return null;
+    }
+  }
+  
+  /**
+   * Create default conversation payload
+   */
+  private createDefaultPayload(): ConversationPayload {
+    return {
+      version: 2,
+      messages: [],
+      timestamp: Date.now()
+    };
   }
 }

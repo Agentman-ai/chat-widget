@@ -52,3 +52,47 @@ export const expand = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 2
 export const collapse = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="var(--chat-header-text-color, currentColor)">
   <path d="M9 3H5v4h2V5h2V3m10 0h-4v2h2v2h2V3M9 21H5v-4h2v2h2v2m10-4h-2v2h-2v2h4v-4"/>
 </svg>`;
+
+export const chat = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="var(--color-primary, currentColor)">
+  <path d="M20 2H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h4l4 4 4-4h4c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm-2 12H6v-2h12v2zm0-3H6V9h12v2zm0-3H6V6h12v2z"/>
+</svg>`;
+
+export const list = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="var(--chat-header-text-color, currentColor)">
+  <path d="M3 13h2v-2H3v2zm0 4h2v-2H3v2zm0-8h2V7H3v2zm4 4h14v-2H7v2zm0 4h14v-2H7v2zM7 7v2h14V7H7z"/>
+</svg>`;
+
+export const arrowLeft = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="var(--chat-header-text-color, currentColor)">
+  <path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z"/>
+</svg>`;
+
+export const attachment = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+  <path d="m21.44 11.05-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66L9.64 16.2a2 2 0 0 1-2.83-2.83l8.49-8.48"/>
+</svg>`;
+
+export const fileDocument = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
+  <path d="M14,2H6A2,2 0 0,0 4,4V20A2,2 0 0,0 6,22H18A2,2 0 0,0 20,20V8L14,2M18,20H6V4H13V9H18V20Z"/>
+</svg>`;
+
+export const fileImage = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
+  <path d="M14,2H6A2,2 0 0,0 4,4V20A2,2 0 0,0 6,22H18A2,2 0 0,0 20,20V8L14,2M18,20H6V4H13V9H18V20Z M8,12L10.5,15L13,11.5L16,16H8V12Z"/>
+</svg>`;
+
+export const fileAudio = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
+  <path d="M14,2H6A2,2 0 0,0 4,4V20A2,2 0 0,0 6,22H18A2,2 0 0,0 20,20V8L14,2M18,20H6V4H13V9H18V20Z M12,12V19A2,2 0 0,1 10,21A2,2 0 0,1 8,19A2,2 0 0,1 10,17A2,2 0 0,1 12,19V15H16V12H12Z"/>
+</svg>`;
+
+export const fileVideo = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
+  <path d="M14,2H6A2,2 0 0,0 4,4V20A2,2 0 0,0 6,22H18A2,2 0 0,0 20,20V8L14,2M18,20H6V4H13V9H18V20Z M8,12L13,16L8,20V12Z"/>
+</svg>`;
+
+export const fileSpreadsheet = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
+  <path d="M14,2H6A2,2 0 0,0 4,4V20A2,2 0 0,0 6,22H18A2,2 0 0,0 20,20V8L14,2M18,20H6V4H13V9H18V20Z M8,12V14H10V12H8M10,14V16H8V14H10M10,16V18H8V16H10M12,12V14H14V12H12M14,14V16H12V14H14M14,16V18H12V16H14M16,12V14H16V12H16M16,14V16H16V14H16M16,16V18H16V16H16Z"/>
+</svg>`;
+
+export const fileText = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
+  <path d="M14,2H6A2,2 0 0,0 4,4V20A2,2 0 0,0 6,22H18A2,2 0 0,0 20,20V8L14,2M18,20H6V4H13V9H18V20Z M16,11H8V13H16V11M16,15H8V17H16V15Z"/>
+</svg>`;
+
+export const plus = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="var(--chat-header-text-color, currentColor)">
+  <path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/>
+</svg>`;
