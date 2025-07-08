@@ -3,7 +3,7 @@
  * Plugin Name: Agentman AI Agents
  * Plugin URI: https://github.com/Agentman-ai/chat-widget/tree/main/wordpress
  * Description: Integrates the Agentman AI Agents into your WordPress site with admin customization options.
- * Version: 0.23.0
+ * Version: 0.24.0
  * Author: Agentman
  * Author URI: https://agentman.ai
  * License: MIT
@@ -19,7 +19,7 @@ if (!defined('ABSPATH')) {
 }
 
 // Define plugin constants
-define('AGENTMAN_CHAT_WIDGET_VERSION', '0.23.0');
+define('AGENTMAN_CHAT_WIDGET_VERSION', '0.24.0');
 define('AGENTMAN_CHAT_WIDGET_PATH', plugin_dir_path(__FILE__));
 define('AGENTMAN_CHAT_WIDGET_URL', plugin_dir_url(__FILE__));
 define('AGENTMAN_CHAT_WIDGET_BASENAME', plugin_basename(__FILE__));
@@ -131,19 +131,23 @@ class Agentman_Chat_Widget {
             'prompt_3' => 'I need help with...',
             'initial_height' => '600px',
             'initial_width' => '400px',
+            // New simplified theme system (v0.24.0+)
             'background_color' => '#ffffff',
             'text_color' => '#111827',
-            'agent_background_color' => '#f3f4f6',
-            'user_background_color' => '#10b981',
-            'agent_foreground_color' => '#000000',
-            'user_foreground_color' => '#ffffff',
-            'header_background_color' => '#059669',
-            'header_text_color' => '#ffffff',
-            'toggle_background_color' => '#059669',
+            'button_color' => '#2563eb',
+            'button_text_color' => '#ffffff',
+            'agent_foreground_color' => '#111827',
+            'user_foreground_color' => '#2563eb',
+            'toggle_background_color' => '#2563eb',
             'toggle_text_color' => '#ffffff',
             'toggle_icon_color' => '#ffffff',
-            'agent_icon_color' => '#059669',
-            'user_icon_color' => '#059669',
+            // Legacy options for backward compatibility (will be migrated)
+            'agent_background_color' => '#f3f4f6', // Deprecated
+            'user_background_color' => '#10b981', // Deprecated  
+            'header_background_color' => '#059669', // Deprecated
+            'header_text_color' => '#ffffff', // Deprecated
+            'agent_icon_color' => '#059669', // Deprecated
+            'user_icon_color' => '#059669', // Deprecated
             'user_icon' => '',
             'agent_icon' => '',
             'logo' => '',
@@ -191,49 +195,53 @@ class Agentman_Chat_Widget {
         $sanitized['hide_branding'] = isset($input['hide_branding']) ? (bool) $input['hide_branding'] : true;
         $sanitized['show_prompts'] = isset($input['show_prompts']) ? (bool) $input['show_prompts'] : true;
         
-        // Text options
-        $sanitized['agent_token'] = sanitize_text_field($input['agent_token']);
-        $sanitized['api_url'] = esc_url_raw($input['api_url']);
-        $sanitized['title'] = sanitize_text_field($input['title']);
-        $sanitized['placeholder'] = sanitize_text_field($input['placeholder']);
-        $sanitized['toggle_text'] = sanitize_text_field($input['toggle_text']);
-        $sanitized['initial_message'] = sanitize_text_field($input['initial_message']);
+        // Text options (with safety checks for required fields)
+        $sanitized['agent_token'] = sanitize_text_field(isset($input['agent_token']) ? $input['agent_token'] : '');
+        $sanitized['api_url'] = esc_url_raw(isset($input['api_url']) ? $input['api_url'] : 'https://run.agentman.ai');
+        $sanitized['title'] = sanitize_text_field(isset($input['title']) ? $input['title'] : 'AI Assistant');
+        $sanitized['placeholder'] = sanitize_text_field(isset($input['placeholder']) ? $input['placeholder'] : 'Ask me anything...');
+        $sanitized['toggle_text'] = sanitize_text_field(isset($input['toggle_text']) ? $input['toggle_text'] : 'Ask Agentman');
+        $sanitized['initial_message'] = sanitize_text_field(isset($input['initial_message']) ? $input['initial_message'] : 'Hello! How can I help you today?');
         $sanitized['welcome_message'] = sanitize_text_field(isset($input['welcome_message']) ? $input['welcome_message'] : '');
         $sanitized['prompt_1'] = sanitize_text_field(isset($input['prompt_1']) ? $input['prompt_1'] : '');
         $sanitized['prompt_2'] = sanitize_text_field(isset($input['prompt_2']) ? $input['prompt_2'] : '');
         $sanitized['prompt_3'] = sanitize_text_field(isset($input['prompt_3']) ? $input['prompt_3'] : '');
-        $sanitized['initial_height'] = sanitize_text_field($input['initial_height']);
-        $sanitized['initial_width'] = sanitize_text_field($input['initial_width']);
+        $sanitized['initial_height'] = sanitize_text_field(isset($input['initial_height']) ? $input['initial_height'] : '600px');
+        $sanitized['initial_width'] = sanitize_text_field(isset($input['initial_width']) ? $input['initial_width'] : '400px');
         
-        // Color options
-        $sanitized['background_color'] = sanitize_hex_color($input['background_color']);
-        $sanitized['text_color'] = sanitize_hex_color($input['text_color']);
-        $sanitized['agent_background_color'] = sanitize_hex_color($input['agent_background_color']);
-        $sanitized['user_background_color'] = sanitize_hex_color($input['user_background_color']);
-        $sanitized['agent_foreground_color'] = sanitize_hex_color($input['agent_foreground_color']);
-        $sanitized['user_foreground_color'] = sanitize_hex_color($input['user_foreground_color']);
-        $sanitized['header_background_color'] = sanitize_hex_color($input['header_background_color']);
-        $sanitized['header_text_color'] = sanitize_hex_color($input['header_text_color']);
-        $sanitized['agent_icon_color'] = sanitize_hex_color($input['agent_icon_color']);
-        $sanitized['user_icon_color'] = sanitize_hex_color($input['user_icon_color']);
+        // New simplified theme color options (v0.24.0+)
+        $sanitized['background_color'] = sanitize_hex_color(isset($input['background_color']) ? $input['background_color'] : '#ffffff');
+        $sanitized['text_color'] = sanitize_hex_color(isset($input['text_color']) ? $input['text_color'] : '#111827');
+        $sanitized['button_color'] = sanitize_hex_color(isset($input['button_color']) ? $input['button_color'] : '#2563eb');
+        $sanitized['button_text_color'] = sanitize_hex_color(isset($input['button_text_color']) ? $input['button_text_color'] : '#ffffff');
+        $sanitized['agent_foreground_color'] = sanitize_hex_color(isset($input['agent_foreground_color']) ? $input['agent_foreground_color'] : '#111827');
+        $sanitized['user_foreground_color'] = sanitize_hex_color(isset($input['user_foreground_color']) ? $input['user_foreground_color'] : '#2563eb');
+        
+        // Legacy color options (deprecated but kept for backward compatibility)
+        $sanitized['agent_background_color'] = sanitize_hex_color(isset($input['agent_background_color']) ? $input['agent_background_color'] : '#f3f4f6');
+        $sanitized['user_background_color'] = sanitize_hex_color(isset($input['user_background_color']) ? $input['user_background_color'] : '#10b981');
+        $sanitized['header_background_color'] = sanitize_hex_color(isset($input['header_background_color']) ? $input['header_background_color'] : '#059669');
+        $sanitized['header_text_color'] = sanitize_hex_color(isset($input['header_text_color']) ? $input['header_text_color'] : '#ffffff');
+        $sanitized['agent_icon_color'] = sanitize_hex_color(isset($input['agent_icon_color']) ? $input['agent_icon_color'] : '#059669');
+        $sanitized['user_icon_color'] = sanitize_hex_color(isset($input['user_icon_color']) ? $input['user_icon_color'] : '#059669');
         
         // Toggle button color options
-        $sanitized['toggle_background_color'] = sanitize_hex_color(isset($input['toggle_background_color']) ? $input['toggle_background_color'] : '#059669');
+        $sanitized['toggle_background_color'] = sanitize_hex_color(isset($input['toggle_background_color']) ? $input['toggle_background_color'] : '#2563eb');
         $sanitized['toggle_text_color'] = sanitize_hex_color(isset($input['toggle_text_color']) ? $input['toggle_text_color'] : '#ffffff');
         $sanitized['toggle_icon_color'] = sanitize_hex_color(isset($input['toggle_icon_color']) ? $input['toggle_icon_color'] : '#ffffff');
         
         // Select options
-        $sanitized['variant'] = in_array($input['variant'], array('corner', 'centered', 'inline')) ? $input['variant'] : 'corner';
-        $sanitized['position'] = in_array($input['position'], array('bottom-right', 'bottom-left', 'top-right', 'top-left')) ? $input['position'] : 'bottom-right';
+        $sanitized['variant'] = isset($input['variant']) && in_array($input['variant'], array('corner', 'centered', 'inline')) ? $input['variant'] : 'corner';
+        $sanitized['position'] = isset($input['position']) && in_array($input['position'], array('bottom-right', 'bottom-left', 'top-right', 'top-left')) ? $input['position'] : 'bottom-right';
         
         // URL options
-        $sanitized['user_icon'] = esc_url_raw($input['user_icon']);
-        $sanitized['agent_icon'] = esc_url_raw($input['agent_icon']);
-        $sanitized['logo'] = esc_url_raw($input['logo']);
-        $sanitized['header_logo'] = esc_url_raw($input['header_logo']);
+        $sanitized['user_icon'] = esc_url_raw(isset($input['user_icon']) ? $input['user_icon'] : '');
+        $sanitized['agent_icon'] = esc_url_raw(isset($input['agent_icon']) ? $input['agent_icon'] : '');
+        $sanitized['logo'] = esc_url_raw(isset($input['logo']) ? $input['logo'] : '');
+        $sanitized['header_logo'] = esc_url_raw(isset($input['header_logo']) ? $input['header_logo'] : '');
         
         // Persistence options
-        $sanitized['persistence_days'] = absint($input['persistence_days']);
+        $sanitized['persistence_days'] = absint(isset($input['persistence_days']) ? $input['persistence_days'] : 7);
         
         return $sanitized;
     }
@@ -343,28 +351,23 @@ class Agentman_Chat_Widget {
             'initialWidth' => $this->options['initial_width'],
             'hideBranding' => isset($this->options['hide_branding']) ? (bool)$this->options['hide_branding'] : true,
             'theme' => array(
-                'backgroundColor' => $this->options['background_color'],
-                'textColor' => $this->options['text_color'],
-                'agentBackgroundColor' => $this->options['agent_background_color'],
-                'userBackgroundColor' => $this->options['user_background_color'],
-                'agentForegroundColor' => $this->options['agent_foreground_color'],
-                'userForegroundColor' => $this->options['user_foreground_color'],
-                'headerBackgroundColor' => $this->options['header_background_color'],
-                'headerTextColor' => $this->options['header_text_color'],
-                'agentIconColor' => $this->options['agent_icon_color'],
-                'userIconColor' => $this->options['user_icon_color']
-            ),
-            'toggleStyle' => array(
-                'backgroundColor' => isset($this->options['toggle_background_color']) ? $this->options['toggle_background_color'] : '#059669',
-                'textColor' => isset($this->options['toggle_text_color']) ? $this->options['toggle_text_color'] : '#ffffff',
-                'iconColor' => isset($this->options['toggle_icon_color']) ? $this->options['toggle_icon_color'] : '#ffffff'
+                // New simplified theme properties (v0.24.0+)
+                'backgroundColor' => isset($this->options['background_color']) ? $this->options['background_color'] : '#ffffff',
+                'textColor' => isset($this->options['text_color']) ? $this->options['text_color'] : '#111827',
+                'buttonColor' => isset($this->options['button_color']) ? $this->options['button_color'] : '#2563eb',
+                'buttonTextColor' => isset($this->options['button_text_color']) ? $this->options['button_text_color'] : '#ffffff',
+                'agentForegroundColor' => isset($this->options['agent_foreground_color']) ? $this->options['agent_foreground_color'] : '#111827',
+                'userForegroundColor' => isset($this->options['user_foreground_color']) ? $this->options['user_foreground_color'] : '#2563eb',
+                'toggleBackgroundColor' => isset($this->options['toggle_background_color']) ? $this->options['toggle_background_color'] : '#2563eb',
+                'toggleTextColor' => isset($this->options['toggle_text_color']) ? $this->options['toggle_text_color'] : '#ffffff',
+                'toggleIconColor' => isset($this->options['toggle_icon_color']) ? $this->options['toggle_icon_color'] : '#ffffff'
             ),
             'icons' => array(
-                'userIcon' => $this->options['user_icon'],
-                'agentIcon' => $this->options['agent_icon']
+                'userIcon' => isset($this->options['user_icon']) ? $this->options['user_icon'] : '',
+                'agentIcon' => isset($this->options['agent_icon']) ? $this->options['agent_icon'] : ''
             ),
-            'logo' => $this->options['logo'],
-            'headerLogo' => $this->options['header_logo'],
+            'logo' => isset($this->options['logo']) ? $this->options['logo'] : '',
+            'headerLogo' => isset($this->options['header_logo']) ? $this->options['header_logo'] : '',
             'isAdmin' => current_user_can('manage_options'),
             'persistence' => array(
                 'enabled' => isset($this->options['persistence_enabled']) ? $this->options['persistence_enabled'] : true,

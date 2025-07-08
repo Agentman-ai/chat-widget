@@ -118,40 +118,23 @@
                                     <input type="color" id="agentman_chat_widget_options[text_color]" name="agentman_chat_widget_options[text_color]" value="<?php echo esc_attr($this->options['text_color']); ?>" />
                                 </div>
                                 <div class="agentman-color-field">
-                                    <label for="agentman_chat_widget_options[header_background_color]"><?php _e('Header Background', 'agentman-chat-widget'); ?></label>
-                                    <input type="color" id="agentman_chat_widget_options[header_background_color]" name="agentman_chat_widget_options[header_background_color]" value="<?php echo esc_attr($this->options['header_background_color']); ?>" />
+                                    <label for="agentman_chat_widget_options[button_color]"><?php _e('Button Color', 'agentman-chat-widget'); ?></label>
+                                    <input type="color" id="agentman_chat_widget_options[button_color]" name="agentman_chat_widget_options[button_color]" value="<?php echo esc_attr(isset($this->options['button_color']) ? $this->options['button_color'] : '#2563eb'); ?>" />
                                 </div>
                                 <div class="agentman-color-field">
-                                    <label for="agentman_chat_widget_options[header_text_color]"><?php _e('Header Text', 'agentman-chat-widget'); ?></label>
-                                    <input type="color" id="agentman_chat_widget_options[header_text_color]" name="agentman_chat_widget_options[header_text_color]" value="<?php echo esc_attr($this->options['header_text_color']); ?>" />
+                                    <label for="agentman_chat_widget_options[button_text_color]"><?php _e('Button Text Color', 'agentman-chat-widget'); ?></label>
+                                    <input type="color" id="agentman_chat_widget_options[button_text_color]" name="agentman_chat_widget_options[button_text_color]" value="<?php echo esc_attr(isset($this->options['button_text_color']) ? $this->options['button_text_color'] : '#ffffff'); ?>" />
                                 </div>
                                 <div class="agentman-color-field">
-                                    <label for="agentman_chat_widget_options[agent_background_color]"><?php _e('Agent Background', 'agentman-chat-widget'); ?></label>
-                                    <input type="color" id="agentman_chat_widget_options[agent_background_color]" name="agentman_chat_widget_options[agent_background_color]" value="<?php echo esc_attr($this->options['agent_background_color']); ?>" />
+                                    <label for="agentman_chat_widget_options[agent_foreground_color]"><?php _e('Assistant Text Color', 'agentman-chat-widget'); ?></label>
+                                    <input type="color" id="agentman_chat_widget_options[agent_foreground_color]" name="agentman_chat_widget_options[agent_foreground_color]" value="<?php echo esc_attr(isset($this->options['agent_foreground_color']) ? $this->options['agent_foreground_color'] : '#111827'); ?>" />
                                 </div>
                                 <div class="agentman-color-field">
-                                    <label for="agentman_chat_widget_options[agent_foreground_color]"><?php _e('Agent Text', 'agentman-chat-widget'); ?></label>
-                                    <input type="color" id="agentman_chat_widget_options[agent_foreground_color]" name="agentman_chat_widget_options[agent_foreground_color]" value="<?php echo esc_attr($this->options['agent_foreground_color']); ?>" />
+                                    <label for="agentman_chat_widget_options[user_foreground_color]"><?php _e('User Text Color', 'agentman-chat-widget'); ?></label>
+                                    <input type="color" id="agentman_chat_widget_options[user_foreground_color]" name="agentman_chat_widget_options[user_foreground_color]" value="<?php echo esc_attr(isset($this->options['user_foreground_color']) ? $this->options['user_foreground_color'] : '#2563eb'); ?>" />
                                 </div>
-                                <div class="agentman-color-field">
-                                    <label for="agentman_chat_widget_options[user_background_color]"><?php _e('User Background', 'agentman-chat-widget'); ?></label>
-                                    <input type="color" id="agentman_chat_widget_options[user_background_color]" name="agentman_chat_widget_options[user_background_color]" value="<?php echo esc_attr($this->options['user_background_color']); ?>" />
-                                </div>
-                                <div class="agentman-color-field">
-                                    <label for="agentman_chat_widget_options[user_foreground_color]"><?php _e('User Text', 'agentman-chat-widget'); ?></label>
-                                    <input type="color" id="agentman_chat_widget_options[user_foreground_color]" name="agentman_chat_widget_options[user_foreground_color]" value="<?php echo esc_attr($this->options['user_foreground_color']); ?>" />
-                                </div>
-                                <div class="agentman-color-field">
-                                    <label for="agentman_chat_widget_options[agent_icon_color]"><?php _e('Agent Icon Color', 'agentman-chat-widget'); ?></label>
-                                    <input type="color" id="agentman_chat_widget_options[agent_icon_color]" name="agentman_chat_widget_options[agent_icon_color]" value="<?php echo esc_attr($this->options['agent_icon_color']); ?>" />
-                                </div>
-                                <!-- User icon color setting removed since user icons are not displayed
-                                <div class="agentman-color-field">
-                                    <label for="agentman_chat_widget_options[user_icon_color]"><?php _e('User Icon Color', 'agentman-chat-widget'); ?></label>
-                                    <input type="color" id="agentman_chat_widget_options[user_icon_color]" name="agentman_chat_widget_options[user_icon_color]" value="<?php echo esc_attr($this->options['user_icon_color']); ?>" />
-                                </div>
-                                -->
                             </div>
+                            <p class="description"><?php _e('Simplified theme colors for the new Claude-style conversation layout. Message bubbles have been removed for a cleaner interface.', 'agentman-chat-widget'); ?></p>
                         </td>
                     </tr>
                     <tr>
@@ -162,7 +145,7 @@
                             <div class="agentman-color-fields">
                                 <div class="agentman-color-field">
                                     <label for="agentman_chat_widget_options[toggle_background_color]"><?php _e('Background', 'agentman-chat-widget'); ?></label>
-                                    <input type="color" id="agentman_chat_widget_options[toggle_background_color]" name="agentman_chat_widget_options[toggle_background_color]" value="<?php echo esc_attr(isset($this->options['toggle_background_color']) ? $this->options['toggle_background_color'] : '#059669'); ?>" />
+                                    <input type="color" id="agentman_chat_widget_options[toggle_background_color]" name="agentman_chat_widget_options[toggle_background_color]" value="<?php echo esc_attr(isset($this->options['toggle_background_color']) ? $this->options['toggle_background_color'] : '#2563eb'); ?>" />
                                 </div>
                                 <div class="agentman-color-field">
                                     <label for="agentman_chat_widget_options[toggle_text_color]"><?php _e('Text Color', 'agentman-chat-widget'); ?></label>
