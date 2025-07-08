@@ -20,7 +20,7 @@
             box-shadow: 0 2px 8px rgba(0,0,0,0.1);
         }
         h1 {
-            color: #059669;
+            color: #2563eb;
             margin-bottom: 10px;
         }
         .subtitle {
@@ -67,7 +67,7 @@
             transition: all 0.2s;
         }
         .primary-button {
-            background: #059669;
+            background: #2563eb;
             color: white;
         }
         .primary-button:hover {
@@ -105,11 +105,11 @@
             transition: all 0.2s;
         }
         .cdn-option:hover {
-            border-color: #059669;
+            border-color: #2563eb;
             background: #f0fdf4;
         }
         .cdn-option.selected {
-            border-color: #059669;
+            border-color: #2563eb;
             background: #f0fdf4;
         }
         .cdn-option h3 {
@@ -198,7 +198,7 @@
                 <button class="primary-button" onclick="loadAndInitWidget()">Load Chat Widget from CDN</button>
                 <button class="secondary-button" onclick="removeWidget()" style="display: none;" id="remove-button">Remove Widget</button>
             </div>
-            <div id="status-message" style="margin-top: 15px; color: #059669; display: none;"></div>
+            <div id="status-message" style="margin-top: 15px; color: #2563eb; display: none;"></div>
         </div>
 
         <div class="demo-section">
@@ -292,10 +292,15 @@
                             placeholder: 'Type your message...',
                             initialMessage: 'Hello! This chat widget was loaded from a CDN. How can I help you today?',
                             theme: {
-                                headerBackgroundColor: '#059669',
-                                headerTextColor: '#ffffff',
-                                userBackgroundColor: '#10b981',
-                                userForegroundColor: '#ffffff'
+                                backgroundColor: '#ffffff',
+                                textColor: '#111827',
+                                buttonColor: '#2563eb',
+                                buttonTextColor: '#ffffff',
+                                agentForegroundColor: '#111827',
+                                userForegroundColor: '#2563eb',
+                                toggleBackgroundColor: '#2563eb',
+                                toggleTextColor: '#ffffff',
+                                toggleIconColor: '#ffffff'
                             }
                         });
                         
@@ -331,7 +336,7 @@
             // Set color based on type
             const colors = {
                 info: '#3b82f6',
-                success: '#059669',
+                success: '#2563eb',
                 warning: '#f59e0b',
                 error: '#ef4444'
             };

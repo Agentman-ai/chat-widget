@@ -58,6 +58,7 @@
         <button onclick="testCornerWidget()">Test Corner Widget</button>
         <button onclick="testInlineWidget()">Test Inline Widget</button>
         <button onclick="testAPIConnection()">Test API Connection</button>
+        <button onclick="testMarkdownRendering()">Test Markdown</button>
         <button onclick="inspectWidget()">Inspect Widget</button>
         <button onclick="clearAll()">Clear All</button>
         <div id="test-status" class="status info">Ready to test</div>
@@ -161,10 +162,15 @@
                     title: 'Debug ChatAgent',
                     initiallyOpen: false,
                     theme: {
-                        headerBackgroundColor: '#059669',
-                        headerTextColor: '#ffffff',
+                        textColor: '#111827',
+                        backgroundColor: '#ffffff',
+                        buttonColor: '#2563eb',
+                        buttonTextColor: '#ffffff',
+                        agentForegroundColor: '#111827',
+                        userForegroundColor: '#ffffff',
                         toggleBackgroundColor: '#059669',
-                        toggleTextColor: '#ffffff'
+                        toggleTextColor: '#ffffff',
+                        toggleIconColor: '#ffffff'
                     }
                 };
 
@@ -209,8 +215,15 @@
                     title: 'Debug ChatAgent (Inline)',
                     initiallyOpen: true,
                     theme: {
-                        headerBackgroundColor: '#059669',
-                        headerTextColor: '#ffffff'
+                        textColor: '#111827',
+                        backgroundColor: '#ffffff',
+                        buttonColor: '#2563eb',
+                        buttonTextColor: '#ffffff',
+                        agentForegroundColor: '#111827',
+                        userForegroundColor: '#ffffff',
+                        toggleBackgroundColor: '#059669',
+                        toggleTextColor: '#ffffff',
+                        toggleIconColor: '#ffffff'
                     }
                 };
 
@@ -251,6 +264,82 @@
             }
 
             updateStatus('test-status', '🔍 Inspection complete - check console', 'info');
+        }
+
+        function testMarkdownRendering() {
+            console.log('📝 Testing markdown rendering...');
+            updateStatus('test-status', '📝 Testing markdown rendering...', 'info');
+
+            if (!chatAgent) {
+                updateStatus('test-status', '❌ Create a widget first', 'error');
+                return;
+            }
+
+            try {
+                // Simulate adding a markdown message like the one from your API response
+                const testMessage = {
+                    id: 'test-md-' + Date.now(),
+                    sender: 'ai',
+                    content: `I specialize in analyzing various types of files, including images, PDFs, and text documents. Here's what I can do for you:
+
+1. **Extract Content**: Perform OCR on images to extract text, and read the content of PDFs and text documents.
+2. **Analyze and Summarize**: Provide a detailed analysis and summary of the key information from the files.
+3. **Actionable Insights**: Offer insights based on the analysis to help you make informed decisions.
+4. **Categorize Data**: Identify and categorize different types of data within the files.
+5. **Security and Privacy**: Ensure secure handling of your files, with no storage beyond the analysis session.
+
+If you have files ready for analysis, feel free to upload them now! You can also test:
+- *Italic text*
+- **Bold text**
+- \`inline code\`
+- [Link to example](https://example.com)
+- :) :D <3 emojis
+
+> This is a blockquote to test formatting.`,
+                    timestamp: new Date().toISOString(),
+                    type: 'text'
+                };
+
+                console.log('🧪 Adding test markdown message:', testMessage);
+                chatAgent.addMessage(testMessage);
+
+                // Check if the message was rendered with HTML
+                setTimeout(() => {
+                    const messages = document.querySelectorAll('.am-chat-message');
+                    const lastMessage = messages[messages.length - 1];
+                    
+                    if (lastMessage) {
+                        const messageContent = lastMessage.querySelector('.am-chat-message-content');
+                        if (messageContent) {
+                            console.log('📝 Rendered message HTML:', messageContent.innerHTML);
+                            
+                            // Check for various markdown elements
+                            const hasLists = messageContent.innerHTML.includes('<ol>') || messageContent.innerHTML.includes('<ul>');
+                            const hasBold = messageContent.innerHTML.includes('<strong>');
+                            const hasItalic = messageContent.innerHTML.includes('<em>');
+                            const hasLinks = messageContent.innerHTML.includes('<a href');
+                            const hasBlockquote = messageContent.innerHTML.includes('<blockquote>');
+                            
+                            console.log('🔍 Markdown rendering check:');
+                            console.log('  - Lists:', hasLists ? '✅' : '❌');
+                            console.log('  - Bold:', hasBold ? '✅' : '❌');
+                            console.log('  - Italic:', hasItalic ? '✅' : '❌');
+                            console.log('  - Links:', hasLinks ? '✅' : '❌');
+                            console.log('  - Blockquotes:', hasBlockquote ? '✅' : '❌');
+                            
+                            if (hasLists && hasBold && hasItalic) {
+                                updateStatus('test-status', '✅ Markdown rendering working!', 'success');
+                            } else {
+                                updateStatus('test-status', '⚠️ Some markdown features missing', 'error');
+                            }
+                        }
+                    }
+                }, 100);
+
+            } catch (error) {
+                console.error('❌ Markdown test failed:', error);
+                updateStatus('test-status', `❌ Markdown test failed: ${error.message}`, 'error');
+            }
         }
 
         function testAPIConnection() {

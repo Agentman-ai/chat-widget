@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test List Spacing Fix</title>
+    <style>
+        body { font-family: Arial, sans-serif; padding: 20px; background: #f0f0f0; }
+        .test-container { background: white; padding: 20px; border-radius: 8px; margin: 20px 0; }
+        button { background: #059669; color: white; border: none; padding: 10px 20px; border-radius: 4px; cursor: pointer; margin: 5px; }
+        button:hover { background: #047857; }
+        .result { border: 1px solid #ccc; padding: 15px; margin: 10px 0; border-radius: 4px; background: #f8f9fa; }
+        .success { border-color: #28a745; background: #d4edda; }
+        .error { border-color: #dc3545; background: #f8d7da; }
+        .comparison { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+        .input-example { background: #f8f9fa; padding: 15px; border-radius: 4px; margin: 10px 0; }
+    </style>
+</head>
+<body>
+    <h1>🧪 List Spacing Fix Test</h1>
+    
+    <div class="test-container">
+        <h2>Compare Both Inputs</h2>
+        <button onclick="testBothInputs()">Test Both Cases</button>
+        <button onclick="clearResults()">Clear Results</button>
+        
+        <div class="comparison">
+            <div>
+                <h3>✅ Working Input (No Extra Spacing):</h3>
+                <div class="input-example">
+                    <pre>1. **Extract Content**: Perform OCR...
+2. **Analyze and Summarize**: Provide...</pre>
+                </div>
+            </div>
+            <div>
+                <h3>❌ Problematic Input (Extra Spacing):</h3>
+                <div class="input-example">
+                    <pre>1. **Text Extraction**: I can perform...
+   
+2. **Content Analysis**: I provide...</pre>
+                </div>
+            </div>
+        </div>
+        
+        <div id="results"></div>
+    </div>
+
+    <script src="dist/index.js"></script>
+    
+    <script>
+        function testBothInputs() {
+            console.log('🧪 Testing both input cases...');
+            
+            // Working input (no extra spacing)
+            const workingInput = `I specialize in analyzing various types of files, including images, PDFs, and text documents. Here's what I can do for you:
+
+1. **Extract Content**: Perform OCR on images to extract text, and read the content of PDFs and text documents.
+2. **Analyze and Summarize**: Provide a detailed analysis and summary of the key information from the files.
+3. **Actionable Insights**: Offer insights based on the analysis to help you make informed decisions.
+4. **Categorize Data**: Identify and categorize different types of data within the files.
+5. **Security and Privacy**: Ensure secure handling of your files, with no storage beyond the analysis session.
+
+If you have files ready for analysis, feel free to upload them now!`;
+
+            // Problematic input (extra spacing)
+            const problematicInput = `I can help you analyze files such as images, PDFs, and text documents. Here's a breakdown of my capabilities:
+
+1. **Text Extraction**: I can perform Optical Character Recognition (OCR) on images to extract text, and read text from PDFs and documents.
+   
+2. **Content Analysis**: I provide detailed analysis of the file contents, summarizing key information.
+
+3. **Insights**: Based on the analysis, I can offer actionable insights related to the content.
+
+4. **Data Categorization**: I can identify and categorize different types of data within your files.
+
+5. **Security Compliance**: I handle your files securely, ensuring they are not stored beyond the analysis session and comply with data protection regulations.
+
+If you have any files you'd like analyzed, please upload them now and I'll get started!`;
+
+            try {
+                const OfflineParser = window.AgentmanChatWidget.OfflineParser;
+                
+                if (!OfflineParser) {
+                    showResult('❌ OfflineParser not found in bundle', 'error');
+                    return;
+                }
+
+                console.log('🔍 Processing working input...');
+                const workingResult = OfflineParser.parse(workingInput);
+                
+                console.log('🔍 Processing problematic input...');
+                const problematicResult = OfflineParser.parse(problematicInput);
+                
+                // Analyze both results
+                const workingAnalysis = analyzeResult(workingResult, 'Extract Content');
+                const problematicAnalysis = analyzeResult(problematicResult, 'Text Extraction');
+                
+                showResult('✅ Working Input Results:', 'success', 
+                    `Duplicates: ${workingAnalysis.duplicates ? '❌' : '✅'} | List items: ${workingAnalysis.listCount} | Numbers in content: ${workingAnalysis.hasNumbers ? '❌' : '✅'}`);
+                
+                showResult('🧪 Problematic Input Results:', problematicAnalysis.duplicates || problematicAnalysis.hasNumbers || problematicAnalysis.listCount !== 5 ? 'error' : 'success', 
+                    `Duplicates: ${problematicAnalysis.duplicates ? '❌' : '✅'} | List items: ${problematicAnalysis.listCount} | Numbers in content: ${problematicAnalysis.hasNumbers ? '❌' : '✅'}`);
+                
+                if (!problematicAnalysis.duplicates && !problematicAnalysis.hasNumbers && problematicAnalysis.listCount === 5) {
+                    showResult('🎉 SUCCESS: Spacing issue fixed!', 'success');
+                } else {
+                    showResult('❌ Spacing issue still exists', 'error');
+                    showResult('Problematic Result HTML:', 'error', problematicResult.substring(0, 500) + '...');
+                }
+                
+            } catch (error) {
+                console.error('❌ Test failed:', error);
+                showResult(`❌ Test failed: ${error.message}`, 'error');
+            }
+        }
+        
+        function analyzeResult(result, testPhrase) {
+            const occurrences = (result.match(new RegExp(testPhrase, 'g')) || []).length;
+            const listItemCount = (result.match(/<li>/g) || []).length;
+            const hasNumbersInContent = result.includes('<li>1.') || result.includes('<li>2.');
+            
+            return {
+                duplicates: occurrences > 1,
+                listCount: listItemCount,
+                hasNumbers: hasNumbersInContent,
+                occurrences: occurrences
+            };
+        }
+        
+        function showResult(message, type = 'result', details = '') {
+            const resultsDiv = document.getElementById('results');
+            const resultDiv = document.createElement('div');
+            resultDiv.className = `result ${type}`;
+            resultDiv.innerHTML = `<strong>${message}</strong>`;
+            
+            if (details) {
+                const detailsDiv = document.createElement('pre');
+                detailsDiv.style.marginTop = '10px';
+                detailsDiv.style.fontSize = '12px';
+                detailsDiv.style.whiteSpace = 'pre-wrap';
+                detailsDiv.textContent = details;
+                resultDiv.appendChild(detailsDiv);
+            }
+            
+            resultsDiv.appendChild(resultDiv);
+        }
+        
+        function clearResults() {
+            document.getElementById('results').innerHTML = '';
+        }
+        
+        // Initialize test when page loads
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('📄 Spacing fix test page loaded');
+            
+            setTimeout(() => {
+                if (window.AgentmanChatWidget) {
+                    console.log('✅ AgentmanChatWidget found');
+                    showResult('✅ Library loaded - click "Test Both Cases" to compare inputs', 'success');
+                } else {
+                    showResult('❌ AgentmanChatWidget not found', 'error');
+                }
+            }, 100);
+        });
+    </script>
+</body>
+</html>

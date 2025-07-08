@@ -31,11 +31,12 @@ export const baseStyles = `
     display: flex;
     align-items: center;
     justify-content: space-between;
-    padding: 8px 12px;
+    padding: 12px 16px;
     border-bottom: 1px solid rgba(0, 0, 0, 0.1);
-    min-height: 48px;
-    background: var(--chat-header-background-color, #059669);
-    color: var(--chat-header-text-color, #FFFFFF);
+    height: 54px;
+    background: white !important;
+    color: #111827 !important;
+    box-sizing: border-box;
   }
 
   .am-chat-header-content {
@@ -49,7 +50,9 @@ export const baseStyles = `
     display: flex;
     align-items: center;
     gap: 4px;
-    font-size: 16px;
+    font-size: 14px;
+    font-weight: normal;
+    color: #111827;
   }
 
   /* Hamburger menu button */
@@ -66,8 +69,8 @@ export const baseStyles = `
   }
 
   .am-chat-logo {
-    width: 38px;
-    height: 38px;
+    width: 28px;
+    height: 28px;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -122,28 +125,56 @@ export const baseStyles = `
   .am-chat-header-actions {
     display: flex;
     align-items: center;
-    gap: 8px;
+    gap: 2px;
   }
 
   .am-chat-header-button {
     background: none;
     border: none;
-    padding: 4px;
+    padding: 6px;
     cursor: pointer;
     display: flex;
     align-items: center;
     justify-content: center;
-    transition: filter 0.2s;
+    transition: background-color 0.2s;
+    border-radius: 4px;
+    color: #6b7280 !important;
   }
 
   .am-chat-header-button:hover {
-    filter: brightness(1.5);
+    background: rgba(0, 0, 0, 0.05) !important;
+    color: #374151 !important;
   }
 
   .am-chat-header-button svg {
-    width: 20px;
-    height: 20px;
+    width: 18px;
+    height: 18px;
+    display: block;
+    margin: auto;
   }
+
+  /* For stroke-based icons (new collection) */
+  .am-chat-header-button svg[stroke],
+  .am-chat-header-button svg[stroke-width] {
+    stroke: #6b7280 !important;
+    fill: none !important;
+  }
+
+  .am-chat-header-button:hover svg[stroke],
+  .am-chat-header-button:hover svg[stroke-width] {
+    stroke: #374151 !important;
+    fill: none !important;
+  }
+
+  /* For fill-based icons (old collection) */
+  .am-chat-header-button svg[fill]:not([fill="none"]) {
+    fill: #6b7280 !important;
+  }
+
+  .am-chat-header-button:hover svg[fill]:not([fill="none"]) {
+    fill: #374151 !important;
+  }
+
 
   .am-chat-messages {
     flex: 1 1 auto;
@@ -185,7 +216,7 @@ export const baseStyles = `
     font-size: 1.1rem;
     line-height: 1;
     border: none;
-    background: var(--chat-header-background-color, #059669);
+    background: var(--chat-header-background-color, #2563eb);
     color: var(--chat-header-text-color, #FFFFFF);
     cursor: pointer;
     border-radius: 4px;
@@ -309,7 +340,7 @@ export const baseStyles = `
   }
 
   .am-chat-branding a {
-    color: #059669;
+    color: #2563eb;
     text-decoration: none;
     font-weight: 500;
   }
@@ -318,17 +349,19 @@ export const baseStyles = `
     text-decoration: underline;
   }
 
+  .am-chat-input-wrapper {
+    background: white;
+    border-top: 1px solid rgba(0, 0, 0, 0.05);
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+  }
+
   .am-chat-input-container {
     display: flex;
     align-items: center;
-    padding: 8px 16px 8px;
-    background: white;
-    border-top: 1px solid rgba(0, 0, 0, 0.05);
-  }
-
-  .am-chat-input-wrapper {
-    position: relative;
-    width: 100%;
+    padding: 8px 16px;
+    gap: 8px;
   }
 
   .am-chat-input {
@@ -351,7 +384,7 @@ export const baseStyles = `
     width: 32px;
     height: 32px;
     padding: 6px;
-    background: var(--chat-header-background-color, #059669);
+    background: var(--chat-header-background-color, #2563eb);
     border: none;
     border-radius: 4px;
     cursor: pointer;
@@ -416,7 +449,7 @@ export const baseStyles = `
     display: flex;
     align-items: center;
     gap: 8px;
-    background: var(--chat-header-background-color, #059669);
+    background: var(--chat-header-background-color, #2563eb);
     color: var(--chat-header-text-color, #FFFFFF);
     padding: 8px 16px 8px 8px;
     border-radius: 100px;
@@ -424,7 +457,7 @@ export const baseStyles = `
   }
 
   .am-chat-toggle-text {
-    font-size: 14px;
+    font-size: 16px;
     font-weight: 500;
   }
 

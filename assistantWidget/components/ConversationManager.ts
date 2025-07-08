@@ -99,7 +99,7 @@ export class ConversationManager {
           <button class="am-conversation-delete" 
                   data-conversation-id="${conv.id}"
                   title="Delete conversation">
-            ${icons.close}
+            ${icons.close2}
           </button>
         </div>
       </div>
@@ -159,18 +159,20 @@ export class ConversationManager {
     const conversationButton = document.createElement('button');
     conversationButton.className = 'am-conversation-toggle am-chat-header-button';
     conversationButton.title = 'View conversations';
-    conversationButton.innerHTML = icons.list;
+    conversationButton.innerHTML = icons.chatHistory;
     
     conversationButton.addEventListener('click', () => {
       this.toggleListView();
     });
 
-    // Insert in the logo-title section (left side of header), before the logo
-    const logoTitle = headerElement.querySelector('.am-chat-logo-title');
-    const logo = logoTitle?.querySelector('.am-chat-header-logo');
+    // Insert in the header actions container as the first button
+    const headerActions = headerElement.querySelector('.am-chat-header-actions');
+    const firstButton = headerActions?.querySelector('.am-chat-header-button');
     
-    if (logoTitle && logo) {
-      logoTitle.insertBefore(conversationButton, logo);
+    if (headerActions && firstButton) {
+      headerActions.insertBefore(conversationButton, firstButton);
+    } else if (headerActions) {
+      headerActions.appendChild(conversationButton);
     }
   }
 
@@ -181,7 +183,7 @@ export class ConversationManager {
     const newButton = document.createElement('button');
     newButton.className = 'am-conversation-new-header am-chat-header-button';
     newButton.title = 'New conversation';
-    newButton.innerHTML = icons.plus;
+    newButton.innerHTML = icons.plus2;
     // Always visible - no display style needed
     
     newButton.addEventListener('click', () => {
@@ -190,12 +192,12 @@ export class ConversationManager {
       }
     });
 
-    // Insert in the header actions container, before the minimize button
+    // Insert in the header actions container, before the expand button
     const headerActions = headerElement.querySelector('.am-chat-header-actions');
-    const minimizeButton = headerActions?.querySelector('.am-chat-minimize');
+    const expandButton = headerActions?.querySelector('.am-chat-expand');
     
-    if (headerActions && minimizeButton) {
-      headerActions.insertBefore(newButton, minimizeButton);
+    if (headerActions && expandButton) {
+      headerActions.insertBefore(newButton, expandButton);
     } else if (headerActions) {
       headerActions.appendChild(newButton);
     }

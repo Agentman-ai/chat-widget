@@ -10,7 +10,9 @@ import { UIManager } from './components/UIManager';
 import { ConversationManager } from './components/ConversationManager';
 import { ClientMetadataCollector } from './utils/client-metadata';
 import { ValidationUtils } from './utils/validation';
+import { OfflineParser } from './message-renderer/offline-parser';
 import * as icons from './assets/icons';
+import { UI_CONSTANTS, API_CONSTANTS, STORAGE_CONSTANTS } from './constants';
 
 /**
  * ChatAgent - Refactored version of ChatWidget with component-based architecture
@@ -42,12 +44,6 @@ export class ChatAgent {
   // Component managers
   private uiManager!: UIManager;
   private conversationManager!: ConversationManager;
-  // private messageHandler: MessageHandler;
-  // private attachmentManager: AttachmentManager;
-  // private promptManager: MessagePromptManager;
-  // private themeManager: ThemeManager;
-  // private dependencyLoader: DependencyLoader;
-  // private loadingManager: LoadingManager;
 
   // Runtime state
   private isInitialized: boolean = false;
@@ -245,10 +241,10 @@ export class ChatAgent {
    */
   private fallbackToOfflineMode(): void {
     this.isOffline = true;
-    // Use simple text processing instead of markdown
+    // Use enhanced offline parser instead of basic text processing
     window.marked = {
       setOptions: () => { },
-      parse: (text: string) => text.replace(/\n/g, '<br>')
+      parse: (text: string) => OfflineParser.parse(text)
     };
   }
 
@@ -261,6 +257,9 @@ export class ChatAgent {
     console.log('🎨 ChatAgent creating UI...');
     this.styleManager.injectStyles();
     this.element = this.uiManager.createAndMount();
+    
+    // Initialize markdown processing (fallback to offline mode since we don't load CDN)
+    this.fallbackToOfflineMode();
     
     // Collect client metadata if enabled
     if (this.config.collectClientMetadata !== false) {
@@ -385,16 +384,16 @@ export class ChatAgent {
     
     return `
       ${showToggle ? `
-        <button class="am-chat-toggle" style="background-color: ${this.theme.toggleBackgroundColor || this.theme.headerBackgroundColor} !important;">
+        <button class="am-chat-toggle" style="background-color: ${this.theme.toggleBackgroundColor} !important;">
           <div class="am-chat-toggle-content">
-            <span class="am-chat-toggle-text" style="color: ${this.theme.toggleTextColor || this.theme.headerTextColor} !important;">
-              ${this.config.toggleText || 'Ask ChatAgent'}
+            <span class="am-chat-toggle-text" style="color: ${this.theme.toggleTextColor} !important;">
+              ${this.config.toggleText || 'AI Assistant'}
             </span>
           </div>
         </button>
       ` : ''}
       <div class="am-chat-container" style="display: ${this.state.isOpen || this.config.variant !== 'corner' ? 'flex' : 'none'};">
-        <div class="am-chat-header" style="background-color: ${this.theme.headerBackgroundColor}; color: ${this.theme.headerTextColor};">
+        <div class="am-chat-header" style="background-color: white; color: #333;">
           <div class="am-chat-header-content">
             <span>${this.config.title}</span>
             <button class="am-chat-minimize">×</button>
@@ -460,7 +459,7 @@ export class ChatAgent {
     const shouldShowFloating = !state.isOpen && 
                                !this.hasUserStartedConversation && 
                                this.isFreshConversation &&
-                               window.innerWidth > 768;
+                               window.innerWidth > UI_CONSTANTS.TABLET_BREAKPOINT;
 
     if (shouldShowFloating) {
       // Schedule floating prompts to appear after 5 seconds
@@ -539,7 +538,12 @@ export class ChatAgent {
         throw new Error(`HTTP error! status: ${response.status}`);
       }
 
-      const data = await response.json();
+      const responseText = await response.text();
+      const data = ValidationUtils.parseAndValidatePayload(responseText);
+      
+      if (!data) {
+        throw new Error('Invalid response format from server');
+      }
       
       // Handle the response directly
       if (data.response) {
@@ -627,7 +631,10 @@ export class ChatAgent {
    */
   private async handleSendMessage(): Promise<void> {
     const input = this.uiManager.getElement('.am-chat-input') as HTMLTextAreaElement;
-    const message = input?.value.trim();
+    const rawMessage = input?.value || '';
+    
+    // Sanitize user input
+    const message = ValidationUtils.sanitizeUserInput(rawMessage).trim();
     
     // Check if we have attachments
     const pendingAttachments = this.stateManager.getState().pendingAttachments || [];
@@ -635,6 +642,12 @@ export class ChatAgent {
     
     // Allow sending if we have either message text OR attachments
     if ((!message && !hasAttachments) || this.state.isSending) {
+      return;
+    }
+
+    // Rate limiting check
+    if (!ValidationUtils.checkRateLimit(`chat_${this.containerId}`, 30, 60000)) {
+      console.warn('Rate limit exceeded for chat messages');
       return;
     }
 
@@ -743,7 +756,12 @@ export class ChatAgent {
         throw new Error(`HTTP error! status: ${response.status}`);
       }
 
-      const data = await response.json();
+      const responseText = await response.text();
+      const data = ValidationUtils.parseAndValidatePayload(responseText);
+      
+      if (!data) {
+        throw new Error('Invalid response format from server');
+      }
       console.log('📨 Received API response:', data);
 
       // Hide loading before showing response
@@ -889,9 +907,7 @@ export class ChatAgent {
     this.loadingMessageElement.className = 'am-message agent am-chat-loading-message';
 
     this.loadingMessageElement.innerHTML = `
-      <div class="am-message-avatar" style="color: ${this.theme.agentIconColor}">
-        💬
-      </div>
+      <div class="am-message-role">Assistant</div>
       <div class="am-message-content">
         <div class="loading-container">
           <div class="loading-bars">
@@ -943,7 +959,7 @@ export class ChatAgent {
       if (loadingText) {
         loadingText.textContent = `${loadingStates[this.currentLoadingStateIndex]}...`;
       }
-    }, 2000);
+    }, UI_CONSTANTS.TRANSITION_SLOW * 4);
   }
 
   /**
@@ -993,7 +1009,7 @@ export class ChatAgent {
       this.element.classList.remove('am-chat-expanded');
       const expandButton = this.uiManager.getElement('.am-chat-expand');
       if (expandButton) {
-        expandButton.innerHTML = icons.expand;
+        expandButton.innerHTML = icons.expand2;
         expandButton.title = 'Expand chat';
       }
     } else {
@@ -1001,7 +1017,7 @@ export class ChatAgent {
       this.element.classList.add('am-chat-expanded');
       const expandButton = this.uiManager.getElement('.am-chat-expand');
       if (expandButton) {
-        expandButton.innerHTML = icons.collapse;
+        expandButton.innerHTML = icons.collapse2;
         expandButton.title = 'Collapse chat';
       }
     }
@@ -1227,7 +1243,7 @@ export class ChatAgent {
           inputElements.forEach(el => {
             (el as HTMLElement).style.display = 'none';
           });
-        }, 300);
+        }, UI_CONSTANTS.TRANSITION_NORMAL);
         
       } else {
         // Closing list view - show and animate chat elements back
@@ -1288,6 +1304,14 @@ export class ChatAgent {
     if (!this.config.enableAttachments || !this.fileUploadManager) return;
 
     Array.from(files).forEach(async (file) => {
+      // Security validation first
+      const fileValidation = ValidationUtils.sanitizeFileData(file);
+      if (!fileValidation.valid) {
+        console.warn(`🚫 File validation failed: ${fileValidation.errors.join(', ')}`);
+        // TODO: Show user-friendly error message in UI
+        return;
+      }
+
       // Validate mime type if agent capabilities are available
       if (this.supportedMimeTypes.length > 0 && !this.supportedMimeTypes.includes(file.type)) {
         console.warn(`🚫 File type not supported: ${file.type}. Supported types: ${this.supportedMimeTypes.join(', ')}`);
@@ -1413,23 +1437,29 @@ export class ChatAgent {
 
     const messageElement = document.createElement('div');
     messageElement.className = `am-message ${message.sender}`;
-    messageElement.style.cssText = `
-      padding: 10px;
-      margin: 10px;
-      border-radius: 8px;
-      background-color: ${message.sender === 'user' ? this.theme.userBackgroundColor : this.theme.agentBackgroundColor};
-      color: ${message.sender === 'user' ? this.theme.userForegroundColor : this.theme.agentForegroundColor};
-      align-self: ${message.sender === 'user' ? 'flex-end' : 'flex-start'};
-      max-width: 80%;
-    `;
-
+    // Remove inline styling to use CSS for Claude-style layout
+    
     const renderedContent = this.messageRenderer.render(message);
     const attachmentsHtml = this.renderMessageAttachments(message);
     
-    messageElement.innerHTML = `
-      <div class="am-message-content">${renderedContent}</div>
-      ${attachmentsHtml}
-    `;
+    // Claude-style layout: role labels and no bubbles, both left-aligned
+    if (message.sender === 'user') {
+      messageElement.innerHTML = `
+        <div class="am-message-role">You</div>
+        <div class="am-message-content">
+          ${renderedContent}
+          ${attachmentsHtml}
+        </div>
+      `;
+    } else {
+      messageElement.innerHTML = `
+        <div class="am-message-role">Assistant</div>
+        <div class="am-message-content">
+          ${renderedContent}
+          ${attachmentsHtml}
+        </div>
+      `;
+    }
 
     messagesContainer.appendChild(messageElement);
     messagesContainer.scrollTop = messagesContainer.scrollHeight;
@@ -1590,7 +1620,7 @@ export class ChatAgent {
       theme: {
         textColor: '#111827',
         backgroundColor: '#FFFFFF',
-        buttonColor: '#059669',
+        buttonColor: '#2563eb',
         buttonTextColor: '#FFFFFF',
         ...config.theme
       },
@@ -1603,19 +1633,13 @@ export class ChatAgent {
     return {
       textColor: this.config.theme?.textColor || '#111827',
       backgroundColor: this.config.theme?.backgroundColor || '#FFFFFF',
-      buttonColor: this.config.theme?.buttonColor || '#059669',
+      buttonColor: this.config.theme?.buttonColor || UI_CONSTANTS.PRIMARY_COLOR,
       buttonTextColor: this.config.theme?.buttonTextColor || '#FFFFFF',
-      agentBackgroundColor: this.config.theme?.agentBackgroundColor || '#f3f4f6',
-      userBackgroundColor: this.config.theme?.userBackgroundColor || '#059669',
       agentForegroundColor: this.config.theme?.agentForegroundColor || '#111827',
-      userForegroundColor: this.config.theme?.userForegroundColor || '#FFFFFF',
-      headerBackgroundColor: this.config.theme?.headerBackgroundColor || '#059669',
-      headerTextColor: this.config.theme?.headerTextColor || '#FFFFFF',
-      agentIconColor: this.config.theme?.agentIconColor || '#059669',
-      userIconColor: this.config.theme?.userIconColor || '#059669',
-      toggleBackgroundColor: this.config.theme?.toggleBackgroundColor || this.config.theme?.headerBackgroundColor || '#059669',
-      toggleTextColor: this.config.theme?.toggleTextColor || this.config.theme?.headerTextColor || '#FFFFFF',
-      toggleIconColor: this.config.theme?.toggleIconColor || this.config.theme?.headerTextColor || '#FFFFFF'
+      userForegroundColor: this.config.theme?.userForegroundColor || '#2563eb',
+      toggleBackgroundColor: this.config.theme?.toggleBackgroundColor || '#2563eb',
+      toggleTextColor: this.config.theme?.toggleTextColor || '#FFFFFF',
+      toggleIconColor: this.config.theme?.toggleIconColor || '#2563eb'
     };
   }
 

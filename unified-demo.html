@@ -225,8 +225,8 @@
                         <h2 class="section-title">Theme Settings</h2>
                         
                         <div class="form-group">
-                            <label for="headerBackgroundColor">Header Background</label>
-                            <input type="color" id="headerBackgroundColor" value="#10b981">
+                            <label for="buttonColor">Button Color</label>
+                            <input type="color" id="buttonColor" value="#2563eb">
                             <span class="color-preview" style="background-color: #10b981;"></span>
                         </div>
                         
@@ -648,7 +648,7 @@
                 
                 // Theme settings
                 theme: {
-                    headerBackgroundColor: document.getElementById('headerBackgroundColor').value,
+                    buttonColor: document.getElementById('buttonColor').value,
                     headerTextColor: document.getElementById('headerTextColor').value,
                     backgroundColor: document.getElementById('backgroundColor').value,
                     textColor: document.getElementById('textColor').value,
@@ -729,7 +729,7 @@
             document.getElementById('initiallyOpen').checked = false;
             
             // Theme settings
-            document.getElementById('headerBackgroundColor').value = '#10b981';
+            document.getElementById('buttonColor').value = '#2563eb';
             document.getElementById('headerTextColor').value = '#FFFFFF';
             document.getElementById('backgroundColor').value = '#FFFFFF';
             document.getElementById('textColor').value = '#111827';

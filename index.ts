@@ -1,3 +1,4 @@
-export { ChatWidget } from './assistantWidget/ChatWidget';
 export { ChatAgent } from './assistantWidget/ChatAgent';
-export type { ChatWidgetConfig } from './assistantWidget/types';
+export { ChatAgent as ChatWidget } from './assistantWidget/ChatAgent';
+export { OfflineParser } from './assistantWidget/message-renderer/offline-parser';
+export type { ChatConfig as ChatWidgetConfig } from './assistantWidget/types/types';

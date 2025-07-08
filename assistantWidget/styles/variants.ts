@@ -22,7 +22,7 @@ export const variantStyles = {
         right: var(--chat-toggle-right, 12px) !important;
         padding: 0 !important;
         border: none !important;
-        background: var(--chat-toggle-background-color, var(--chat-header-background-color, #059669)) !important;
+        background: var(--chat-toggle-background-color, var(--chat-header-background-color, #2563eb)) !important;
         cursor: pointer !important;
         z-index: var(--chat-z-index, 1000)
         border-radius: 32px !important;
@@ -43,7 +43,7 @@ export const variantStyles = {
 
       .am-chat-widget--corner .am-chat-toggle:hover {
         transform: translateY(-1px) !important;
-        background: var(--chat-toggle-background-color, var(--chat-header-background-color, #059669)) !important;
+        background: var(--chat-toggle-background-color, var(--chat-header-background-color, #2563eb)) !important;
         color: var(--chat-toggle-text-color, var(--chat-header-text-color, #FFFFFF)) !important;
         text-decoration: none !important;
         border: none !important;

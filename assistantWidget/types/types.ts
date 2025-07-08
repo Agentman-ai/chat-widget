@@ -2,18 +2,19 @@
 export type ChatVariant = 'inline' | 'corner' | 'centered';
 
 export interface ChatTheme {
+  // Core Colors
   textColor: string;
   backgroundColor: string;
+  
+  // Buttons
   buttonColor: string;
   buttonTextColor: string;
-  agentBackgroundColor: string;
-  userBackgroundColor: string;
+  
+  // Messages (No Bubbles - Text Only)
   agentForegroundColor: string;
   userForegroundColor: string;
-  headerBackgroundColor: string;
-  headerTextColor: string;
-  agentIconColor: string;
-  userIconColor: string;
+  
+  // Toggle Button (Including agentmanLogo)
   toggleBackgroundColor: string;
   toggleTextColor: string;
   toggleIconColor: string;
@@ -34,8 +35,6 @@ export interface ChatIcons {
   expandIcon?: string;
   collapseIcon?: string;
   reduceIcon?: string;
-  userIcon?: string;
-  agentIcon?: string;
 }
 
 export interface ChatConfig {
@@ -63,14 +62,6 @@ export interface ChatConfig {
   initialWidth?: string;
   assets?: Partial<ChatAssets>;
   icons?: Partial<ChatIcons>;
-  agentBackgroundColor?: string;
-  userBackgroundColor?: string;
-  agentForegroundColor?: string;
-  userForegroundColor?: string;
-  headerBackgroundColor?: string;
-  headerTextColor?: string;
-  agentIconColor?: string;
-  userIconColor?: string;
   toggleText?: string;
   /** Custom toggle button colors from WordPress settings */
   toggleStyle?: {

@@ -62,7 +62,7 @@ export const conversationStyles = `
   }
 
   .am-conversation-new-header:hover {
-    background: rgba(255, 255, 255, 0.1);
+    background: rgba(255, 255, 255, 0.1) !important;
   }
 
   /* Conversation List */
@@ -88,7 +88,7 @@ export const conversationStyles = `
 
   .am-conversation-item.active {
     background: #eff6ff;
-    border-left: 3px solid var(--chat-button-color, #059669);
+    border-left: 3px solid var(--chat-button-color, #2563eb);
   }
 
   .am-conversation-info {
@@ -151,7 +151,7 @@ export const conversationStyles = `
   }
 
   .am-conversation-new-button {
-    background: var(--chat-button-color, #059669);
+    background: var(--chat-button-color, #2563eb);
     color: var(--chat-button-text-color, #ffffff);
     border: none;
     padding: 8px 16px;

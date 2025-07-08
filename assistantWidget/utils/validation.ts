@@ -174,4 +174,148 @@ export class ValidationUtils {
       };
     }
   }
+
+  /**
+   * Sanitize user input text to prevent XSS and ensure safe processing
+   */
+  static sanitizeUserInput(input: string, maxLength: number = 4000): string {
+    if (!input || typeof input !== 'string') {
+      return '';
+    }
+
+    // Trim and limit length
+    let sanitized = input.trim().substring(0, maxLength);
+
+    // Remove null bytes and control characters (except newlines and tabs)
+    sanitized = sanitized.replace(/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/g, '');
+
+    // Basic HTML escape for safety (will be processed by markdown parser)
+    const htmlEscapes: { [key: string]: string } = {
+      '&': '&amp;',
+      '<': '&lt;',
+      '>': '&gt;',
+      '"': '&quot;',
+      "'": '&#x27;'
+    };
+
+    // Only escape if not already escaped
+    if (!/&(?:amp|lt|gt|quot|#x27);/.test(sanitized)) {
+      sanitized = sanitized.replace(/[&<>"']/g, (match) => htmlEscapes[match]);
+    }
+
+    return sanitized;
+  }
+
+  /**
+   * Validate and sanitize file upload data
+   */
+  static sanitizeFileData(file: File): { valid: boolean; errors: string[] } {
+    const errors: string[] = [];
+    
+    // Check file name
+    if (!file.name || file.name.length > 255) {
+      errors.push('Invalid file name');
+    }
+
+    // Check for potentially dangerous file extensions
+    const dangerousExtensions = ['.exe', '.bat', '.cmd', '.scr', '.pif', '.vbs', '.js', '.jar'];
+    const fileExt = file.name.toLowerCase().substring(file.name.lastIndexOf('.'));
+    if (dangerousExtensions.includes(fileExt)) {
+      errors.push('File type not allowed for security reasons');
+    }
+
+    // Check file size (50MB limit)
+    if (file.size > 50 * 1024 * 1024) {
+      errors.push('File size exceeds maximum limit');
+    }
+
+    // Check for zero-byte files
+    if (file.size === 0) {
+      errors.push('Empty files are not allowed');
+    }
+
+    return {
+      valid: errors.length === 0,
+      errors
+    };
+  }
+
+  /**
+   * Validate URL for safety
+   */
+  static isValidUrl(url: string): boolean {
+    try {
+      const parsed = new URL(url);
+      // Only allow http, https, and mailto protocols
+      return ['http:', 'https:', 'mailto:'].includes(parsed.protocol);
+    } catch {
+      return false;
+    }
+  }
+
+  /**
+   * Sanitize JSON payloads and prevent prototype pollution
+   */
+  static parseAndValidatePayload(jsonString: string): any {
+    try {
+      const parsed = JSON.parse(jsonString);
+      return this.sanitizeObject(parsed);
+    } catch (error) {
+      console.warn('JSON parse error:', error);
+      return null;
+    }
+  }
+
+  /**
+   * Deep sanitize objects to prevent prototype pollution
+   */
+  private static sanitizeObject(obj: any, maxDepth: number = 10): any {
+    if (maxDepth <= 0) {
+      return null;
+    }
+
+    if (obj === null || typeof obj !== 'object') {
+      return obj;
+    }
+
+    if (Array.isArray(obj)) {
+      return obj.map(item => this.sanitizeObject(item, maxDepth - 1));
+    }
+
+    const sanitized: any = {};
+    for (const key in obj) {
+      // Skip prototype-polluting keys
+      if (key === '__proto__' || key === 'constructor' || key === 'prototype') {
+        continue;
+      }
+
+      if (obj.hasOwnProperty(key)) {
+        sanitized[key] = this.sanitizeObject(obj[key], maxDepth - 1);
+      }
+    }
+
+    return sanitized;
+  }
+
+  /**
+   * Rate limiting for API calls
+   */
+  private static rateLimitMap = new Map<string, { count: number; lastReset: number }>();
+
+  static checkRateLimit(key: string, maxRequests: number = 60, windowMs: number = 60000): boolean {
+    const now = Date.now();
+    const record = this.rateLimitMap.get(key);
+
+    if (!record || now - record.lastReset > windowMs) {
+      this.rateLimitMap.set(key, { count: 1, lastReset: now });
+      return true;
+    }
+
+    if (record.count >= maxRequests) {
+      return false;
+    }
+
+    record.count++;
+    return true;
+  }
 }

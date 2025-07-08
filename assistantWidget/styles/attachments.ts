@@ -27,28 +27,81 @@ export const attachmentStyles = `
     display: none;
   }
 
-  /* Attachment preview container */
+  /* Attachment preview container - STACKED: Full width row above input */
   .chat-attachments-preview {
     display: flex;
-    flex-direction: column;
-    gap: 4px;
-    padding: 8px;
-    border-bottom: 1px solid rgba(0, 0, 0, 0.1);
-    max-height: 150px;
-    overflow-y: auto;
+    flex-direction: row;
+    gap: 8px;
+    padding: 12px 16px;
+    overflow-x: auto;
+    overflow-y: hidden;
+    position: relative;
+    width: 100%;
+    background: rgba(0, 0, 0, 0.02);
+    border-bottom: none;
+    
+    /* Custom scrollbar */
+    scrollbar-width: thin;
+    scrollbar-color: rgba(0, 0, 0, 0.2) transparent;
   }
 
-  /* Individual attachment item */
+  .chat-attachments-preview::-webkit-scrollbar {
+    height: 4px;
+  }
+
+  .chat-attachments-preview::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  .chat-attachments-preview::-webkit-scrollbar-thumb {
+    background: rgba(0, 0, 0, 0.2);
+    border-radius: 2px;
+  }
+
+  .chat-attachments-preview::-webkit-scrollbar-thumb:hover {
+    background: rgba(0, 0, 0, 0.3);
+  }
+
+  /* Scroll hint indicator */
+  .chat-attachments-preview::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    width: 20px;
+    background: linear-gradient(to left, rgba(0, 0, 0, 0.02), transparent);
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity 0.3s;
+  }
+
+  .chat-attachments-preview.has-overflow::after {
+    opacity: 1;
+  }
+
+  /* Individual attachment item - MINIMAL: Clean thumbnail design */
   .chat-attachment-item {
     position: relative;
     display: flex;
+    flex-direction: row;
     align-items: center;
-    gap: 8px;
-    background: rgba(0, 0, 0, 0.03);
+    background: rgba(255, 255, 255, 0.8);
     border: 1px solid rgba(0, 0, 0, 0.1);
-    border-radius: 6px;
-    padding: 6px 8px;
+    border-radius: 8px;
+    padding: 8px;
     animation: slideIn 0.2s ease-out;
+    width: 40%;
+    flex-shrink: 0;
+    cursor: default;
+    transition: all 0.2s;
+    gap: 10px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+  }
+
+  .chat-attachment-item:hover {
+    background: rgba(255, 255, 255, 0.95);
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
   }
 
   @keyframes slideIn {
@@ -62,93 +115,115 @@ export const attachmentStyles = `
     }
   }
 
-  /* Attachment thumbnail for images */
+  /* Attachment thumbnail for images - MINIMAL: Larger preview */
   .chat-attachment-thumbnail {
-    width: 32px;
-    height: 32px;
+    width: 40px;
+    height: 40px;
     object-fit: cover;
-    border-radius: 4px;
+    border-radius: 6px;
     flex-shrink: 0;
   }
 
-  /* File icon for non-images */
+  /* File icon for non-images - MINIMAL: Larger icon area */
   .chat-attachment-icon {
-    width: 32px;
-    height: 32px;
+    width: 40px;
+    height: 40px;
     display: flex;
     align-items: center;
     justify-content: center;
-    background: rgba(0, 0, 0, 0.08);
-    border-radius: 4px;
+    background: rgba(59, 130, 246, 0.08);
+    border-radius: 6px;
     flex-shrink: 0;
   }
 
   .chat-attachment-icon svg {
-    width: 18px;
-    height: 18px;
+    width: 20px;
+    height: 20px;
     opacity: 0.6;
+    color: rgba(59, 130, 246, 0.7);
   }
 
-  /* Attachment info */
+  /* Attachment info - HORIZONTAL: Left-aligned for inline layout */
   .chat-attachment-info {
     flex: 1;
     min-width: 0;
   }
 
   .chat-attachment-name {
-    font-size: 12px;
-    font-weight: 500;
+    font-size: 13px;
+    font-weight: 400;
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
-    margin-bottom: 2px;
+    line-height: 1.3;
+    color: rgba(0, 0, 0, 0.7);
   }
 
-  .chat-attachment-size {
-    font-size: 11px;
-    opacity: 0.7;
-  }
-
-  /* Remove button */
+  /* Remove button - MINIMAL: Subtle × in top-right corner */
   .chat-attachment-remove {
     position: absolute;
-    top: -4px;
-    right: -4px;
-    width: 20px;
-    height: 20px;
-    background: #ff4444;
-    color: white;
+    top: 4px;
+    right: 4px;
+    width: 18px;
+    height: 18px;
+    background: rgba(0, 0, 0, 0.05);
+    color: rgba(0, 0, 0, 0.4);
     border: none;
     border-radius: 50%;
     cursor: pointer;
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 12px;
-    opacity: 0;
-    transition: opacity 0.2s;
+    font-size: 14px;
+    font-weight: normal;
+    line-height: 1;
+    transition: all 0.2s;
+    padding: 0;
   }
 
-  .chat-attachment-item:hover .chat-attachment-remove {
-    opacity: 1;
+  .chat-attachment-remove:hover {
+    background: rgba(0, 0, 0, 0.1);
+    color: rgba(0, 0, 0, 0.6);
   }
 
-  /* Upload progress */
+  .chat-attachment-remove:active {
+    transform: scale(0.9);
+  }
+
+  /* Upload progress - HORIZONTAL: Bottom overlay for inline layout */
   .chat-attachment-progress {
     position: absolute;
     bottom: 0;
     left: 0;
     right: 0;
-    height: 3px;
+    height: 2px;
     background: rgba(0, 0, 0, 0.1);
-    border-radius: 0 0 8px 8px;
+    border-radius: 0 0 6px 6px;
     overflow: hidden;
   }
 
   .chat-attachment-progress-bar {
     height: 100%;
-    background: #4CAF50;
+    background: linear-gradient(90deg, #3b82f6, #2563eb);
     transition: width 0.3s ease;
+    border-radius: 2px;
+    position: relative;
+  }
+
+  .chat-attachment-progress-bar::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    bottom: 0;
+    right: 0;
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
+    animation: shimmer 1.5s infinite;
+  }
+
+  @keyframes shimmer {
+    0% { transform: translateX(-100%); }
+    100% { transform: translateX(100%); }
   }
 
   /* Error state */
@@ -236,20 +311,57 @@ export const attachmentStyles = `
     font-size: 20px;
   }
 
-  /* Responsive adjustments */
+  /* Responsive adjustments - HORIZONTAL: Better mobile experience */
   @media (max-width: 480px) {
     .chat-attachments-preview {
-      max-height: 80px;
+      padding: 6px 0;
+      gap: 6px;
     }
 
     .chat-attachment-item {
-      max-width: 150px;
+      width: 45%;
+      padding: 4px 6px;
+      gap: 6px;
     }
 
     .chat-attachment-thumbnail,
     .chat-attachment-icon {
-      width: 32px;
-      height: 32px;
+      width: 36px;
+      height: 36px;
+    }
+
+    .chat-attachment-icon svg {
+      width: 18px;
+      height: 18px;
+    }
+
+    .chat-attachment-name {
+      font-size: 12px;
+    }
+
+    .chat-attachment-remove {
+      width: 16px;
+      height: 16px;
+      top: 2px;
+      right: 2px;
+      font-size: 12px;
+    }
+  }
+
+  /* Extra improvements for very wide screens */
+  @media (min-width: 768px) {
+    .chat-attachment-item {
+      padding: 10px;
+    }
+
+    .chat-attachment-thumbnail,
+    .chat-attachment-icon {
+      width: 44px;
+      height: 44px;
+    }
+
+    .chat-attachment-name {
+      font-size: 13px;
     }
   }
 `;

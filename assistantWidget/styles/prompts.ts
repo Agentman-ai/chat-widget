@@ -30,9 +30,9 @@ export const promptStyles = `
   }
 
   .am-chat-input-prompt-btn:hover {
-    background-color: var(--chat-button-color, #059669);
+    background-color: var(--chat-button-color, #2563eb);
     color: var(--chat-button-text-color, #ffffff);
-    border-color: var(--chat-button-color, #059669);
+    border-color: var(--chat-button-color, #2563eb);
     transform: translateY(-1px);
     box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
   }
@@ -127,7 +127,7 @@ export const promptStyles = `
     width: 32px;
     height: 32px;
     border-radius: 50%;
-    background-color: var(--chat-button-color, #059669);
+    background-color: var(--chat-button-color, #2563eb);
     margin-right: 12px;
     flex-shrink: 0;
     display: flex;
@@ -176,7 +176,7 @@ export const promptStyles = `
   }
 
   .am-chat-floating-message-prompt:hover {
-    background: var(--chat-button-color, #059669);
+    background: var(--chat-button-color, #2563eb);
     color: var(--chat-button-text-color, #ffffff);
     transform: translateY(-1px);
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);

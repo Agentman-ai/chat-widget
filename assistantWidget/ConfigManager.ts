@@ -5,22 +5,22 @@ import { logo as logo, logo as headerLogo} from './assets/logo';
 
 export class ConfigManager {
   private static readonly defaultTheme: ChatTheme = {
-    userBackgroundColor: '#10b981',
-    agentBackgroundColor: '#6c757d',
-    textColor: '#212529',
+    // Core Colors
+    textColor: '#111827',
     backgroundColor: '#ffffff',
-    buttonColor: '#007bff',
+    
+    // Buttons
+    buttonColor: '#2563eb',
     buttonTextColor: '#ffffff',
-    agentForegroundColor: '#ffffff',
-    userForegroundColor: '#ffffff',
-    headerBackgroundColor: '#f3f4f6',
-    headerTextColor: '#111827',
-    agentIconColor: '#ffffff',
-    userIconColor: '#ffffff',
-    // Toggle button styling properties
-    toggleBackgroundColor: '#10b981',
+    
+    // Messages (No Bubbles - Text Only)
+    agentForegroundColor: '#111827',
+    userForegroundColor: '#2563eb',
+    
+    // Toggle Button (Including agentmanLogo)
+    toggleBackgroundColor: '#2563eb',
     toggleTextColor: '#ffffff',
-    toggleIconColor: '#ffffff'
+    toggleIconColor: '#2563eb'
   };
 
   private static readonly defaultAssets: ChatAssets = {
@@ -130,12 +130,15 @@ export class ConfigManager {
 
   public getCSSVariables(): Record<string, string> {
     return {
-      '--chat-primary-color': this.theme.userBackgroundColor,
-      '--chat-secondary-color': this.theme.agentBackgroundColor,
       '--chat-text-color': this.theme.textColor,
       '--chat-background-color': this.theme.backgroundColor,
       '--chat-button-color': this.theme.buttonColor,
-      '--chat-button-text-color': this.theme.buttonTextColor
+      '--chat-button-text-color': this.theme.buttonTextColor,
+      '--chat-agent-foreground-color': this.theme.agentForegroundColor,
+      '--chat-user-foreground-color': this.theme.userForegroundColor,
+      '--chat-toggle-background-color': this.theme.toggleBackgroundColor,
+      '--chat-toggle-text-color': this.theme.toggleTextColor,
+      '--chat-toggle-icon-color': this.theme.toggleIconColor
     };
   }
 

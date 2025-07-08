@@ -236,11 +236,11 @@ export class UIManager {
               style="background-color: ${this.theme.toggleBackgroundColor} !important;">
         <div class="am-chat-toggle-content">
           <div class="am-chat-logo" style="color: ${this.theme.toggleIconColor} !important;">
-            ${this.assets.logo || icons.chat}
+            ${this.assets.logo || icons.agentmanLogo}
           </div>
           <span class="am-chat-toggle-text" 
                 style="color: ${this.theme.toggleTextColor} !important;">
-            ${this.config.toggleText || 'Ask ChatAgent'}
+            ${this.config.toggleText || 'Ask AI'}
           </span>
         </div>
       </button>
@@ -266,22 +266,19 @@ export class UIManager {
    */
   private generateHeader(): string {
     return `
-      <div class="am-chat-header" 
-           style="background-color: ${this.theme.headerBackgroundColor}; 
-                  color: ${this.theme.headerTextColor};">
+      <div class="am-chat-header">
         <div class="am-chat-header-content">
           <div class="am-chat-logo-title">
-            <div class="am-chat-header-logo">${this.assets.headerLogo || icons.chat}</div>
-            <span>${this.config.title}</span>
+            <span>Ask AI</span>
           </div>
           <div class="am-chat-header-actions">
             <button class="am-chat-expand am-chat-header-button desktop-only" 
-                    title="Expand chat">
-              ${icons.expand}
+                    title="Expand">
+              ${icons.expand2}
             </button>
             <button class="am-chat-minimize am-chat-header-button" 
-                    title="Minimize chat">
-              ${icons.close}
+                    title="Close">
+              ${icons.close2}
             </button>
           </div>
         </div>
@@ -340,19 +337,21 @@ export class UIManager {
     const showAttachments = this.config.enableAttachments;
     
     return `
-      ${showAttachments ? this.generateAttachmentPreview() : ''}
       ${this.generateMessagePrompts()}
-      <div class="am-chat-input-container">
-        ${showAttachments ? this.generateAttachmentButton() : ''}
-        <textarea class="am-chat-input" 
-                  placeholder="${this.config.placeholder || 'Type your message...'}"
-                  rows="1"></textarea>
-        <button class="am-chat-send" 
-                style="background-color: ${this.theme.buttonColor}; 
-                       color: ${this.theme.buttonTextColor};"
-                disabled>
-          ${icons.send}
-        </button>
+      <div class="am-chat-input-wrapper">
+        ${showAttachments ? this.generateAttachmentPreview() : ''}
+        <div class="am-chat-input-container">
+          ${showAttachments ? this.generateAttachmentButton() : ''}
+          <textarea class="am-chat-input" 
+                    placeholder="${this.config.placeholder || 'Type your message...'}"
+                    rows="1"></textarea>
+          <button class="am-chat-send" 
+                  style="background-color: ${this.theme.buttonColor}; 
+                         color: ${this.theme.buttonTextColor};"
+                  disabled>
+            ${icons.send}
+          </button>
+        </div>
       </div>
     `;
   }
@@ -630,12 +629,8 @@ export class UIManager {
     const header = this.element?.querySelector('.am-chat-header') as HTMLElement;
     if (!header) return;
 
-    if (theme.headerBackgroundColor) {
-      header.style.backgroundColor = theme.headerBackgroundColor;
-    }
-    if (theme.headerTextColor) {
-      header.style.color = theme.headerTextColor;
-    }
+    // Don't apply theme colors - let CSS handle the white background
+    // The header should always be white as per the new design
   }
 
   /**
@@ -778,7 +773,7 @@ export class UIManager {
         const prompt = (e.target as HTMLElement).getAttribute('data-prompt');
         if (prompt && this.boundPromptClickHandler) {
           // Add visual feedback
-          (e.target as HTMLElement).style.background = 'var(--chat-button-color, #059669)';
+          (e.target as HTMLElement).style.background = 'var(--chat-button-color, #2563eb)';
           (e.target as HTMLElement).style.color = 'var(--chat-button-text-color, #ffffff)';
           
           // Delay to show visual feedback, then trigger action
@@ -822,31 +817,54 @@ export class UIManager {
     if (!this.config.enableAttachments || !this.element) return;
 
     const previewContainer = this.element.querySelector('.chat-attachments-preview') as HTMLElement;
+    const inputWrapper = this.element.querySelector('.am-chat-input-wrapper') as HTMLElement;
     if (!previewContainer) return;
 
     if (attachments.length === 0) {
       previewContainer.style.display = 'none';
       previewContainer.innerHTML = '';
+      if (inputWrapper) {
+        inputWrapper.classList.remove('has-attachments');
+      }
       return;
     }
 
     previewContainer.style.display = 'flex';
+    if (inputWrapper) {
+      inputWrapper.classList.add('has-attachments');
+    }
+    
     previewContainer.innerHTML = attachments.map(attachment => {
       const statusClass = attachment.upload_status === 'error' ? 'error' : '';
       const progressHtml = attachment.upload_status === 'uploading' ? 
         `<div class="chat-attachment-progress"><div class="chat-attachment-progress-bar" style="width: ${attachment.upload_progress || 0}%"></div></div>` : '';
       
+      // Determine if this is an image or file
+      const isImage = attachment.file_type === 'image' && attachment.url;
+      const thumbnailHtml = isImage ? 
+        `<img src="${attachment.url}" alt="${this.escapeHtml(attachment.filename)}" class="chat-attachment-thumbnail" />` :
+        `<div class="chat-attachment-icon">${this.getFileTypeIcon(attachment.filename)}</div>`;
+      
       return `
         <div class="chat-attachment-item ${statusClass}">
+          ${thumbnailHtml}
           <div class="chat-attachment-info">
             <div class="chat-attachment-name">${this.escapeHtml(attachment.filename)}</div>
-            <div class="chat-attachment-size">${this.formatFileSize(attachment.size_bytes)}</div>
-            ${progressHtml}
           </div>
-          <button class="chat-attachment-remove" data-id="${attachment.file_id}" title="Remove attachment">${icons.close}</button>
+          <button class="chat-attachment-remove" data-id="${attachment.file_id}" title="Remove attachment">×</button>
+          ${progressHtml}
         </div>
       `;
     }).join('');
+
+    // Add scroll indicator if content overflows
+    setTimeout(() => {
+      if (previewContainer.scrollWidth > previewContainer.clientWidth) {
+        previewContainer.classList.add('has-overflow');
+      } else {
+        previewContainer.classList.remove('has-overflow');
+      }
+    }, 100);
 
     // Attach remove button listeners with proper cleanup tracking
     const removeButtons = previewContainer.querySelectorAll('.chat-attachment-remove');
@@ -876,6 +894,28 @@ export class UIManager {
     const i = Math.floor(Math.log(bytes) / Math.log(k));
     
     return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+  }
+
+  /**
+   * Get appropriate icon for file type
+   */
+  private getFileTypeIcon(filename: string): string {
+    const extension = filename.toLowerCase().split('.').pop() || '';
+    
+    // Import icons from the attachments module
+    const { attachmentIcons } = require('../styles/attachments');
+    
+    if (['jpg', 'jpeg', 'png', 'gif', 'webp', 'svg'].includes(extension)) {
+      return attachmentIcons.image;
+    } else if (['mp3', 'wav', 'ogg', 'flac', 'm4a'].includes(extension)) {
+      return attachmentIcons.audio;
+    } else if (['mp4', 'webm', 'mov', 'avi', 'mkv'].includes(extension)) {
+      return attachmentIcons.video;
+    } else if (['pdf', 'doc', 'docx', 'txt', 'rtf'].includes(extension)) {
+      return attachmentIcons.document;
+    } else {
+      return attachmentIcons.file;
+    }
   }
 
   /**
