@@ -1,4 +1,4 @@
-// ChatAgent.ts - Refactored component-based chat widget
+// ChatWidget.ts - Refactored component-based chat widget
 import type { ChatConfig, Message, ChatState, ChatTheme, ChatAssets, ClientMetadata } from './types/types';
 import { PersistenceManager } from './PersistenceManager';
 import { FileUploadManager } from './FileUploadManager';
@@ -15,14 +15,14 @@ import * as icons from './assets/icons';
 import { UI_CONSTANTS, API_CONSTANTS, STORAGE_CONSTANTS } from './constants';
 
 /**
- * ChatAgent - Refactored version of ChatWidget with component-based architecture
+ * ChatWidget - Component-based chat widget with modern architecture
  * 
  * This class serves as the main coordinator for all chat widget functionality,
  * delegating specific responsibilities to focused component classes.
  */
-export class ChatAgent {
-  // Track instances by containerId (same pattern as ChatWidget)
-  private static instances: Map<string, ChatAgent> = new Map();
+export class ChatWidget {
+  // Track instances by containerId
+  private static instances: Map<string, ChatWidget> = new Map();
 
   // Core properties
   private config: ChatConfig;
@@ -73,18 +73,18 @@ export class ChatAgent {
   private currentLoadingStateIndex: number = 0;
 
   constructor(config: ChatConfig & { containerId: string }) {
-    console.log('🚀 ChatAgent initializing...');
+    console.log('🚀 ChatWidget initializing...');
     
     this.containerId = config.containerId;
 
     // Check for existing instance with this containerId
-    const existingInstance = ChatAgent.instances.get(this.containerId);
+    const existingInstance = ChatWidget.instances.get(this.containerId);
     if (existingInstance) {
       existingInstance.destroy();
     }
 
     // Store the new instance
-    ChatAgent.instances.set(this.containerId, this);
+    ChatWidget.instances.set(this.containerId, this);
 
     // Initialize configuration and state
     this.config = this.mergeWithDefaultConfig(config);
@@ -204,7 +204,7 @@ export class ChatAgent {
       this.fetchAgentCapabilities();
     }
 
-    console.log('✅ ChatAgent initialized successfully');
+    console.log('✅ ChatWidget initialized successfully');
   }
 
   /**
@@ -254,7 +254,7 @@ export class ChatAgent {
   private initialize(): void {
     if (this.isInitialized) return;
 
-    console.log('🎨 ChatAgent creating UI...');
+    console.log('🎨 ChatWidget creating UI...');
     this.styleManager.injectStyles();
     this.element = this.uiManager.createAndMount();
     
@@ -342,7 +342,7 @@ export class ChatAgent {
     this.uiManager.updateTheme(this.theme);
     
     this.isInitialized = true;
-    console.log('🎉 ChatAgent UI initialized');
+    console.log('🎉 ChatWidget UI initialized');
   }
 
   /**
@@ -404,7 +404,7 @@ export class ChatAgent {
           <textarea class="am-chat-input" placeholder="${this.config.placeholder || 'Type your message...'}"></textarea>
           <button class="am-chat-send" style="background-color: ${this.theme.buttonColor}; color: ${this.theme.buttonTextColor};">Send</button>
         </div>
-        <div class="am-chat-branding">Powered by <a href="https://agentman.ai" target="_blank">ChatAgent (Refactored)</a></div>
+        <div class="am-chat-branding">Powered by <a href="https://agentman.ai" target="_blank">Agentman</a></div>
       </div>
     `;
   }
@@ -1573,7 +1573,7 @@ export class ChatAgent {
    * Destroy widget instance
    */
   public destroy(): void {
-    console.log('🧹 ChatAgent destroying...');
+    console.log('🧹 ChatWidget destroying...');
 
     // Clean up timers
     if (this.promptTimer) window.clearTimeout(this.promptTimer);
@@ -1590,33 +1590,33 @@ export class ChatAgent {
     }
 
     // Remove from instances map
-    ChatAgent.instances.delete(this.containerId);
+    ChatWidget.instances.delete(this.containerId);
     
-    console.log('✅ ChatAgent destroyed');
+    console.log('✅ ChatWidget destroyed');
   }
 
   /**
    * Get instance by containerId
    */
-  public static getInstance(containerId: string): ChatAgent | undefined {
-    return ChatAgent.instances.get(containerId);
+  public static getInstance(containerId: string): ChatWidget | undefined {
+    return ChatWidget.instances.get(containerId);
   }
 
   /**
    * Destroy all instances
    */
   public static destroyAll(): void {
-    Array.from(ChatAgent.instances.values()).forEach(instance => {
+    Array.from(ChatWidget.instances.values()).forEach(instance => {
       instance.destroy();
     });
-    ChatAgent.instances.clear();
+    ChatWidget.instances.clear();
   }
 
-  // Utility methods (copied from ChatWidget for now)
+  // Utility methods
   private mergeWithDefaultConfig(config: ChatConfig): ChatConfig {
     return {
       ...config,
-      title: config.title || 'Chat Agent',
+      title: config.title || 'Chat Widget',
       theme: {
         textColor: '#111827',
         backgroundColor: '#FFFFFF',
