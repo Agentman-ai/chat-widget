@@ -11,7 +11,10 @@
       "Bash(curl:*)",
       "Bash(gcloud config get-value:*)",
       "Bash(cp:*)",
-      "Bash(mkdir:*)"
+      "Bash(mkdir:*)",
+      "Bash(rg:*)",
+      "Bash(find:*)",
+      "Bash(npm run build:*)"
     ],
     "deny": []
   }

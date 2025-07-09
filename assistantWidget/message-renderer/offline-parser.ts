@@ -79,6 +79,11 @@ export class OfflineParser {
   };
 
   static parse(text: string): string {
+    // Handle null, undefined, or non-string values
+    if (text == null || typeof text !== 'string') {
+      return '';
+    }
+    
     try {
       let html = text;
 
@@ -126,6 +131,11 @@ export class OfflineParser {
 
   // Helper method to escape HTML entities
   static escapeHtml(text: string): string {
+    // Handle null, undefined, or non-string values
+    if (text == null || typeof text !== 'string') {
+      return '';
+    }
+    
     const htmlEscapes: { [key: string]: string } = {
       '&': '&amp;',
       '<': '&lt;',
@@ -139,6 +149,11 @@ export class OfflineParser {
 
   // Helper method to process emojis
   static processEmojis(text: string): string {
+    // Handle null, undefined, or non-string values
+    if (text == null || typeof text !== 'string') {
+      return '';
+    }
+    
     let result = text;
     for (const [emoticon, emoji] of Object.entries(this.emojiMap)) {
       // Escape special regex characters in emoticon
@@ -150,6 +165,11 @@ export class OfflineParser {
 
   // Helper method to sanitize URLs
   static sanitizeUrl(url: string): string {
+    // Handle null, undefined, or non-string values
+    if (url == null || typeof url !== 'string') {
+      return '#';
+    }
+    
     try {
       const parsed = new URL(url);
       return ['http:', 'https:', 'mailto:'].includes(parsed.protocol) ? url : '#';
@@ -160,6 +180,14 @@ export class OfflineParser {
 
   // Helper method to validate and process markdown links safely
   static processMarkdownLink(text: string, url: string): string {
+    // Handle null, undefined, or non-string values
+    if (text == null || typeof text !== 'string') {
+      text = '';
+    }
+    if (url == null || typeof url !== 'string') {
+      url = '';
+    }
+    
     const safeUrl = this.sanitizeUrl(url.trim());
     const safeText = this.escapeHtml(text);
     return `<a href="${safeUrl}" target="_blank" rel="noopener noreferrer">${safeText}</a>`;

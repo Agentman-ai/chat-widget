@@ -387,7 +387,7 @@ export class UIManager {
     
     return `
       <div class="am-chat-branding">
-        Powered by ${brandingText}
+        Powered by Agentman.ai
       </div>
     `;
   }

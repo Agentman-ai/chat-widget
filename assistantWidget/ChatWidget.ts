@@ -910,11 +910,8 @@ export class ChatWidget {
       <div class="am-message-role">Assistant</div>
       <div class="am-message-content">
         <div class="loading-container">
-          <div class="loading-bars">
-            <span></span><span></span><span></span>
-          </div>
-          <div class="loading-text-wrapper">
-            <span class="loading-text">Thinking...</span>
+          <div class="loading-waves">
+            <span></span><span></span><span></span><span></span><span></span>
           </div>
         </div>
       </div>
@@ -922,7 +919,7 @@ export class ChatWidget {
 
     messagesContainer.appendChild(this.loadingMessageElement);
     messagesContainer.scrollTop = messagesContainer.scrollHeight;
-    this.startLoadingAnimation();
+    // Wave animation is CSS-based, no need for JavaScript animation
   }
 
   /**
@@ -934,6 +931,7 @@ export class ChatWidget {
       this.loadingMessageElement = null;
     }
 
+    // No longer needed - wave animation is CSS-based
     if (this.loadingAnimationInterval) {
       window.clearInterval(this.loadingAnimationInterval);
       this.loadingAnimationInterval = null;
@@ -941,25 +939,11 @@ export class ChatWidget {
   }
 
   /**
-   * Start loading animation
+   * Start loading animation (deprecated - now using CSS-based wave animation)
    */
   private startLoadingAnimation(): void {
-    this.currentLoadingStateIndex = 0;
-    const loadingStates = ['Thinking', 'Planning', 'Acting', 'Generating response'];
-
-    if (this.loadingAnimationInterval) {
-      window.clearInterval(this.loadingAnimationInterval);
-    }
-
-    this.loadingAnimationInterval = window.setInterval(() => {
-      if (!this.loadingMessageElement) return;
-
-      this.currentLoadingStateIndex = (this.currentLoadingStateIndex + 1) % loadingStates.length;
-      const loadingText = this.loadingMessageElement.querySelector('.loading-text');
-      if (loadingText) {
-        loadingText.textContent = `${loadingStates[this.currentLoadingStateIndex]}...`;
-      }
-    }, UI_CONSTANTS.TRANSITION_SLOW * 4);
+    // No longer needed - wave animation is CSS-based
+    // Keeping method for backward compatibility
   }
 
   /**
