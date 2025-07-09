@@ -74,7 +74,7 @@ export class OfflineParser {
     // Email auto-linking
     autoEmail: {
       pattern: /\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b/g,
-      replace: (match: string, email: string) => `<a href="mailto:${email}">${OfflineParser.escapeHtml(email)}</a>`
+      replace: (match: string) => `<a href="mailto:${match}">${OfflineParser.escapeHtml(match)}</a>`
     }
   };
 

@@ -40,6 +40,7 @@
         placeholder: 'Ask me anything...',
         toggleText: 'Ask Agentman',
         initiallyOpen: false,
+        enableAttachments: true,
         
         // Theme system (matching simplified WordPress theme)
         theme: {
