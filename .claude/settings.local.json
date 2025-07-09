@@ -1,0 +1,18 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(ls:*)",
+      "Bash(./deploy-local.sh:*)",
+      "Bash(./deploy-gcp.sh deploy:*)",
+      "Bash(gsutil iam:*)",
+      "Bash(gcloud storage buckets update:*)",
+      "Bash(./deploy-gcp.sh:*)",
+      "Bash(gsutil ls:*)",
+      "Bash(curl:*)",
+      "Bash(gcloud config get-value:*)",
+      "Bash(cp:*)",
+      "Bash(mkdir:*)"
+    ],
+    "deny": []
+  }
+}
