@@ -67,28 +67,86 @@ shopify/
 6. Save file
 
 ### Script Tag Example
+
+**Basic Installation:**
 ```html
-<script src="https://cdn.agentman.ai/shopify/v1/widget.js" 
+<script src="https://storage.googleapis.com/chatwidget-shopify-storage-for-cdn/shopify/v1/widget.js" 
         data-agent-token="YOUR_AGENT_TOKEN"></script>
+```
+
+**Customized Installation:**
+```html
+<script src="https://storage.googleapis.com/chatwidget-shopify-storage-for-cdn/shopify/v1/widget.js" 
+        data-agent-token="YOUR_AGENT_TOKEN"
+        data-title="{{ shop.name }} Assistant"
+        data-bg-color="{{ settings.background_color }}"
+        data-button-color="{{ settings.accent_color }}"
+        data-toggle-text="Chat with us"
+        data-prompt-1="Track my order"
+        data-prompt-2="Product information"
+        data-prompt-3="Return policy"></script>
 ```
 
 ## Configuration Options
 
-All configuration options from WordPress are available:
+🆕 **NEW: Data Attribute Configuration System**  
+All ChatWidget options can now be customized directly in your Shopify theme using data attributes on the script tag. No need to modify the CDN package!
 
-- **General**: Enable/disable, placement, position, initially open
-- **Appearance**: Colors, dimensions, toggle button styling
-- **Content**: Title, placeholder, initial message, prompts
-- **Advanced**: Persistence, branding, Shopify integration options
+### Available Data Attributes
+
+| Category | Data Attribute | Default | Description |
+|----------|---------------|---------|-------------|
+| **Behavior** | `data-variant` | `corner` | Widget style: corner, centered, inline |
+| | `data-position` | `bottom-right` | Position: bottom-right, bottom-left, etc. |
+| | `data-initially-open` | `false` | Open widget on page load |
+| | `data-enable-attachments` | `true` | Enable file attachments |
+| **Appearance** | `data-initial-height` | `600px` | Widget height when opened |
+| | `data-initial-width` | `400px` | Widget width when opened |
+| | `data-title` | `AI Assistant` | Widget title in header |
+| | `data-placeholder` | `Ask me anything...` | Input placeholder text |
+| | `data-toggle-text` | `Ask Agentman` | Toggle button text |
+| **Colors** | `data-bg-color` | `#ffffff` | Widget background color |
+| | `data-text-color` | `#111827` | Text color |
+| | `data-button-color` | `#2563eb` | Primary button color |
+| | `data-button-text-color` | `#ffffff` | Button text color |
+| | `data-toggle-bg-color` | `#2563eb` | Toggle button background |
+| **Content** | `data-welcome-message` | `How can I help you today?` | Welcome message |
+| | `data-prompt-1` | `Track my order` | First quick prompt |
+| | `data-prompt-2` | `Product information` | Second quick prompt |
+| | `data-prompt-3` | `Return policy` | Third quick prompt |
+
+### Integration with Shopify Themes
+
+**Use Theme Colors:**
+```html
+data-bg-color="{{ settings.background_color }}"
+data-button-color="{{ settings.accent_color }}"
+data-text-color="{{ settings.text_color }}"
+```
+
+**Page-Specific Configuration:**
+```html
+{% if template.name == 'product' %}
+  data-title="Product Help"
+  data-prompt-1="Product details"
+  data-prompt-2="Size guide"
+{% elsif template.name == 'cart' %}
+  data-title="Checkout Help"
+  data-prompt-1="Payment options"
+{% endif %}
+```
+
+📖 **Complete Guide**: See `/docs/shopify-customization.md` for comprehensive documentation and examples.
 
 ## Development Status
 
-- [📋] **Phase 1 Planning**: Complete
-- [🚧] **Script Service**: Ready to implement
-- [🚧] **Config Tool**: Ready to implement  
-- [🚧] **Documentation**: Ready to create
-- [📋] **Testing**: Pending implementation
-- [📋] **CDN Deployment**: Pending implementation
+- [✅] **Phase 1 Planning**: Complete
+- [✅] **Script Service**: Implemented with data attribute configuration system
+- [✅] **Configuration System**: Data attributes for theme customization  
+- [✅] **Documentation**: Complete with examples and best practices
+- [✅] **CDN Deployment**: Deployed to GCP Storage
+- [🚧] **Config Tool**: Web-based tool (available but optional)
+- [📋] **Testing**: Ready for pilot customers
 
 ## Technical Architecture
 

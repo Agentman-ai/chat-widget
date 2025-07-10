@@ -1029,6 +1029,7 @@ export class ChatWidget {
     if (header) {
       this.conversationManager.addConversationButton(header, hasConversations);
       this.conversationManager.addNewConversationButton(header); // Always show + button
+      this.conversationManager.addHeaderDivider(header); // Add divider between button groups
       this.conversationManager.addBackButton(header);
     }
 

@@ -157,9 +157,13 @@ export class ConversationManager {
     }
 
     const conversationButton = document.createElement('button');
-    conversationButton.className = 'am-conversation-toggle am-chat-header-button';
-    conversationButton.title = 'View conversations';
-    conversationButton.innerHTML = icons.chatHistory;
+    conversationButton.className = 'am-conversation-toggle am-chat-header-button am-header-button-with-text';
+    conversationButton.title = 'Conversation History';
+    conversationButton.innerHTML = `
+      ${icons.chatHistory}
+      <span class="am-button-label">Chats</span>
+      <span class="am-conversation-indicator"></span>
+    `;
     
     conversationButton.addEventListener('click', () => {
       this.toggleListView();
@@ -181,9 +185,12 @@ export class ConversationManager {
    */
   public addNewConversationButton(headerElement: HTMLElement): void {
     const newButton = document.createElement('button');
-    newButton.className = 'am-conversation-new-header am-chat-header-button';
+    newButton.className = 'am-conversation-new-header am-chat-header-button am-header-button-with-text';
     newButton.title = 'New conversation';
-    newButton.innerHTML = icons.plus2;
+    newButton.innerHTML = `
+      ${icons.plus2}
+      <span class="am-button-label">New</span>
+    `;
     // Always visible - no display style needed
     
     newButton.addEventListener('click', () => {
@@ -200,6 +207,21 @@ export class ConversationManager {
       headerActions.insertBefore(newButton, expandButton);
     } else if (headerActions) {
       headerActions.appendChild(newButton);
+    }
+  }
+
+  /**
+   * Add a vertical divider in the header actions
+   */
+  public addHeaderDivider(headerElement: HTMLElement): void {
+    const divider = document.createElement('div');
+    divider.className = 'am-header-divider';
+    
+    const headerActions = headerElement.querySelector('.am-chat-header-actions');
+    const expandButton = headerActions?.querySelector('.am-chat-expand');
+    
+    if (headerActions && expandButton) {
+      headerActions.insertBefore(divider, expandButton);
     }
   }
 

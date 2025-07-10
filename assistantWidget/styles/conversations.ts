@@ -58,11 +58,58 @@ export const conversationStyles = `
     border-radius: 4px;
     font-size: 16px;
     transition: background-color 0.2s;
-    margin-right: 8px;
   }
 
   .am-conversation-new-header:hover {
     background: rgba(255, 255, 255, 0.1) !important;
+  }
+
+  /* Header buttons with text labels */
+  .am-header-button-with-text {
+    display: flex !important;
+    align-items: center;
+    gap: 4px;
+    padding: 0 0px !important;
+    min-width: auto !important;
+  }
+
+  .am-header-button-with-text svg {
+    width: 18px;
+    height: 18px;
+    flex-shrink: 0;
+  }
+
+  .am-button-label {
+    font-size: 12px;
+    font-weight: 400;
+    color: var(--chat-header-text-color, #ffffff);
+    white-space: nowrap;
+  }
+
+  /* Conversation indicator - small dot to show there are conversations */
+  .am-conversation-indicator {
+    position: absolute;
+    top: 6px;
+    right: 6px;
+    width: 5px;
+    height: 5px;
+    background-color: var(--chat-button-color, #2563eb);
+    border-radius: 50%;
+    display: none; /* Hide for now since we have text labels */
+  }
+
+  .am-conversation-toggle {
+    position: relative;
+  }
+
+  /* Header divider */
+  .am-header-divider {
+    width: 1px;
+    height: 24px;
+    background-color: #111827;
+    opacity: 0.15;
+    margin: 0 4px;
+    flex-shrink: 0;
   }
 
   /* Conversation List */
@@ -176,7 +223,6 @@ export const conversationStyles = `
     border-radius: 4px;
     font-size: 16px;
     transition: background-color 0.2s;
-    margin-right: 8px;
   }
 
   .am-conversation-toggle:hover,
@@ -187,7 +233,6 @@ export const conversationStyles = `
   .am-conversation-back {
     font-size: 18px;
     font-weight: bold;
-    margin-right: 12px;
   }
 
   /* Mobile Responsiveness */

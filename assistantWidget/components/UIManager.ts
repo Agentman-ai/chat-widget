@@ -269,7 +269,7 @@ export class UIManager {
       <div class="am-chat-header">
         <div class="am-chat-header-content">
           <div class="am-chat-logo-title">
-            <span>Ask AI</span>
+            <span>${this.config.title || 'AI Assistant'}</span>
           </div>
           <div class="am-chat-header-actions">
             <button class="am-chat-expand am-chat-header-button desktop-only" 

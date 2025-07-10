@@ -44,15 +44,24 @@ export const baseStyles = `
     align-items: center;
     justify-content: space-between;
     width: 100%;
+    gap: 8px;
   }
 
   .am-chat-logo-title {
     display: flex;
     align-items: center;
     gap: 4px;
-    font-size: 14px;
+    font-size: 16px;
     font-weight: normal;
     color: #111827;
+    flex-shrink: 1;
+    min-width: 0;
+  }
+  
+  .am-chat-logo-title span {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
   }
 
   /* Hamburger menu button */
@@ -113,8 +122,8 @@ export const baseStyles = `
   }
 
   .am-chat-header button svg {
-    width: 20px;
-    height: 20px;
+    width: 18px;
+    height: 18px;
     fill: var(--chat-header-text-color, #FFFFFF);
   }
 
@@ -125,7 +134,8 @@ export const baseStyles = `
   .am-chat-header-actions {
     display: flex;
     align-items: center;
-    gap: 2px;
+    gap: 0px !important;
+    flex-shrink: 0;
   }
 
   .am-chat-header-button {
@@ -436,7 +446,6 @@ export const baseStyles = `
     border-radius: 100px;
     padding: 0;
     cursor: pointer;
-    background: none;
     transition: transform 0.2s;
     z-index: 1000;
   }

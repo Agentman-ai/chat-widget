@@ -21,8 +21,89 @@
     const configId = currentScript?.getAttribute('data-config-id');
     const customApiUrl = currentScript?.getAttribute('data-api-url');
     
+    // Extract widget appearance options from data attributes
+    const extractDataAttribute = (name, defaultValue, parser = (v) => v) => {
+        const value = currentScript?.getAttribute(`data-${name}`);
+        if (value === null || value === undefined) return defaultValue;
+        try {
+            return parser(value);
+        } catch (e) {
+            logError(`Invalid data-${name} value: ${value}`, e);
+            return defaultValue;
+        }
+    };
+    
+    // Extract configuration options that can be set from Shopify liquid
+    const configOverrides = {
+        variant: extractDataAttribute('variant', 'corner'),
+        position: extractDataAttribute('position', 'bottom-right'),
+        initialHeight: extractDataAttribute('initial-height', '600px'),
+        initialWidth: extractDataAttribute('initial-width', '400px'),
+        title: extractDataAttribute('title', 'AI Assistant'),
+        placeholder: extractDataAttribute('placeholder', 'Ask me anything...'),
+        toggleText: extractDataAttribute('toggle-text', 'Ask Agentman'),
+        initiallyOpen: extractDataAttribute('initially-open', false, v => v === 'true'),
+        enableAttachments: extractDataAttribute('enable-attachments', true, v => v === 'true'),
+        hideBranding: extractDataAttribute('hide-branding', true, v => v === 'true'),
+        
+        // Theme colors
+        'theme.backgroundColor': extractDataAttribute('bg-color', '#ffffff'),
+        'theme.textColor': extractDataAttribute('text-color', '#111827'),
+        'theme.buttonColor': extractDataAttribute('button-color', '#2563eb'),
+        'theme.buttonTextColor': extractDataAttribute('button-text-color', '#ffffff'),
+        'theme.agentForegroundColor': extractDataAttribute('agent-color', '#111827'),
+        'theme.userForegroundColor': extractDataAttribute('user-color', '#2563eb'),
+        'theme.toggleBackgroundColor': extractDataAttribute('toggle-bg-color', '#2563eb'),
+        'theme.toggleTextColor': extractDataAttribute('toggle-text-color', '#ffffff'),
+        'theme.toggleIconColor': extractDataAttribute('toggle-icon-color', '#ffffff'),
+        
+        // Message prompts
+        'messagePrompts.show': extractDataAttribute('show-prompts', true, v => v === 'true'),
+        'messagePrompts.welcome_message': extractDataAttribute('welcome-message', 'How can I help you today?'),
+        'messagePrompts.prompt1': extractDataAttribute('prompt-1', 'Track my order'),
+        'messagePrompts.prompt2': extractDataAttribute('prompt-2', 'Product information'),
+        'messagePrompts.prompt3': extractDataAttribute('prompt-3', 'Return policy'),
+        
+        // Persistence settings
+        'persistence.enabled': extractDataAttribute('persistence-enabled', true, v => v === 'true'),
+        'persistence.days': extractDataAttribute('persistence-days', 7, v => parseInt(v, 10))
+    };
+    
     // Configuration service URL (for advanced configurations)
     const CONFIG_SERVICE_URL = 'https://config.agentman.ai/shopify';
+    
+    // Helper function to apply configuration overrides using dot notation
+    function applyConfigOverrides(config, overrides) {
+        const result = { ...config };
+        
+        // Ensure nested objects exist
+        if (!result.theme) result.theme = {};
+        if (!result.messagePrompts) result.messagePrompts = {};
+        if (!result.persistence) result.persistence = {};
+        
+        for (const [key, value] of Object.entries(overrides)) {
+            if (value !== null && value !== undefined) {
+                if (key.includes('.')) {
+                    // Handle nested properties (e.g., 'theme.backgroundColor')
+                    const [parent, child] = key.split('.');
+                    if (parent === 'messagePrompts' && child.startsWith('prompt')) {
+                        // Handle prompt array specially
+                        if (!result.messagePrompts.prompts) result.messagePrompts.prompts = [];
+                        const promptIndex = parseInt(child.replace('prompt', '')) - 1;
+                        result.messagePrompts.prompts[promptIndex] = value;
+                    } else {
+                        if (!result[parent]) result[parent] = {};
+                        result[parent][child] = value;
+                    }
+                } else {
+                    // Handle top-level properties
+                    result[key] = value;
+                }
+            }
+        }
+        
+        return result;
+    }
     
     // Default configuration matching WordPress feature parity
     const defaultConfig = {
@@ -125,6 +206,9 @@
         // Override with script tag attributes
         if (agentToken) config.agentToken = agentToken;
         if (customApiUrl) config.apiUrl = customApiUrl;
+        
+        // Apply data attribute overrides
+        config = applyConfigOverrides(config, configOverrides);
         
         return config;
     }
