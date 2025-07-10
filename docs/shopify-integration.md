@@ -314,7 +314,6 @@ shopify-integration/
                     <input type="number" id="persistenceDays" value="7" min="1" max="30"> days
                 </div>
 
-
                 <h3>Shopify Integration</h3>
                 <div class="form-group">
                     <label>
