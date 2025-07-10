@@ -164,7 +164,7 @@ class Agentman_Chat_Widget_Admin {
         if ($options) {
             // Add or update a timestamp and API URL to force refresh and update endpoint
             $options['last_republish'] = time();
-            $options['api_url']       = 'https://run.agentman.ai';
+            $options['api_url']       = 'https://studio-api.agentman.ai';
             update_option('agentman_chat_widget_options', $options);
         }
         

@@ -11,15 +11,25 @@
     'use strict';
     
     // Script metadata
-    const SCRIPT_VERSION = '1.0.0';
+    const SCRIPT_VERSION = '1.0.1';
     // Use your own CDN URL for the core widget
     const WIDGET_CDN = 'https://storage.googleapis.com/chatwidget-shopify-storage-for-cdn/core/chat-widget.js';
     
     // Extract configuration from script tag
-    const currentScript = document.currentScript || document.querySelector('script[src*="agentman"]');
+    // For async scripts, document.currentScript may be null, so we need a more robust selector
+    const currentScript = document.currentScript || 
+                         document.querySelector('script[src*="widget.js"]') ||
+                         document.querySelector('script[src*="chatwidget-shopify-storage-for-cdn"]');
     const agentToken = currentScript?.getAttribute('data-agent-token');
     const configId = currentScript?.getAttribute('data-config-id');
     const customApiUrl = currentScript?.getAttribute('data-api-url');
+    
+    // Debug logging
+    if (!currentScript) {
+        logError('Could not find script tag - data attributes will not be read');
+    } else {
+        logInfo(`Found script tag. API URL: ${customApiUrl || 'not set'}, Token: ${agentToken ? 'set' : 'not set'}`);
+    }
     
     // Extract widget appearance options from data attributes
     const extractDataAttribute = (name, defaultValue, parser = (v) => v) => {
@@ -108,7 +118,7 @@
     const defaultConfig = {
         // Required
         agentToken: agentToken || '',
-        apiUrl: customApiUrl || 'https://run.agentman.ai',
+        apiUrl: customApiUrl || 'https://studio-api.agentman.ai',
         containerId: 'agentman-chat-shopify',
         
         // Widget behavior

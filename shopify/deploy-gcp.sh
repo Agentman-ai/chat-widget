@@ -112,15 +112,15 @@ EOF
 deploy_files() {
     log_info "Deploying files to GCS..."
     
-    # Deploy widget scripts with long cache (immutable)
+    # Deploy widget scripts with shorter cache for development
     log_info "Uploading widget scripts..."
-    gsutil -h "Cache-Control:public, max-age=31536000, immutable" \
+    gsutil -h "Cache-Control:public, max-age=300" \
            -h "Content-Type:application/javascript" \
            cp "$BUILD_DIR/cdn/shopify/v1/"*.js "gs://$BUCKET_NAME/shopify/v1/"
     
     # Deploy core widget
     log_info "Uploading core widget..."
-    gsutil -h "Cache-Control:public, max-age=31536000, immutable" \
+    gsutil -h "Cache-Control:public, max-age=300" \
            -h "Content-Type:application/javascript" \
            cp "$BUILD_DIR/cdn/core/chat-widget.js" "gs://$BUCKET_NAME/core/"
     
@@ -304,6 +304,33 @@ configure() {
     echo "3. Run: ./deploy-gcp.sh deploy"
 }
 
+# Invalidate cache function
+invalidate_cache() {
+    log_info "🔄 Invalidating CDN cache..."
+    
+    # Update cache headers on existing files to force refresh
+    log_info "Updating cache headers for widget files..."
+    gsutil -m setmeta -h "Cache-Control:no-cache, no-store, must-revalidate" \
+        "gs://$BUCKET_NAME/shopify/v1/*.js" 2>/dev/null || true
+    
+    gsutil -m setmeta -h "Cache-Control:no-cache, no-store, must-revalidate" \
+        "gs://$BUCKET_NAME/core/chat-widget.js" 2>/dev/null || true
+    
+    # Wait a moment
+    sleep 2
+    
+    # Set back to normal cache times
+    log_info "Restoring normal cache headers..."
+    gsutil -m setmeta -h "Cache-Control:public, max-age=300" \
+        "gs://$BUCKET_NAME/shopify/v1/*.js" 2>/dev/null || true
+    
+    gsutil -m setmeta -h "Cache-Control:public, max-age=300" \
+        "gs://$BUCKET_NAME/core/chat-widget.js" 2>/dev/null || true
+    
+    log_success "Cache invalidation completed"
+    log_info "Note: It may take a few minutes for all edge locations to update"
+}
+
 # Cleanup function
 cleanup() {
     log_warning "🧹 This will delete all deployed files and resources"
@@ -331,6 +358,7 @@ usage() {
     echo ""
     echo "Commands:"
     echo "  deploy     Deploy the widget to GCP"
+    echo "  invalidate Force CDN cache refresh"
     echo "  configure  Show configuration help"
     echo "  test       Test current deployment"
     echo "  cleanup    Remove all deployed resources"
@@ -354,6 +382,9 @@ main() {
     case ${1:-deploy} in
         deploy)
             deploy
+            ;;
+        invalidate)
+            invalidate_cache
             ;;
         configure)
             configure

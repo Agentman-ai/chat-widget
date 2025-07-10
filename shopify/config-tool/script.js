@@ -398,7 +398,7 @@ class ShopifyConfigTool {
         // Build complete configuration
         const fullConfig = {
             agentToken: this.config.agentToken,
-            apiUrl: 'https://run.agentman.ai',
+            apiUrl: 'https://studio-api.agentman.ai',
             containerId: 'agentman-chat-shopify',
             variant: this.config.variant,
             position: this.config.position,

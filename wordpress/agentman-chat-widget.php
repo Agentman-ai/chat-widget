@@ -116,7 +116,7 @@ class Agentman_Chat_Widget {
         return array(
             'enabled' => true,
             'agent_token' => '.eJyrVipJzUvMK4nPTFGyMjHTUUosKMjJTE4syczPQ4ilp0JVGBqa1wIAxoEQ6Q.aBBksw.BckjpVgss02uf6AWE5yqqMUrQms',
-            'api_url' => 'https://run.agentman.ai',
+            'api_url' => 'https://studio-api.agentman.ai',
             'variant' => 'corner',
             'position' => 'bottom-right',
             'title' => 'AI Assistant',
@@ -197,7 +197,7 @@ class Agentman_Chat_Widget {
         
         // Text options (with safety checks for required fields)
         $sanitized['agent_token'] = sanitize_text_field(isset($input['agent_token']) ? $input['agent_token'] : '');
-        $sanitized['api_url'] = esc_url_raw(isset($input['api_url']) ? $input['api_url'] : 'https://run.agentman.ai');
+        $sanitized['api_url'] = esc_url_raw(isset($input['api_url']) ? $input['api_url'] : 'https://studio-api.agentman.ai');
         $sanitized['title'] = sanitize_text_field(isset($input['title']) ? $input['title'] : 'AI Assistant');
         $sanitized['placeholder'] = sanitize_text_field(isset($input['placeholder']) ? $input['placeholder'] : 'Ask me anything...');
         $sanitized['toggle_text'] = sanitize_text_field(isset($input['toggle_text']) ? $input['toggle_text'] : 'Ask Agentman');

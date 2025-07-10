@@ -44,6 +44,11 @@ cat "$SCRIPT_DIR/script-service/index.js" >> "$BUILD_DIR/cdn/shopify/v1/widget.j
 # Create minified version (simple copy for now)
 cp "$BUILD_DIR/cdn/shopify/v1/widget.js" "$BUILD_DIR/cdn/shopify/v1/widget.min.js"
 
+# Copy core widget from parent dist
+echo -e "${YELLOW}Copying core widget...${NC}"
+mkdir -p "$BUILD_DIR/cdn/core"
+cp "$SCRIPT_DIR/../dist/index.js" "$BUILD_DIR/cdn/core/chat-widget.js"
+
 # Copy configuration tool
 echo -e "${YELLOW}Copying configuration tool...${NC}"
 cp -r "$SCRIPT_DIR/config-tool/"* "$BUILD_DIR/cdn/shopify/config-tool/"
