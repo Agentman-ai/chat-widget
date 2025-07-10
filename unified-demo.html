@@ -225,8 +225,8 @@
                         <h2 class="section-title">Theme Settings</h2>
                         
                         <div class="form-group">
-                            <label for="headerBackgroundColor">Header Background</label>
-                            <input type="color" id="headerBackgroundColor" value="#10b981">
+                            <label for="buttonColor">Button Color</label>
+                            <input type="color" id="buttonColor" value="#2563eb">
                             <span class="color-preview" style="background-color: #10b981;"></span>
                         </div>
                         
@@ -357,6 +357,15 @@
                             </label>
                             <p class="description">When enabled, the "Powered by Agentman.ai" text will still appear but without a clickable link.</p>
                         </div>
+                        
+                        <h2 class="section-title">Attachment Settings</h2>
+                        
+                        <div class="form-group">
+                            <label>
+                                <input type="checkbox" id="enableAttachments"> Enable file attachments
+                            </label>
+                            <p class="description">When enabled, users can attach files to their messages. Files are validated based on agent capabilities.</p>
+                        </div>
                     </div>
                 </div>
                 
@@ -417,7 +426,7 @@
         // Initialize the widget with persistence
         function initWidget() {
             // Get the ChatWidget class
-            const ChatWidget = window['@agentman/chat-widget'].ChatWidget;
+            const ChatWidget = window.AgentmanChatWidget?.ChatWidget || window.AgentmanChatWidget;
             
             console.log('Using built-in persistence functionality');
             
@@ -639,7 +648,7 @@
                 
                 // Theme settings
                 theme: {
-                    headerBackgroundColor: document.getElementById('headerBackgroundColor').value,
+                    buttonColor: document.getElementById('buttonColor').value,
                     headerTextColor: document.getElementById('headerTextColor').value,
                     backgroundColor: document.getElementById('backgroundColor').value,
                     textColor: document.getElementById('textColor').value,
@@ -665,6 +674,9 @@
                 // Branding settings
                 hideBranding: document.getElementById('hideBranding').checked,
                 
+                // Attachment settings
+                enableAttachments: document.getElementById('enableAttachments').checked,
+                
                 // Persistence settings
                 persistence: {
                     enabled: document.getElementById('persistenceEnabled').checked,
@@ -675,16 +687,35 @@
         }
         
         function applyConfig() {
+            console.log('Applying new configuration...');
+            
             // Remove existing widget
             if (chatWidget) {
+                console.log('Destroying existing widget instance');
                 chatWidget.destroy();
+                chatWidget = null;
             }
             
-            // Initialize with new config
-            const ChatWidget = window['@agentman/chat-widget'].ChatWidget;
-            chatWidget = new ChatWidget(getFormConfig());
-            
-            console.log('Widget configuration applied');
+            // Small delay to ensure cleanup is complete
+            setTimeout(() => {
+                // Get new configuration
+                const newConfig = getFormConfig();
+                console.log('New configuration:', newConfig);
+                
+                // Initialize with new config
+                const ChatWidget = window.AgentmanChatWidget?.ChatWidget || window.AgentmanChatWidget;
+                if (!ChatWidget) {
+                    console.error('ChatWidget class not found!');
+                    return;
+                }
+                
+                try {
+                    chatWidget = new ChatWidget(newConfig);
+                    console.log('Widget configuration applied successfully');
+                } catch (error) {
+                    console.error('Error creating new widget:', error);
+                }
+            }, 100);
         }
         
         function resetConfig() {
@@ -698,7 +729,7 @@
             document.getElementById('initiallyOpen').checked = false;
             
             // Theme settings
-            document.getElementById('headerBackgroundColor').value = '#10b981';
+            document.getElementById('buttonColor').value = '#2563eb';
             document.getElementById('headerTextColor').value = '#FFFFFF';
             document.getElementById('backgroundColor').value = '#FFFFFF';
             document.getElementById('textColor').value = '#111827';
@@ -726,6 +757,9 @@
             
             // Branding settings
             document.getElementById('hideBranding').checked = true;
+            
+            // Attachment settings
+            document.getElementById('enableAttachments').checked = false;
             
             // Update color previews
             updateColorPreviews();

@@ -6,6 +6,8 @@
 
 A customizable, open-source chat widget that can be easily integrated into any web application. The widget provides a modern, responsive interface for users to interact with Agentman AI agents.
 
+**Latest Version**: Features a completely refactored component-based architecture with improved performance, simplified theming, and Claude-style conversation interface.
+
 ## Table of Contents
 - [Features](#features)
 - [Demo](#demo)
@@ -34,17 +36,41 @@ A customizable, open-source chat widget that can be easily integrated into any w
 
 ## Features
 
-- 🎨 Fully customizable UI with extensive theming options
-- 💬 Message prompts and welcome messages
-- 🔒 Secure token-based authentication
-- 🌐 Easy integration with any web application
-- 📱 Responsive design for all devices
-- 💾 Built-in persistence for chat history across sessions
-- ⚡ Lightweight and performant (~50KB gzipped)
-- 🔌 WordPress plugin support
-- 🌍 Cross-browser compatible (Chrome, Firefox, Safari, Edge)
-- ♿ Accessibility-friendly
-- 🔧 TypeScript support
+### 🎨 **Modern Interface**
+- Claude-style conversation layout with role labels (no message bubbles)
+- Simplified theming system focused on essential customization
+- Responsive design for all devices and screen sizes
+- Professional header design with grouped action buttons
+
+### 🏗️ **Component Architecture**
+- Modern component-based architecture for better maintainability
+- Separated concerns: UIManager, ConversationManager, StateManager
+- Reactive state management with pub/sub pattern
+- Optimized DOM manipulation and caching
+
+### 💬 **Conversation Features**
+- Multiple conversation support with history navigation
+- Message prompts and welcome messages
+- Conversation persistence across sessions
+- Real-time message rendering with markdown support
+
+### 🔧 **Developer Experience**
+- TypeScript support with comprehensive type definitions
+- Easy integration with any web application
+- WordPress plugin support with visual configuration
+- Simplified API with backward compatibility
+
+### ⚡ **Performance**
+- Lightweight and performant (~41KB gzipped)
+- Optimized bundle size with smart defaults
+- Efficient memory management and cleanup
+- Browser caching and CDN support
+
+### 🔒 **Security & Reliability**
+- Secure token-based authentication
+- Input sanitization and XSS prevention
+- Cross-browser compatible (Chrome, Firefox, Safari, Edge)
+- Accessibility-friendly design
 
 ## Demo
 
@@ -59,10 +85,14 @@ To run the demos locally:
 npm install
 npm run build
 # Open any of the demo HTML files in your browser:
-# - unified-demo.html (configuration playground)
+# - demo.html (main configuration demo)
+# - unified-demo.html (advanced features)
 # - cdn-demo.html (CDN integration)
 # - iframe-example.html (iframe embedding)
+# - persistence-demo.html (conversation history)
 ```
+
+See [DEMOS.md](DEMOS.md) for detailed information about each demo.
 
 ## Installation
 
@@ -195,9 +225,13 @@ const config = {
   theme: {
     backgroundColor: '#ffffff',
     textColor: '#111827',
-    headerBackgroundColor: '#10b981',
-    headerTextColor: '#ffffff',
-    // ... more theme options
+    buttonColor: '#2563eb',
+    buttonTextColor: '#ffffff',
+    agentForegroundColor: '#111827',
+    userForegroundColor: '#2563eb',
+    toggleBackgroundColor: '#2563eb',
+    toggleTextColor: '#ffffff',
+    toggleIconColor: '#ffffff'
   },
   
   // Persistence
@@ -319,40 +353,32 @@ Prompts appear above the toggle button in corner variant and automatically send 
 
 ### Theme Customization
 
-The theme object supports comprehensive styling options:
+The theme object supports comprehensive styling options using a simplified, modern interface:
 
 ```javascript
 const config = {
   theme: {
-    // Main widget colors
-    backgroundColor: '#ffffff',
-    textColor: '#111827',
-    
-    // Header styling
-    headerBackgroundColor: '#10b981',
-    headerTextColor: '#ffffff',
-    
-    // Message bubbles
-    agentBackgroundColor: '#f3f4f6',
-    userBackgroundColor: '#10b981',
-    agentForegroundColor: '#111827',
-    userForegroundColor: '#ffffff',
-    
-    // Toggle button (corner variant)
-    toggleBackgroundColor: '#10b981',
-    toggleTextColor: '#ffffff',
-    toggleIconColor: '#ffffff',
-    
-    // Icons
-    agentIconColor: '#10b981',
-    userIconColor: '#10b981',
+    // Core Colors
+    textColor: '#111827',          // Main text color
+    backgroundColor: '#ffffff',     // Widget background
     
     // Buttons
-    buttonColor: '#10b981',
-    buttonTextColor: '#ffffff'
+    buttonColor: '#2563eb',        // Primary button color
+    buttonTextColor: '#ffffff',    // Button text color
+    
+    // Message Colors (Claude-style, no bubbles)
+    agentForegroundColor: '#111827',  // Assistant text color
+    userForegroundColor: '#2563eb',   // User text color
+    
+    // Toggle Button (corner variant)
+    toggleBackgroundColor: '#2563eb', // Toggle button background
+    toggleTextColor: '#ffffff',       // Toggle button text
+    toggleIconColor: '#ffffff'        // Toggle button icon
   }
 };
 ```
+
+**Theme Simplification**: The new ChatWidget uses a streamlined theme system focused on essential customization options. Message bubbles have been replaced with a Claude-style conversation layout using role labels.
 
 ### Icon Customization
 
@@ -434,36 +460,40 @@ const widget2 = new ChatWidget({
 
 ### Dynamic Configuration
 
-Update widget configuration after initialization:
+The ChatWidget uses a modern component-based architecture with the following public methods:
 
 ```javascript
 const chatWidget = new ChatWidget(initialConfig);
 
-// Update theme dynamically
-chatWidget.updateTheme({
-  headerBackgroundColor: '#059669'
+// Toggle chat visibility (corner variant)
+chatWidget.toggleChat();
+
+// Add messages programmatically
+chatWidget.addMessage({
+  id: 'msg-123',
+  sender: 'agent',
+  content: 'Hello from the API!',
+  timestamp: new Date().toISOString(),
+  type: 'text'
 });
 
-// Change agent
-chatWidget.updateAgent('NEW_AGENT_TOKEN');
+// Clear conversation storage
+chatWidget.clearStorage();
+
+// Clean up when done
+chatWidget.destroy();
 ```
 
-### Event Handling
+### Static Methods
 
-Listen to widget events:
+Access widget instances and manage multiple widgets:
 
 ```javascript
-chatWidget.on('open', () => {
-  console.log('Chat opened');
-});
+// Get widget instance by container ID
+const widget = ChatWidget.getInstance('my-container');
 
-chatWidget.on('close', () => {
-  console.log('Chat closed');
-});
-
-chatWidget.on('message', (message) => {
-  console.log('New message:', message);
-});
+// Destroy all widget instances
+ChatWidget.destroyAll();
 ```
 
 ## WordPress Integration
@@ -541,16 +571,32 @@ npm run lint
 
 ```
 chat-widget/
-├── src/              # Source code
-│   ├── components/   # UI components
-│   ├── styles/       # CSS styles
-│   ├── utils/        # Utility functions
-│   └── index.ts      # Main entry point
-├── dist/             # Built files
-├── wordpress-plugin/ # WordPress plugin
-├── docs/             # Documentation
-└── examples/         # Example implementations
+├── assistantWidget/        # Main widget source code
+│   ├── components/         # UI component classes (UIManager, ConversationManager)
+│   ├── styles/            # CSS-in-JS styling system
+│   ├── message-renderer/  # Message processing and rendering
+│   ├── utils/             # Utility functions and validation
+│   ├── assets/            # Icons and logo assets
+│   ├── types/             # TypeScript type definitions
+│   ├── constants.ts       # Application constants
+│   └── ChatWidget.ts      # Main ChatWidget class
+├── dist/                  # Built files
+├── wordpress/             # WordPress plugin integration
+├── *.html                 # Demo files (see DEMOS.md)
+└── index.ts              # Library entry point
 ```
+
+### Architecture
+
+The ChatWidget uses a modern component-based architecture:
+
+- **ChatWidget**: Main coordinator class managing all functionality
+- **UIManager**: Handles DOM creation, manipulation, and UI updates  
+- **ConversationManager**: Manages multiple conversations and history
+- **StateManager**: Reactive state management with pub/sub pattern
+- **StyleManager**: Dynamic CSS injection and theming
+- **MessageRenderer**: Markdown processing and message rendering
+- **PersistenceManager**: localStorage conversation history management
 
 ## Contributing
 

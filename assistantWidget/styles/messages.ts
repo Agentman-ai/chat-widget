@@ -1,44 +1,53 @@
 // styles/messages.ts
 export const messageStyles = `
   .am-message {
-    margin-bottom: 8px;
+    margin-bottom: 18px;
     display: flex;
-    gap: 8px;
+    flex-direction: column;
     align-items: flex-start;
-    flex-direction: row;
+    width: 100%;
   }
 
   .am-message.user {
-    flex-direction: row-reverse;
-    margin-top: 16px;
-    text-align: right;
+    margin-top: 24px;
+    margin-bottom: 18px;
   }
 
   .am-message-content {
-    padding: 8px 12px;
-    border-radius: 8px;
+    padding: 0;
+    border-radius: 0;
     font-size: 14px;
-    max-width: 85%;
+    width: 100%;
     word-wrap: break-word;
-    line-height: 1.4;
+    line-height: 1.6;
+    background: none;
+    border: none;
   }
 
   .am-message.agent .am-message-content {
-    background: var(--chat-agent-background-color, #f3f4f6);
-    color: var(--chat-agent-foreground-color, #111827);
-    border: 1px solid rgba(0, 0, 0, 0.05);
+    color: #111827;
   }
 
   .am-message.user .am-message-content {
-    background: var(--chat-user-background-color, #ecfdf5);
-    color: var(--chat-user-foreground-color, #111827);
-    margin-right: 12px; /* Add some margin on the right side */
-    border: 1px solid rgba(0, 0, 0, 0.05);
-    margin-top: 8px;
+    color: #111827;
+  }
+
+  /* Role labels */
+  .am-message-role {
+    font-size: 12px;
+    font-weight: 600;
+    color: #6b7280;
     margin-bottom: 8px;
-    max-width: 90%; /* Allow user messages to be slightly wider */
-    align-self: flex-end; /* Align to the right */
-    text-align: left; /* Keep text left-aligned within the bubble */
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+
+  .am-message.agent .am-message-role {
+    color: #111827;
+  }
+
+  .am-message.user .am-message-role {
+    color: #2563eb;
   }
 
   // Content formatting - Reduce spacing
@@ -241,7 +250,7 @@ export const messageStyles = `
 
   /* Blockquotes */
   .am-message-content blockquote {
-    border-left: 4px solid #059669;
+    border-left: 4px solid #2563eb;
     margin: 8px 0;
     padding: 4px 12px;
     color: #4b5563;

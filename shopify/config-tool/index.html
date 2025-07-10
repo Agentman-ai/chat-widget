@@ -1,0 +1,448 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Agentman Widget Configuration for Shopify</title>
+    <link rel="stylesheet" href="styles.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <div class="logo">
+                <h1>🛒 Agentman for Shopify</h1>
+            </div>
+            <div class="header-content">
+                <h2>Configure Your AI Assistant</h2>
+                <p>Set up your chat widget with the same powerful options as WordPress</p>
+            </div>
+        </header>
+
+        <div class="progress-bar">
+            <div class="progress-steps">
+                <div class="step active" data-step="1">
+                    <div class="step-number">1</div>
+                    <div class="step-label">Token</div>
+                </div>
+                <div class="step" data-step="2">
+                    <div class="step-number">2</div>
+                    <div class="step-label">Appearance</div>
+                </div>
+                <div class="step" data-step="3">
+                    <div class="step-number">3</div>
+                    <div class="step-label">Content</div>
+                </div>
+                <div class="step" data-step="4">
+                    <div class="step-number">4</div>
+                    <div class="step-label">Advanced</div>
+                </div>
+                <div class="step" data-step="5">
+                    <div class="step-number">5</div>
+                    <div class="step-label">Install</div>
+                </div>
+            </div>
+            <div class="progress-line">
+                <div class="progress-fill"></div>
+            </div>
+        </div>
+
+        <div class="config-sections">
+            <!-- Step 1: Agent Token -->
+            <section class="config-section active" data-step="1">
+                <div class="section-header">
+                    <h2>🔑 Agent Token</h2>
+                    <p>Connect your Shopify store to your Agentman AI assistant</p>
+                </div>
+                
+                <div class="form-card">
+                    <div class="form-group">
+                        <label for="agentToken">Agent Token *</label>
+                        <input type="text" id="agentToken" placeholder="Paste your Agentman token here" required>
+                        <div class="form-help">
+                            <p>Don't have a token? <a href="https://studio.agentman.ai" target="_blank">Get yours from Agentman Studio →</a></p>
+                        </div>
+                    </div>
+
+                    <div class="template-selector">
+                        <h3>Quick Start Templates</h3>
+                        <div class="template-grid">
+                            <div class="template-card" data-template="default">
+                                <div class="template-icon">🎯</div>
+                                <h4>Default</h4>
+                                <p>General purpose assistant</p>
+                            </div>
+                            <div class="template-card" data-template="ecommerce">
+                                <div class="template-icon">🛍️</div>
+                                <h4>E-commerce</h4>
+                                <p>Sales & product support</p>
+                            </div>
+                            <div class="template-card" data-template="support">
+                                <div class="template-icon">💬</div>
+                                <h4>Support</h4>
+                                <p>Customer service focused</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="section-actions">
+                    <button class="btn-next" onclick="nextStep()" disabled id="step1Next">Next: Appearance →</button>
+                </div>
+            </section>
+
+            <!-- Step 2: Appearance -->
+            <section class="config-section" data-step="2">
+                <div class="section-header">
+                    <h2>🎨 Appearance</h2>
+                    <p>Customize the look and feel to match your store</p>
+                </div>
+
+                <div class="form-grid">
+                    <div class="form-card">
+                        <h3>Widget Style</h3>
+                        <div class="form-group">
+                            <label for="variant">Display Type</label>
+                            <select id="variant">
+                                <option value="corner">Corner Button (Recommended)</option>
+                                <option value="inline">Inline Embed</option>
+                                <option value="centered">Centered Overlay</option>
+                            </select>
+                        </div>
+
+                        <div class="form-group" id="positionGroup">
+                            <label for="position">Position</label>
+                            <div class="position-selector">
+                                <input type="radio" id="pos-br" name="position" value="bottom-right" checked>
+                                <label for="pos-br" class="position-option">
+                                    <div class="position-preview">
+                                        <div class="position-dot bottom-right"></div>
+                                    </div>
+                                    Bottom Right
+                                </label>
+                                
+                                <input type="radio" id="pos-bl" name="position" value="bottom-left">
+                                <label for="pos-bl" class="position-option">
+                                    <div class="position-preview">
+                                        <div class="position-dot bottom-left"></div>
+                                    </div>
+                                    Bottom Left
+                                </label>
+                                
+                                <input type="radio" id="pos-tr" name="position" value="top-right">
+                                <label for="pos-tr" class="position-option">
+                                    <div class="position-preview">
+                                        <div class="position-dot top-right"></div>
+                                    </div>
+                                    Top Right
+                                </label>
+                                
+                                <input type="radio" id="pos-tl" name="position" value="top-left">
+                                <label for="pos-tl" class="position-option">
+                                    <div class="position-preview">
+                                        <div class="position-dot top-left"></div>
+                                    </div>
+                                    Top Left
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="form-card">
+                        <h3>Colors</h3>
+                        <div class="color-grid">
+                            <div class="color-input">
+                                <label for="buttonColor">Primary Color</label>
+                                <div class="color-picker">
+                                    <input type="color" id="buttonColor" value="#2563eb">
+                                    <span class="color-value">#2563eb</span>
+                                </div>
+                            </div>
+                            <div class="color-input">
+                                <label for="backgroundColor">Background</label>
+                                <div class="color-picker">
+                                    <input type="color" id="backgroundColor" value="#ffffff">
+                                    <span class="color-value">#ffffff</span>
+                                </div>
+                            </div>
+                            <div class="color-input">
+                                <label for="textColor">Text Color</label>
+                                <div class="color-picker">
+                                    <input type="color" id="textColor" value="#111827">
+                                    <span class="color-value">#111827</span>
+                                </div>
+                            </div>
+                            <div class="color-input">
+                                <label for="agentForegroundColor">Assistant Text</label>
+                                <div class="color-picker">
+                                    <input type="color" id="agentForegroundColor" value="#111827">
+                                    <span class="color-value">#111827</span>
+                                </div>
+                            </div>
+                            <div class="color-input">
+                                <label for="userForegroundColor">User Text</label>
+                                <div class="color-picker">
+                                    <input type="color" id="userForegroundColor" value="#2563eb">
+                                    <span class="color-value">#2563eb</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="section-actions">
+                    <button class="btn-prev" onclick="prevStep()">← Back</button>
+                    <button class="btn-next" onclick="nextStep()">Next: Content →</button>
+                </div>
+            </section>
+
+            <!-- Step 3: Content -->
+            <section class="config-section" data-step="3">
+                <div class="section-header">
+                    <h2>💬 Content & Messages</h2>
+                    <p>Configure what your customers see and how they interact</p>
+                </div>
+
+                <div class="form-grid">
+                    <div class="form-card">
+                        <h3>Basic Content</h3>
+                        <div class="form-group">
+                            <label for="title">Widget Title</label>
+                            <input type="text" id="title" value="AI Assistant" placeholder="AI Assistant">
+                        </div>
+
+                        <div class="form-group">
+                            <label for="toggleText">Button Text</label>
+                            <input type="text" id="toggleText" value="Ask Agentman" placeholder="Ask Agentman">
+                        </div>
+
+                        <div class="form-group">
+                            <label for="placeholder">Input Placeholder</label>
+                            <input type="text" id="placeholder" value="Ask me anything..." placeholder="Ask me anything...">
+                        </div>
+
+                        <div class="form-group">
+                            <label for="initialMessage">Welcome Message</label>
+                            <textarea id="initialMessage" rows="3" placeholder="Hello! How can I help you today?">Hello! How can I help you today?</textarea>
+                        </div>
+                    </div>
+
+                    <div class="form-card">
+                        <h3>Quick Prompts</h3>
+                        <div class="form-group">
+                            <label>
+                                <input type="checkbox" id="showPrompts" checked>
+                                Show Quick Prompt Buttons
+                            </label>
+                            <div class="form-help">
+                                <p>Help customers get started with suggested questions</p>
+                            </div>
+                        </div>
+
+                        <div id="promptsSection">
+                            <div class="form-group">
+                                <label for="prompt1">Prompt 1</label>
+                                <input type="text" id="prompt1" value="Track my order" placeholder="Track my order">
+                            </div>
+                            <div class="form-group">
+                                <label for="prompt2">Prompt 2</label>
+                                <input type="text" id="prompt2" value="Product information" placeholder="Product information">
+                            </div>
+                            <div class="form-group">
+                                <label for="prompt3">Prompt 3</label>
+                                <input type="text" id="prompt3" value="Return policy" placeholder="Return policy">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="section-actions">
+                    <button class="btn-prev" onclick="prevStep()">← Back</button>
+                    <button class="btn-next" onclick="nextStep()">Next: Advanced →</button>
+                </div>
+            </section>
+
+            <!-- Step 4: Advanced -->
+            <section class="config-section" data-step="4">
+                <div class="section-header">
+                    <h2>⚙️ Advanced Settings</h2>
+                    <p>Fine-tune your assistant's behavior and features</p>
+                </div>
+
+                <div class="form-grid">
+                    <div class="form-card">
+                        <h3>Conversation Settings</h3>
+                        <div class="form-group">
+                            <label>
+                                <input type="checkbox" id="persistenceEnabled" checked>
+                                Remember Conversations
+                            </label>
+                            <div class="form-help">
+                                <p>Save conversation history when customers navigate between pages</p>
+                            </div>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="persistenceDays">Keep History For</label>
+                            <div class="input-group">
+                                <input type="number" id="persistenceDays" value="7" min="1" max="30">
+                                <span>days</span>
+                            </div>
+                        </div>
+
+                        <div class="form-group">
+                            <label>
+                                <input type="checkbox" id="hideBranding" checked>
+                                Hide External Links
+                            </label>
+                            <div class="form-help">
+                                <p>Remove clickable links from branding text</p>
+                            </div>
+                        </div>
+
+                        <div class="form-group">
+                            <label>
+                                <input type="checkbox" id="initiallyOpen">
+                                Open Automatically
+                            </label>
+                            <div class="form-help">
+                                <p>Show the chat widget open when page loads</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="form-card">
+                        <h3>Shopify Integration</h3>
+                        <div class="form-group">
+                            <label>
+                                <input type="checkbox" id="customerData" checked>
+                                Include Customer Data
+                            </label>
+                            <div class="form-help">
+                                <p>Pass logged-in customer information for personalized responses</p>
+                            </div>
+                        </div>
+
+                        <div class="form-group">
+                            <label>
+                                <input type="checkbox" id="cartSync" checked>
+                                Sync Cart Information
+                            </label>
+                            <div class="form-help">
+                                <p>Allow the AI to see what's in the customer's cart</p>
+                            </div>
+                        </div>
+
+                        <div class="form-group">
+                            <label>
+                                <input type="checkbox" id="orderLookup" checked>
+                                Enable Order Lookup
+                            </label>
+                            <div class="form-help">
+                                <p>Allow customers to ask about their order status</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="section-actions">
+                    <button class="btn-prev" onclick="prevStep()">← Back</button>
+                    <button class="btn-primary" onclick="generateInstallation()">Generate Installation →</button>
+                </div>
+            </section>
+
+            <!-- Step 5: Installation -->
+            <section class="config-section" data-step="5">
+                <div class="section-header">
+                    <h2>🚀 Installation Ready!</h2>
+                    <p>Your chat widget is configured and ready to install</p>
+                </div>
+
+                <div class="installation-methods">
+                    <div class="method-card primary">
+                        <div class="method-header">
+                            <h3>🎯 Method 1: Quick Install</h3>
+                            <span class="badge recommended">Recommended</span>
+                        </div>
+                        <p>Copy this script tag and add it to your theme.liquid file</p>
+                        
+                        <div class="code-block">
+                            <div class="code-header">
+                                <span>Script Tag</span>
+                                <button onclick="copyScriptTag()" class="btn-copy" id="copyScriptBtn">
+                                    📋 Copy
+                                </button>
+                            </div>
+                            <code id="scriptTag" class="code-content"></code>
+                        </div>
+
+                        <div class="installation-steps">
+                            <h4>Installation Steps:</h4>
+                            <ol>
+                                <li>Go to <strong>Shopify Admin → Online Store → Themes</strong></li>
+                                <li>Click <strong>Actions → Edit code</strong> on your current theme</li>
+                                <li>Find and open <strong>layout/theme.liquid</strong></li>
+                                <li>Paste the script tag just before <strong>&lt;/body&gt;</strong></li>
+                                <li>Click <strong>Save</strong></li>
+                                <li>Your chat widget will appear immediately!</li>
+                            </ol>
+                        </div>
+                    </div>
+
+                    <div class="method-card">
+                        <div class="method-header">
+                            <h3>🔗 Method 2: Share Installation Link</h3>
+                        </div>
+                        <p>Send this link to your store owner for guided installation</p>
+                        
+                        <div class="code-block">
+                            <div class="code-header">
+                                <span>Installation Link</span>
+                                <button onclick="copyInstallLink()" class="btn-copy" id="copyLinkBtn">
+                                    📋 Copy
+                                </button>
+                            </div>
+                            <code id="installLink" class="code-content"></code>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="success-message">
+                    <div class="success-icon">✅</div>
+                    <div class="success-content">
+                        <h3>Configuration Complete!</h3>
+                        <p>Your Agentman widget is ready to provide excellent customer support on your Shopify store.</p>
+                    </div>
+                </div>
+
+                <div class="section-actions">
+                    <button class="btn-prev" onclick="prevStep()">← Back to Edit</button>
+                    <button class="btn-secondary" onclick="downloadConfig()">💾 Download Config</button>
+                    <button class="btn-primary" onclick="startOver()">Configure Another Store</button>
+                </div>
+            </section>
+        </div>
+
+        <div class="preview-panel" id="previewPanel">
+            <div class="preview-header">
+                <h3>Live Preview</h3>
+                <button class="preview-toggle" onclick="togglePreview()">×</button>
+            </div>
+            <div class="preview-content">
+                <iframe id="previewFrame" src="preview.html"></iframe>
+            </div>
+        </div>
+
+        <button class="preview-fab" onclick="togglePreview()" id="previewFab">
+            👁️ Preview
+        </button>
+    </div>
+
+    <!-- Toast notifications -->
+    <div id="toastContainer" class="toast-container"></div>
+
+    <script src="script.js"></script>
+</body>
+</html>

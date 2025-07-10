@@ -188,19 +188,9 @@
                         <span class="color-preview" style="background-color: #ffffff"></span>
                     </div>
                     <div class="form-group">
-                        <label>Header Background</label>
+                        <label>Toggle Background</label>
                         <input type="color" id="headerBackgroundColor" value="#059669">
                         <span class="color-preview" style="background-color: #059669"></span>
-                    </div>
-                    <div class="form-group">
-                        <label>User Background</label>
-                        <input type="color" id="userBackgroundColor" value="#10b981">
-                        <span class="color-preview" style="background-color: #10b981"></span>
-                    </div>
-                    <div class="form-group">
-                        <label>Agent Background</label>
-                        <input type="color" id="agentBackgroundColor" value="#f3f4f6">
-                        <span class="color-preview" style="background-color: #f3f4f6"></span>
                     </div>
                 </div>
             </div>
@@ -395,19 +385,15 @@
             initialHeight: '600px',
             initialWidth: '400px',
             theme: {
+                textColor: '#111827',
                 backgroundColor: '#ffffff',
-                textColor: '#1f2937',
                 buttonColor: '#10b981',
                 buttonTextColor: '#ffffff',
-                agentBackgroundColor: '#f3f4f6',
-                userBackgroundColor: '#10b981',
-                agentForegroundColor: '#000000',
+                agentForegroundColor: '#111827',
                 userForegroundColor: '#ffffff',
-                headerBackgroundColor: '#059669',
-                headerTextColor: '#ffffff',
-                agentIconColor: '#059669',
-                userIconColor: '#059669',
-                sendIconColor: '#ffffff'
+                toggleBackgroundColor: '#059669',
+                toggleTextColor: '#ffffff',
+                toggleIconColor: '#ffffff'
             },
             persistence: {
                 enabled: true,
@@ -426,11 +412,15 @@
 
             // Theme colors
             config.theme = {
-                ...config.theme,
+                textColor: '#111827',
                 backgroundColor: document.getElementById('backgroundColor').value,
-                headerBackgroundColor: document.getElementById('headerBackgroundColor').value,
-                userBackgroundColor: document.getElementById('userBackgroundColor').value,
-                agentBackgroundColor: document.getElementById('agentBackgroundColor').value
+                buttonColor: '#2563eb',
+                buttonTextColor: '#ffffff',
+                agentForegroundColor: '#111827',
+                userForegroundColor: '#ffffff',
+                toggleBackgroundColor: document.getElementById('headerBackgroundColor').value,
+                toggleTextColor: '#ffffff',
+                toggleIconColor: '#ffffff'
             };
             
             // Persistence settings
@@ -463,9 +453,7 @@
             document.getElementById('variant').value = defaultConfig.variant;
             document.getElementById('initialMessage').value = defaultConfig.initialMessage;
             document.getElementById('backgroundColor').value = defaultConfig.theme.backgroundColor;
-            document.getElementById('headerBackgroundColor').value = defaultConfig.theme.headerBackgroundColor;
-            document.getElementById('userBackgroundColor').value = defaultConfig.theme.userBackgroundColor;
-            document.getElementById('agentBackgroundColor').value = defaultConfig.theme.agentBackgroundColor;
+            document.getElementById('headerBackgroundColor').value = defaultConfig.theme.toggleBackgroundColor;
             document.getElementById('persistenceEnabled').checked = defaultConfig.persistence.enabled;
             document.getElementById('persistenceDays').value = defaultConfig.persistence.days;
 

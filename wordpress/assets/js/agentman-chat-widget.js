@@ -99,45 +99,9 @@
                 localStorage.setItem('agentman_chat_widget_timestamp', currentTimestamp);
             }
             
-            // Apply custom toggle button styling if toggle style options are present
-            if (agentmanChatWidgetOptions.toggleStyle) {
-                const customToggleStyle = document.createElement('style');
-                customToggleStyle.id = 'agentman-custom-toggle-styles';
-                customToggleStyle.textContent = `
-                    .agentman-toggle-button {
-                        background-color: ${agentmanChatWidgetOptions.toggleStyle.backgroundColor || '#059669'} !important;
-                        color: ${agentmanChatWidgetOptions.toggleStyle.textColor || '#ffffff'} !important;
-                    }
-                    .agentman-toggle-button svg path {
-                        fill: ${agentmanChatWidgetOptions.toggleStyle.iconColor || '#ffffff'} !important;
-                    }
-                    .agentman-toggle-button:hover {
-                        background-color: ${agentmanChatWidgetOptions.toggleStyle.backgroundColor || '#059669'} !important;
-                        filter: brightness(1.1) !important;
-                    }
-                    .agentman-toggle-button:focus {
-                        outline: none !important;
-                    }
-                `;
-                document.head.appendChild(customToggleStyle);
-                
-                // Set up a MutationObserver to apply styles when button is dynamically created
-                const observer = new MutationObserver((mutations) => {
-                    for (const mutation of mutations) {
-                        if (mutation.addedNodes.length) {
-                            const toggleButton = document.querySelector('.agentman-toggle-button');
-                            if (toggleButton) {
-                                toggleButton.classList.add('has-custom-style');
-                                // Observer did its job, disconnect
-                                observer.disconnect();
-                            }
-                        }
-                    }
-                });
-                
-                // Start observing the document body for dynamic elements
-                observer.observe(document.body, { childList: true, subtree: true });
-            }
+            // Note: Toggle button styling is now handled by the new ChatWidget theme system
+            // The theme.toggleBackgroundColor, theme.toggleTextColor, and theme.toggleIconColor
+            // properties are automatically applied by the ChatWidget
             
             // Initialize the widget with the configuration
             window.agentmanChatWidget = new window.ChatWidget(agentmanChatWidgetOptions);

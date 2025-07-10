@@ -1,0 +1,26 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(ls:*)",
+      "Bash(./deploy-local.sh:*)",
+      "Bash(./deploy-gcp.sh deploy:*)",
+      "Bash(gsutil iam:*)",
+      "Bash(gcloud storage buckets update:*)",
+      "Bash(./deploy-gcp.sh:*)",
+      "Bash(gsutil ls:*)",
+      "Bash(curl:*)",
+      "Bash(gcloud config get-value:*)",
+      "Bash(cp:*)",
+      "Bash(mkdir:*)",
+      "Bash(rg:*)",
+      "Bash(find:*)",
+      "Bash(npm run build:*)",
+      "Bash(grep:*)",
+      "Bash(node:*)",
+      "Bash(bash:*)",
+      "Bash(npm test)",
+      "Bash(npm run release:*)"
+    ],
+    "deny": []
+  }
+}

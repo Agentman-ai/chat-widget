@@ -7,6 +7,8 @@ import { responsiveStyles } from './responsive';
 import { svgStyles } from './svg';
 import { loadingStyles } from './loading';
 import { promptStyles } from './prompts';
+import { attachmentStyles } from './attachments';
+import { conversationStyles } from './conversations';
 
 export class StyleManager {
   private styleElement: HTMLStyleElement | null = null;
@@ -21,6 +23,8 @@ export class StyleManager {
       svgStyles,
       loadingStyles,
       promptStyles,
+      attachmentStyles,
+      conversationStyles,
       variantStyles[this.variant],
       animationStyles,
       responsiveStyles

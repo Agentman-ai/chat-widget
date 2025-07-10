@@ -1,2 +1,3 @@
 export { ChatWidget } from './assistantWidget/ChatWidget';
-export type { ChatWidgetConfig } from './assistantWidget/types';
+export { OfflineParser } from './assistantWidget/message-renderer/offline-parser';
+export type { ChatConfig as ChatWidgetConfig } from './assistantWidget/types/types';

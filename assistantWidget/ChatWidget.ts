@@ -1,72 +1,80 @@
-// ChatWidget.ts
-import type { ChatConfig, Message, APIResponse, ChatState, ChatTheme, ChatAssets, PersistenceConfig } from './types/types';
+// ChatWidget.ts - Refactored component-based chat widget
+import type { ChatConfig, Message, ChatState, ChatTheme, ChatAssets, ClientMetadata } from './types/types';
 import { PersistenceManager } from './PersistenceManager';
-
+import { FileUploadManager } from './FileUploadManager';
 import { ConfigManager } from './ConfigManager';
 import { StateManager } from './StateManager';
 import { StyleManager } from './styles/style-manager';
-import { MessageRenderer } from './message-renderer/message-renderer'
+import { MessageRenderer } from './message-renderer/message-renderer';
+import { UIManager } from './components/UIManager';
+import { ConversationManager } from './components/ConversationManager';
+import { ClientMetadataCollector } from './utils/client-metadata';
+import { ValidationUtils } from './utils/validation';
 import { OfflineParser } from './message-renderer/offline-parser';
-import { user, agent, close, send, minimize, maximize, resize, expand, collapse } from './assets/icons';
-import { logo, logo as headerLogo } from './assets/logo';
-import { isImageUrl, getIconHtml } from './utils/icon-utils';
+import * as icons from './assets/icons';
+import { UI_CONSTANTS, API_CONSTANTS, STORAGE_CONSTANTS } from './constants';
 
+/**
+ * ChatWidget - Component-based chat widget with modern architecture
+ * 
+ * This class serves as the main coordinator for all chat widget functionality,
+ * delegating specific responsibilities to focused component classes.
+ */
 export class ChatWidget {
   // Track instances by containerId
   private static instances: Map<string, ChatWidget> = new Map();
 
+  // Core properties
   private config: ChatConfig;
   private state: ChatState;
-  private element!: HTMLElement; // Mark as definitely assigned
+  private element!: HTMLElement;
   private containerId: string;
   private conversationId: string;
   private theme: ChatTheme;
   private assets: ChatAssets;
-  private configManager: ConfigManager;
-  private stateManager: StateManager;
-  private messageRenderer: MessageRenderer;
-  private resizeTimeout: number | null = null;
-  private isInitializing: boolean = false;
-  private styleManager: StyleManager;
-  private resizeDebounceTimeout: number | null = null;
+
+  // Existing managers (reused from original)
+  private configManager!: ConfigManager;
+  private stateManager!: StateManager;
+  private messageRenderer!: MessageRenderer;
+  private fileUploadManager!: FileUploadManager;
+  private styleManager!: StyleManager;
+  private persistenceManager: PersistenceManager | null = null;
+
+  // Component managers
+  private uiManager!: UIManager;
+  private conversationManager!: ConversationManager;
+
+  // Runtime state
   private isInitialized: boolean = false;
+  private isInitializing: boolean = false;
   private isOffline: boolean = false;
   private lastMessageCount: number = 0;
-  private persistenceManager: PersistenceManager | null = null;
-  // Timer handle for delayed prompt display
+  private hasUserStartedConversation: boolean = false;
+  private isFreshConversation: boolean = true; // New flag to track if this is a truly fresh conversation
+
+  // Agent capabilities (extracted from API metadata)
+  private supportedMimeTypes: string[] = [];
+  private supportsAttachments: boolean = false;
+  private agentCapabilities: any = null;
+  
+  // Client metadata
+  private clientMetadata: ClientMetadata = {};
+
+  // Timer handles
   private promptTimer: number | null = null;
-
-  private static readonly defaultIcons = {
-    closeIcon: close,
-    sendIcon: send,
-    minimizeIcon: minimize,
-    maximizeIcon: maximize,
-    expandIcon: expand,
-    collapseIcon: collapse,
-    reduceIcon: resize,
-    userIcon: user,
-    agentIcon: agent
-  };
-
-  private loadingMessageElement: HTMLElement | null = null;
-  private loadingStates: string[] = [
-    'Thinking',
-    'Planning',
-    'Acting',
-    'Generating response'
-  ];
+  private floatingPromptTimer: number | null = null;
+  private resizeTimeout: number | null = null;
+  private resizeDebounceTimeout: number | null = null;
   private loadingAnimationInterval: number | null = null;
+
+  // Loading states
+  private loadingMessageElement: HTMLElement | null = null;
   private currentLoadingStateIndex: number = 0;
 
-  private static MARKED_CDNS = [
-    'https://cdnjs.cloudflare.com/ajax/libs/marked/9.1.2/marked.min.js',
-    'https://cdn.jsdelivr.net/npm/marked@9.1.2/marked.min.js',
-    'https://unpkg.com/marked@9.1.2/marked.min.js'
-  ];
-
-
   constructor(config: ChatConfig & { containerId: string }) {
-
+    console.log('🚀 ChatWidget initializing...');
+    
     this.containerId = config.containerId;
 
     // Check for existing instance with this containerId
@@ -78,31 +86,8 @@ export class ChatWidget {
     // Store the new instance
     ChatWidget.instances.set(this.containerId, this);
 
-    // Create config with theme properties, only including defined values
-    const themeProperties: Record<string, string> = {};
-    if (config.userBackgroundColor) themeProperties.userBackgroundColor = config.userBackgroundColor;
-    if (config.agentBackgroundColor) themeProperties.agentBackgroundColor = config.agentBackgroundColor;
-    if (config.agentForegroundColor) themeProperties.agentForegroundColor = config.agentForegroundColor;
-    if (config.userForegroundColor) themeProperties.userForegroundColor = config.userForegroundColor;
-    if (config.headerBackgroundColor) themeProperties.headerBackgroundColor = config.headerBackgroundColor;
-    if (config.headerTextColor) themeProperties.headerTextColor = config.headerTextColor;
-    if (config.agentIconColor) themeProperties.agentIconColor = config.agentIconColor;
-    if (config.userIconColor) themeProperties.userIconColor = config.userIconColor;
-    // Add toggle button styling properties
-    if (config.theme?.toggleBackgroundColor) themeProperties.toggleBackgroundColor = config.theme.toggleBackgroundColor;
-    if (config.theme?.toggleTextColor) themeProperties.toggleTextColor = config.theme.toggleTextColor;
-    if (config.theme?.toggleIconColor) themeProperties.toggleIconColor = config.theme.toggleIconColor;
-    // Pull in PHP-provided toggleStyle overrides
-    if (config.toggleStyle?.backgroundColor) themeProperties.toggleBackgroundColor = config.toggleStyle.backgroundColor;
-    if (config.toggleStyle?.textColor) themeProperties.toggleTextColor = config.toggleStyle.textColor;
-    if (config.toggleStyle?.iconColor) themeProperties.toggleIconColor = config.toggleStyle.iconColor;
-
-    const configWithTheme: ChatConfig = {
-      ...config,
-      theme: config.theme ? { ...config.theme, ...themeProperties } : themeProperties
-    };
-
-    this.config = this.mergeWithDefaultConfig(configWithTheme);
+    // Initialize configuration and state
+    this.config = this.mergeWithDefaultConfig(config);
     this.theme = this.initializeTheme();
     this.assets = this.initializeAssets();
     this.state = {
@@ -111,41 +96,99 @@ export class ChatWidget {
       isInitialized: false,
       isSending: false,
       messages: [],
-      error: undefined
+      error: undefined,
+      pendingAttachments: [],
+      isUploadingFiles: false
     };
 
+    // Initialize managers
+    this.initializeManagers();
+
+    // Initialize conversation ID
+    this.conversationId = this.generateUUID();
+
+    // Initialize persistence if enabled
+    if (this.config.persistence?.enabled) {
+      this.initializePersistence();
+    }
+
+    // Start initialization process
+    this.init();
+  }
+
+  /**
+   * Initialize all manager components
+   */
+  private initializeManagers(): void {
     this.stateManager = new StateManager(this.state);
     this.stateManager.subscribe(this.handleStateChange.bind(this));
 
-    this.conversationId = this.generateUUID();
-
     this.configManager = new ConfigManager(this.config);
     this.messageRenderer = new MessageRenderer();
+    this.fileUploadManager = new FileUploadManager(
+      this.config.apiUrl,
+      this.config.agentToken,
+      this.conversationId
+    );
 
-    this.styleManager = new StyleManager(config.variant);
-    
-    // Initialize persistence if enabled
-    if (this.config.persistence?.enabled) {
-      this.persistenceManager = new PersistenceManager(
-        this.containerId,
-        this.stateManager,
-        true // enabled
-      );
-      
-      // Migrate any legacy data
-      this.persistenceManager.migrateLegacy();
-      
-      // Get the first conversation ID or create a new one
-      const firstId = this.persistenceManager.getCurrentId() ?? this.persistenceManager.create();
-      this.conversationId = firstId;
-    }
+    this.styleManager = new StyleManager(this.config.variant);
 
-    this.init();
+    // Initialize UI manager with event handlers
+    this.uiManager = new UIManager(
+      this.config,
+      this.theme,
+      this.assets,
+      this.containerId,
+      {
+        onToggle: this.toggleChat.bind(this),
+        onSend: this.handleSendMessage.bind(this),
+        onInputKey: this.handleInputKeypress.bind(this),
+        onResize: this.handleResize.bind(this),
+        onExpand: this.handleExpandClick.bind(this),
+        onPromptClick: this.handlePromptClick.bind(this),
+        onAttachmentClick: this.handleAttachmentClick.bind(this),
+        onFileSelect: this.handleFileSelect.bind(this),
+        onAttachmentRemove: this.handleAttachmentRemove.bind(this)
+      }
+    );
 
+    // Initialize conversation manager
+    this.conversationManager = new ConversationManager(
+      this.config,
+      this.theme,
+      {
+        onNewConversation: this.handleNewConversation.bind(this),
+        onSwitchConversation: this.handleSwitchConversation.bind(this),
+        onDeleteConversation: this.handleDeleteConversation.bind(this),
+        onToggleListView: this.handleToggleListView.bind(this)
+      }
+    );
   }
 
-  async init() {
+  /**
+   * Initialize persistence manager
+   */
+  private initializePersistence(): void {
+    this.persistenceManager = new PersistenceManager(
+      this.containerId,
+      this.stateManager,
+      true // enabled
+    );
+    
+    // Migrate any legacy data
+    this.persistenceManager.migrateLegacy();
+    
+    // Get the first conversation ID or create a new one
+    const firstId = this.persistenceManager.getCurrentId() ?? this.persistenceManager.create();
+    this.conversationId = firstId;
+  }
+
+  /**
+   * Main initialization method
+   */
+  async init(): Promise<void> {
     try {
+      console.log('📦 ChatAgent loading dependencies...');
       await this.loadDependencies();
       this.isOffline = false;
     } catch (error) {
@@ -155,91 +198,32 @@ export class ChatWidget {
 
     // Always initialize, regardless of online/offline status
     this.initialize();
+  
+    // Fetch agent capabilities after initialization (only if attachments are enabled)
+    if (this.config.enableAttachments) {
+      this.fetchAgentCapabilities();
+    }
+
+    console.log('✅ ChatWidget initialized successfully');
   }
 
-  async loadDependencies() {
+  /**
+   * Load external dependencies (marked.js)
+   */
+  private async loadDependencies(): Promise<void> {
+    // TODO: Move to DependencyLoader component
     if (window.marked) {
       this.configureMarked();
       return;
     }
 
-    if (await this.loadFromCache()) {
-      return;
-    }
-
-    for (const cdn of ChatWidget.MARKED_CDNS) {
-      try {
-        await this.loadScript(cdn);
-        this.configureMarked();
-        this.cacheLibrary(cdn);
-        return;
-      } catch (error) {
-        console.warn(`Failed to load from CDN: ${cdn}`, error);
-        continue;
-      }
-    }
-
-    throw new Error('All CDNs failed to load');
+    // For now, use simple fallback
+    this.fallbackToOfflineMode();
   }
 
-
-  private async loadScript(src: string): Promise<void> {
-    return new Promise((resolve, reject) => {
-      const script = document.createElement('script');
-      script.src = src;
-      script.async = true;
-
-      const timeout = setTimeout(() => {
-        reject(new Error('Script load timeout'));
-      }, 5000);
-
-      script.onload = () => {
-        clearTimeout(timeout);
-        resolve();
-      };
-
-      script.onerror = () => {
-        clearTimeout(timeout);
-        reject(new Error(`Failed to load script: ${src}`));
-      };
-
-      document.head.appendChild(script);
-    });
-  }
-
-  async loadFromCache() {
-    try {
-      if ('caches' in window) {
-        const cache = await caches.open('chat-widget-cache');
-        for (const cdn of ChatWidget.MARKED_CDNS) {
-          const response = await cache.match(cdn);
-          if (response) {
-            const script = await response.text();
-            eval(script);
-            this.configureMarked();
-            return true;
-          }
-        }
-      }
-    } catch (error) {
-      console.warn('Failed to load from cache:', error);
-    }
-    return false;
-  }
-
-  cacheLibrary(cdn: string): void {
-    try {
-      if ('caches' in window) {
-        caches.open('chat-widget-cache').then(cache => {
-          cache.add(cdn);
-        });
-      }
-    } catch (error) {
-      console.warn('Failed to cache library:', error);
-    }
-  }
-
-
+  /**
+   * Configure marked.js when available
+   */
   private configureMarked(): void {
     if (window.marked) {
       window.marked.setOptions({
@@ -252,96 +236,100 @@ export class ChatWidget {
     }
   }
 
+  /**
+   * Fallback to offline mode without marked.js
+   */
   private fallbackToOfflineMode(): void {
     this.isOffline = true;
+    // Use enhanced offline parser instead of basic text processing
     window.marked = {
       setOptions: () => { },
       parse: (text: string) => OfflineParser.parse(text)
     };
   }
 
-
-  private mergeWithDefaultConfig(config: ChatConfig): ChatConfig {
-
-    return {
-      ...config,
-      title: config.title || 'Chat Assistant',
-      theme: {
-        textColor: '#111827',
-        backgroundColor: '#FFFFFF',
-        buttonColor: '#059669',
-        buttonTextColor: '#FFFFFF',
-        ...config.theme
-      },
-      placeholder: config.placeholder || 'Type your message...',
-      initiallyOpen: config.initiallyOpen || false,
-      icons: {
-        closeIcon: config.icons?.closeIcon || ChatWidget.defaultIcons.closeIcon,
-        sendIcon: config.icons?.sendIcon || ChatWidget.defaultIcons.sendIcon,
-        minimizeIcon: config.icons?.minimizeIcon || ChatWidget.defaultIcons.minimizeIcon,
-        maximizeIcon: config.icons?.maximizeIcon || ChatWidget.defaultIcons.maximizeIcon,
-        expandIcon: config.icons?.expandIcon || ChatWidget.defaultIcons.expandIcon,
-        collapseIcon: config.icons?.collapseIcon || ChatWidget.defaultIcons.collapseIcon,
-        reduceIcon: config.icons?.reduceIcon || ChatWidget.defaultIcons.reduceIcon,
-        userIcon: config.icons?.userIcon || ChatWidget.defaultIcons.userIcon,
-        agentIcon: config.icons?.agentIcon || ChatWidget.defaultIcons.agentIcon
-      }
-    };
-  }
-
-  private initializeTheme(): ChatTheme {
-    return {
-      textColor: this.config.theme?.textColor || '#111827',
-      backgroundColor: this.config.theme?.backgroundColor || '#FFFFFF',
-      buttonColor: this.config.theme?.buttonColor || '#059669',
-      buttonTextColor: this.config.theme?.buttonTextColor || '#FFFFFF',
-      agentBackgroundColor: this.config.agentBackgroundColor || this.config.theme?.agentBackgroundColor || '#f3f4f6',
-      userBackgroundColor: this.config.userBackgroundColor || this.config.theme?.userBackgroundColor || '#ecfdf5',
-      agentForegroundColor: this.config.agentForegroundColor || this.config.theme?.agentForegroundColor || '#111827',
-      userForegroundColor: this.config.userForegroundColor || this.config.theme?.userForegroundColor || '#FFFFFF',
-      headerBackgroundColor: this.config.headerBackgroundColor || this.config.theme?.headerBackgroundColor || '#BE185D',
-      headerTextColor: this.config.headerTextColor || this.config.theme?.headerTextColor || '#FFFFFF',
-      agentIconColor: this.config.theme?.agentIconColor || '#BE185D',
-      userIconColor: this.config.theme?.userIconColor || '#F43F5E',
-      // Add toggle button styling properties with fallbacks to header colors
-      toggleBackgroundColor: this.config.theme?.toggleBackgroundColor || this.config.theme?.headerBackgroundColor || '#BE185D',
-      toggleTextColor: this.config.theme?.toggleTextColor || this.config.theme?.headerTextColor || '#FFFFFF',
-      toggleIconColor: this.config.theme?.toggleIconColor || this.config.theme?.headerTextColor || '#FFFFFF'
-    };
-  }
-
-  private initializeAssets(): ChatAssets {
-    const assets = {
-      logo: getIconHtml(this.config.logo || logo, 'Main Logo', 42),
-      headerLogo: getIconHtml(this.config.headerLogo || headerLogo, 'Header Logo', 32)
-    };
-    
-    return assets;
-  }
-
-  private initialize() {
+  /**
+   * Initialize the widget UI and functionality
+   */
+  private initialize(): void {
     if (this.isInitialized) return;
 
-    this.setupOnlineStatusMonitoring();
+    console.log('🎨 ChatWidget creating UI...');
     this.styleManager.injectStyles();
-    this.createElements();
-    this.attachEventListeners();
+    this.element = this.uiManager.createAndMount();
+    
+    // Initialize markdown processing (fallback to offline mode since we don't load CDN)
+    this.fallbackToOfflineMode();
+    
+    // Collect client metadata if enabled
+    if (this.config.collectClientMetadata !== false) {
+      // Collect basic metadata synchronously
+      this.clientMetadata = ClientMetadataCollector.collect(this.config.clientMetadata);
+      console.log('🔍 Collected client metadata:', this.clientMetadata);
+      
+      // Optionally collect IP address asynchronously with race condition prevention
+      if (this.config.collectIPAddress) {
+        console.log('🌐 Fetching IP address and geolocation...');
+        const currentMetadata = { ...this.clientMetadata };
+        
+        ClientMetadataCollector.collectWithIP(this.config.clientMetadata)
+          .then(metadataWithIP => {
+            // Only update if no other updates have occurred
+            if (JSON.stringify(this.clientMetadata) === JSON.stringify(currentMetadata)) {
+              this.clientMetadata = metadataWithIP;
+              console.log('✅ Updated metadata with IP:', metadataWithIP);
+            } else {
+              console.log('⚠️ Metadata changed during IP collection, merging...');
+              // Merge IP data with current metadata
+              if (metadataWithIP.ip_address && !this.clientMetadata.ip_address) {
+                this.clientMetadata.ip_address = metadataWithIP.ip_address;
+              }
+              if (metadataWithIP.geo_location && !this.clientMetadata.geo_location) {
+                this.clientMetadata.geo_location = metadataWithIP.geo_location;
+              }
+            }
+          })
+          .catch(error => {
+            console.warn('⚠️ Failed to fetch IP address:', error);
+          });
+      }
+    } else if (this.config.clientMetadata) {
+      // Use only the provided metadata without auto-collection
+      this.clientMetadata = this.config.clientMetadata;
+      console.log('📋 Using provided client metadata:', this.clientMetadata);
+    }
 
+    // Add conversation management UI if persistence is enabled
+    if (this.persistenceManager) {
+      this.setupConversationManagement();
+    }
+
+    // Handle persistence restoration
     let shouldInitChat = true;
     if (this.persistenceManager) {
       const messages = this.persistenceManager.loadMessages();
+      
+      // Load persisted metadata for current conversation
+      const metadata = this.persistenceManager.loadMetadata();
+      if (metadata) {
+        console.log('📋 Initial load - restoring agent capabilities from persisted metadata:', metadata);
+        this.processAgentCapabilities(metadata);
+      } else {
+        console.log('⚠️ Initial load - no persisted metadata found, will initialize from API');
+      }
+      
       if (messages.length > 0) {
-        // Clear existing messages
         this.stateManager.clearMessages();
-        
-        // Add each message
         messages.forEach(msg => this.addMessage(msg));
-        
-        // Update lastMessageCount to skip already loaded AI messages
         this.lastMessageCount = messages.filter(m => m.sender === 'agent').length;
         
-        // Skip initialization since conversation is restored
-        shouldInitChat = false;
+        // Set conversation state based on loaded messages
+        const userMessages = messages.filter(msg => msg.sender === 'user');
+        this.hasUserStartedConversation = userMessages.length > 0;
+        this.isFreshConversation = false; // This is an existing conversation being loaded
+        
+        // If we have metadata, don't need to init chat (avoid duplicate API call)
+        shouldInitChat = !metadata;
       }
     }
 
@@ -350,492 +338,16 @@ export class ChatWidget {
     }
 
     // Update UI based on initial state
-    this.updateUI(this.stateManager.getState());
-
-    this.updateColors(this.theme);
+    this.uiManager.updateUI(this.stateManager.getState());
+    this.uiManager.updateTheme(this.theme);
     
-    // Now that the DOM is initialized, load messages from persistence if available
-    if (this.persistenceManager) {
-      this.stateManager.setMessages(this.persistenceManager.loadMessages());
-    }
-
     this.isInitialized = true;
-  }
-
-  private applyInitialDimensions(height?: string, width?: string): void {
-    if (!height && !width) return;
-
-    const container = this.element.querySelector('.am-chat-container') as HTMLElement;
-    if (container) {
-      if (height) container.style.height = height;
-      if (width) container.style.width = width;
-    }
-  }
-
-  // Get instance by containerId
-  public static getInstance(containerId: string): ChatWidget | undefined {
-    return ChatWidget.instances.get(containerId);
-  }
-
-  public destroy(): void {
-    // Clean up styles
-    this.styleManager.cleanup();
-
-    // Clean up ALL timeouts
-    if (this.resizeTimeout) {
-      window.clearTimeout(this.resizeTimeout);
-    }
-    if (this.resizeDebounceTimeout) {
-      window.clearTimeout(this.resizeDebounceTimeout);
-    }
-    if (this.loadingAnimationInterval) {
-      window.clearInterval(this.loadingAnimationInterval);
-    }
-    if (this.promptTimer) {
-      window.clearTimeout(this.promptTimer);
-    }
-
-    // Remove event listeners
-    window.removeEventListener('resize', this.handleResize.bind(this));
-
-    // Remove DOM elements
-    const widgetElement = document.querySelector(`.am-chat-widget[data-container="${this.containerId}"]`);
-    widgetElement?.remove();
-
-    // Clean up state manager
-    this.stateManager.clearListeners();
-    this.styleManager.cleanup();
-
-    // Remove from instances map
-    ChatWidget.instances.delete(this.containerId);
+    console.log('🎉 ChatWidget UI initialized');
   }
 
   /**
-   * Clear persisted messages and conversation history
+   * Create DOM elements - TODO: Move to UIManager
    */
-  public clearStorage(): void {
-    if (this.persistenceManager) {
-      this.persistenceManager.clearStorage();
-      this.stateManager.clearMessages();
-    }
-  }
-
-  public static destroyAll(): void {
-    // Convert Map values to array before iteration
-    Array.from(ChatWidget.instances.values()).forEach(instance => {
-      instance.destroy();
-    });
-    ChatWidget.instances.clear();
-  }
-
-  private handleResize = (): void => {
-    // Clear any existing resize timeout
-    if (this.resizeTimeout) {
-      window.clearTimeout(this.resizeTimeout);
-    }
-
-    // Set new timeout for performance
-    this.resizeTimeout = window.setTimeout(() => {
-      const state = this.stateManager.getState();
-      this.updateUI(state);
-    }, 100);
-  };
-
-  private handleImmediateResize(): void {
-    // Handle any immediate resize needs
-    // For example, adjusting input field height
-    const input = this.element.querySelector('.am-chat-input') as HTMLTextAreaElement;
-    if (input) {
-      input.style.height = 'auto';
-      input.style.height = `${Math.min(input.scrollHeight, 100)}px`;
-    }
-  }
-
-  public subscribeToState(callback: (state: ChatState) => void): () => void {
-    return this.stateManager.subscribe(callback);
-  }
-
-  private setupForCurrentDevice(): void {
-    if (this.config.variant !== 'corner') return;
-
-    const container = this.element.querySelector('.am-chat-container') as HTMLElement;
-    const input = this.element.querySelector('.am-chat-input') as HTMLTextAreaElement;
-    if (!container) return;
-
-    const isMobile = window.innerWidth <= 480;
-
-    if (isMobile) {
-      container.style.width = '100%';
-      container.style.height = '100%';
-      container.style.borderRadius = '0';
-      container.style.bottom = '0';
-      container.style.right = '0';
-
-      if (this.state.isOpen) {
-        document.body.style.overflow = 'hidden';
-      }
-    } else {
-      container.style.width = this.config.initialWidth || '360px';
-      container.style.height = this.config.initialHeight || '700px';
-      container.style.borderRadius = '12px';
-      container.style.bottom = '20px';
-      container.style.right = '20px';
-
-      document.body.style.overflow = '';
-    }
-
-    // Ensure input maintains its height
-    if (input && !input.style.height) {
-      input.style.height = '32px';
-    }
-  }
-
-
-  private handleStateChange(state: ChatState): void {
-    this.updateUI(state);
-    this.updateToggleButtonStyling();
-  }
-  
-  private updateToggleButtonStyling(): void {
-    const toggleButton = this.element.querySelector('.am-chat-toggle') as HTMLButtonElement;
-    if (toggleButton) {
-      toggleButton.style.backgroundColor = this.theme.toggleBackgroundColor;
-      
-      const toggleIcon = toggleButton.querySelector('.am-chat-logo') as HTMLElement;
-      if (toggleIcon) {
-        toggleIcon.style.color = this.theme.toggleIconColor;
-      }
-      
-      const toggleText = toggleButton.querySelector('.am-chat-toggle-text') as HTMLElement;
-      if (toggleText) {
-        toggleText.style.color = this.theme.toggleTextColor;
-        toggleText.textContent = this.config.toggleText || 'Ask Agentman';
-      }
-    }
-  }
-
-  private updateUI(state: ChatState): void {
-    const container = this.element.querySelector('.am-chat-container') as HTMLDivElement;
-    const toggle = this.element.querySelector('.am-chat-toggle') as HTMLButtonElement;
-    const prompts = this.element.querySelector('.am-chat-message-prompts-container') as HTMLElement;
-
-
-    if (container) {
-      // For corner variant, handle show/hide
-      if (this.config.variant === 'corner') {
-        console.log('[DEBUG] updateUI for corner variant', {
-          isOpen: state.isOpen,
-          messagePromptsConfig: this.config.messagePrompts
-        });
-        
-        const shouldShowCollapsedUI = !state.isOpen && !this.hasUserStartedConversation();
-        console.log('[DEBUG] shouldShowCollapsedUI:', shouldShowCollapsedUI);
-
-      // Handle prompts visibility and placement
-      if (shouldShowCollapsedUI) {
-        console.log('[DEBUG] Scheduling collapsed prompts to show after delay');
-        if (!this.promptTimer) {
-          this.promptTimer = window.setTimeout(() => {
-            console.log('[DEBUG] Delayed showCollapsedPrompts');
-            this.showCollapsedPrompts();
-            this.promptTimer = null;
-          }, 5000);
-        }
-      } else {
-        console.log('[DEBUG] Hiding collapsed prompts and clearing scheduled show');
-        if (this.promptTimer) {
-          clearTimeout(this.promptTimer);
-          this.promptTimer = null;
-        }
-        this.hideCollapsedPrompts();
-      }        
-
-        container.style.display = state.isOpen ? 'flex' : 'none';
-        if (toggle) {
-          toggle.style.display = state.isOpen ? 'none' : 'flex';
-        }
-      } else {
-        // For centered and inline variants, always show container
-        container.style.display = 'flex';
-        // Ensure toggle is hidden for non-corner variants
-        if (toggle) {
-          toggle.style.display = 'none';
-        }
-      }
-    }
-
-    // If we're in corner variant, update device-specific layout
-    if (this.config.variant === 'corner') {
-      this.setupForCurrentDevice();
-    }
-  }
-
-  // Determines if the user has started a conversation
-  private hasUserStartedConversation(): boolean {
-    const messages = this.stateManager.getState().messages;
-    
-    console.log('[DEBUG] Checking conversation status:', {
-      messageCount: messages.length,
-      hasInitialMessage: !!this.config.initialMessage,
-      messages: messages.map(m => ({ sender: m.sender, content: m.content.substring(0, 30) + '...' }))
-    });
-    
-    // If there are no messages, conversation hasn't started
-    if (messages.length === 0) {
-      console.log('[DEBUG] No messages, conversation not started');
-      return false;
-    }
-    
-    // If there's only one message and it's from the agent (system welcome), 
-    // we still consider the conversation as not started by the user
-    if (messages.length === 1 && messages[0].sender === 'agent' && 
-        this.config.initialMessage) {
-      console.log('[DEBUG] Only one message (system welcome), conversation not started');
-      return false;
-    }
-    
-    // Otherwise, if there are user messages or multiple agent messages, 
-    // the conversation has started
-    const hasStarted = messages.some(msg => msg.sender === 'user') || messages.length > 1;
-    console.log('[DEBUG] Conversation started:', hasStarted);
-    return hasStarted;
-  }
-
-  // Show prompts above the toggle button (when chat is collapsed)
-  private showCollapsedPrompts(): void {
-    console.log('[DEBUG] showCollapsedPrompts called');
-    let prompts = this.element.querySelector('.am-chat-message-prompts-container');
-    console.log('[DEBUG] Existing prompts element:', prompts);
-    
-    if (!prompts) {
-      console.log('[DEBUG] Creating new prompts container');
-      prompts = document.createElement('div');
-      prompts.className = 'am-chat-message-prompts-container';
-      
-      const promptsHTML = this.renderMessagePrompts();
-      console.log('[DEBUG] Rendered prompts HTML:', promptsHTML);
-      prompts.innerHTML = promptsHTML;
-      
-      // Insert before or after the toggle button as needed
-      const toggle = this.element.querySelector('.am-chat-toggle');
-      console.log('[DEBUG] Toggle button found:', !!toggle);
-      
-      if (toggle && toggle.parentElement) {
-        console.log('[DEBUG] Inserting prompts before toggle button');
-        toggle.parentElement.insertBefore(prompts, toggle);
-      } else {
-        console.log('[DEBUG] Could not find toggle button or its parent');
-      }
-      
-      this.attachPromptListeners();
-    } else {
-      console.log('[DEBUG] Prompts container already exists');
-    }
-    
-    console.log('[DEBUG] Setting prompts display to block');
-    (prompts as HTMLElement).style.display = 'block';
-  }
-
-// Hide the prompts container
-private hideCollapsedPrompts(): void {
-  const prompts = this.element.querySelector('.am-chat-message-prompts-container');
-  if (prompts) prompts.remove();
-}
-
-/**
- * Render the welcome message and up to 3 prompts if enabled and present.
- */
-/**
- * Check if the current device is a desktop
- * @returns {boolean} true if device is desktop, false otherwise
- */
-private isDesktopDevice(): boolean {
-  // Check if window width is greater than 768px (standard tablet breakpoint)
-  return window.innerWidth > 768;
-}
-
-private renderMessagePrompts(): string {
-  console.log('[DEBUG] renderMessagePrompts called');
-  const promptsCfg = this.config.messagePrompts;
-  console.log('[DEBUG] messagePrompts config:', promptsCfg);
-  
-  // First check if we're on a desktop device
-  if (!this.isDesktopDevice()) {
-    console.log('[DEBUG] Not a desktop device, hiding prompts');
-    return '';
-  }
-  
-  if (!promptsCfg || !promptsCfg.show) {
-    console.log('[DEBUG] Prompts not enabled or missing config');
-    return '';
-  }
-  
-  const { welcome_message, prompts } = promptsCfg;
-  const hasPrompts = Array.isArray(prompts) && prompts.some(p => !!p);
-  const hasWelcome = !!welcome_message;
-  
-  console.log('[DEBUG] Prompt details:', { 
-    hasWelcome, 
-    hasPrompts, 
-    welcomeMessage: welcome_message,
-    prompts: prompts
-  });
-  
-  if (!hasPrompts && !hasWelcome) {
-    console.log('[DEBUG] No welcome message or prompts to show');
-    return '';
-  }
-  
-  let html = '';
-  if (hasWelcome) {
-    // Create a welcome message with the structure that matches the design
-    html += `<div class="am-chat-welcome-message">
-      <div class="am-chat-welcome-header">
-        <div class="am-chat-welcome-avatar">
-          <svg viewBox="0 0 100 100" width="16" height="16" class="am-chat-logo-svg" aria-label="Agentman logo">
-            <!-- Optimized viewBox for better rendering at small sizes -->
-            <g transform="scale(0.2) translate(10,10)">
-              <!-- White background circle -->
-              <ellipse rx="195.69139" ry="195.69139" transform="matrix(1.029699 0 0 1.029699 240.53478 231.5)" fill="white" stroke-width="0"/>
-              <!-- Logo paths -->
-              <path d="M115.170448,367.37098l75.209552-41.95l34.570045,89.914073q-71.559193-7.964036-109.779597-47.964073Z" transform="translate(1.705203 0.000002)" fill="#059669" stroke="#059669" stroke-width="0.964"/>
-              <path d="M115.170448,367.37098l75.209552-41.95l34.570045,89.914073q-71.559193-7.964036-109.779597-47.964073Z" transform="matrix(-1 0 0 1 477.488884 0.213954)" fill="#059669" stroke="#059669" stroke-width="0.964"/>
-              <path d="M239.689307,333.842501l-11.989999,12.523368l7.640737,9.115074-9.00527,28.429999l13.354532,21.66l12.169999-21.66-8.276464-28.429999l7.683584-9.115074-11.577119-12.523368Z" transform="translate(.000003-8.207567)" fill="#059669" stroke-width="0.964"/>
-              <path d="M277.027489,313.607575c2.10968-2.124145,2.109674-7.294472,2.10968-12.616701.000001-4.924048,3.734359-8.575732,5.993261-11.785502c6.850428-9.734066,17.425154-17.270326,32.509567-28.554392c19.581659-14.648281,38.363352-37.839451,38.363352-75.004322s-15.358165-77.557662-47.326267-97.060908-100.336835-21.863731-138.616835,11.230119q-38.28,33.09385-26.47094,84.615075q2.941471,5.424961-4.109265,16.914925c-7.050736,11.489964-5.790737,10.87-13.400737,20.07q-7.61,9.2,14.77,24.588001q8.081429,8.196065,4.040692,25.931176c-4.040737,17.735111,17.930782,25.351045,58.470045,26.015934c6.315019,0,10.285402,4.016302,9.820182,13.53245c2.318232,3.860567,45.195831,4.173208,63.847265,2.124145Z" transform="translate(-4.731067 2.174968)" fill="#059669" stroke-width="0.964"/>
-            </g>
-          </svg>
-          <!-- Fallback for SVG rendering issues -->
-          <span class="am-chat-logo-fallback" aria-hidden="true"></span>
-        </div>
-        <span class="am-chat-welcome-text">👋 ${welcome_message}</span>
-      </div>
-    </div>`;
-  }
-  if (hasPrompts) {
-    html += '<div class="am-chat-message-prompts">';
-    prompts.forEach((prompt, idx) => {
-      if (prompt) {
-        html += `<button class="am-chat-message-prompt" data-action="suggest" data-idx="${idx}">${prompt}</button>`;
-      }
-    });
-    html += '</div>';
-  }
-  
-  console.log('[DEBUG] Generated HTML:', html);
-  return html;
-}
-
-/**
- * Attach click listeners to prompt buttons.
- */
-private attachPromptListeners(): void {
-  const promptBtns = this.element.querySelectorAll('.am-chat-message-prompt');
-  promptBtns.forEach(btn => {
-    btn.addEventListener('click', this.handlePromptClick);
-  });
-}
-
-/**
- * Handle prompt button click: fill input and focus.
- */
-private handlePromptClick = (e: Event): void => {
-  if (e.target instanceof HTMLButtonElement) {
-    const idx = e.target.getAttribute('data-idx');
-    if (idx !== null) {
-      const promptText = this.config.messagePrompts?.prompts[Number(idx)] || '';
-      
-      // Add visual feedback that the prompt was clicked
-      const button = e.target;
-      const originalBackground = button.style.backgroundColor;
-      const originalColor = button.style.color;
-      
-      // Highlight effect
-      button.style.backgroundColor = 'var(--chat-toggle-background-color, var(--chat-header-background-color, #059669))';
-      button.style.color = 'white';
-      
-      // Open the chat first
-      this.stateManager.setOpen(true);
-      this.updateUI(this.stateManager.getState());
-      
-      // Send the message directly instead of filling the input
-      if (promptText) {
-        console.log('[DEBUG] Sending prompt message:', promptText);
-        
-        // Restore original styling after a short delay
-        setTimeout(() => {
-          button.style.backgroundColor = originalBackground;
-          button.style.color = originalColor;
-        }, 200);
-        
-        try {
-          this.handleSendMessage(promptText);
-        } catch (error) {
-          console.error('[ERROR] Failed to send prompt message:', error);
-          // Show error message to user
-          this.addMessage({
-            id: this.generateUUID(),
-            sender: 'agent',
-            content: 'Sorry, I encountered an error processing your request. Please try again.',
-            timestamp: new Date().toISOString(),
-            type: 'text'
-          });
-        }
-      }
-    }
-  }
-}
-
-
-  public updateTheme(theme: Partial<ChatConfig['theme']>): void {
-    this.config.theme = {
-      ...this.config.theme,
-      ...theme
-    };
-
-    if (this.element) {
-      Object.entries(this.config.theme).forEach(([key, value]) => {
-        this.element.style.setProperty(`--chat-${key}`, value);
-      });
-    }
-  }
-
-  public updateVariant(variant: ChatConfig['variant']): void {
-    this.config.variant = variant;
-    this.styleManager.updateStyles(variant);
-
-    if (this.element) {
-      this.element.className = `chat-widget chat-widget--${variant}`;
-    }
-
-    this.setupForCurrentDevice();
-  }
-
-  public updateColors(theme: Partial<ChatTheme>): void {
-    if (this.element) {
-      if (theme.textColor) this.element.style.setProperty('--chat-text-color', theme.textColor);
-      if (theme.backgroundColor) this.element.style.setProperty('--chat-background-color', theme.backgroundColor);
-      if (theme.buttonColor) this.element.style.setProperty('--chat-button-color', theme.buttonColor);
-      if (theme.buttonTextColor) this.element.style.setProperty('--chat-button-text-color', theme.buttonTextColor);
-      if (theme.agentBackgroundColor) this.element.style.setProperty('--chat-agent-background-color', theme.agentBackgroundColor);
-      if (theme.userBackgroundColor) this.element.style.setProperty('--chat-user-background-color', theme.userBackgroundColor);
-      if (theme.agentForegroundColor) this.element.style.setProperty('--chat-agent-foreground-color', theme.agentForegroundColor);
-      if (theme.userForegroundColor) this.element.style.setProperty('--chat-user-foreground-color', theme.userForegroundColor);
-      if (theme.headerBackgroundColor) this.element.style.setProperty('--chat-header-background-color', theme.headerBackgroundColor);
-      if (theme.headerTextColor) this.element.style.setProperty('--chat-header-text-color', theme.headerTextColor);
-      if (theme.agentIconColor) this.element.style.setProperty('--chat-agent-icon-color', theme.agentIconColor);
-      if (theme.userIconColor) this.element.style.setProperty('--chat-user-icon-color', theme.userIconColor);
-      // Add toggle button styling CSS variables
-      if (theme.toggleBackgroundColor) this.element.style.setProperty('--chat-toggle-background-color', theme.toggleBackgroundColor);
-      if (theme.toggleTextColor) this.element.style.setProperty('--chat-toggle-text-color', theme.toggleTextColor);
-      if (theme.toggleIconColor) this.element.style.setProperty('--chat-toggle-icon-color', theme.toggleIconColor);
-      
-      // Update toggle button styling directly
-      if (theme.toggleBackgroundColor || theme.toggleTextColor || theme.toggleIconColor) {
-        this.updateToggleButtonStyling();
-      }
-    }
-  }
-
   private createElements(): void {
     // Remove any existing widget for this container
     const existingWidget = document.querySelector(`.am-chat-widget[data-container="${this.containerId}"]`);
@@ -847,21 +359,16 @@ private handlePromptClick = (e: Event): void => {
     this.element.className = `am-chat-widget am-chat-widget--${this.config.variant}`;
     this.element.setAttribute('data-container', this.containerId);
 
-    // Only show toggle button for corner variant
-    const showToggle = this.config.variant === 'corner';
+    // Basic template for now - TODO: Move to UIManager
+    this.element.innerHTML = this.generateTemplate();
 
-    this.element.innerHTML = this.generateTemplate(showToggle);
-
-    this.applyInitialDimensions(this.config.initialHeight, this.config.initialWidth);
-
-    // For inline variant, append to container, otherwise append to document.body
+    // Mount to container
     if (this.config.variant === 'inline') {
       const container = document.getElementById(this.containerId);
       if (!container) {
         console.error(`Container with id "${this.containerId}" not found`);
         return;
       }
-      // Clear the container
       container.innerHTML = '';
       container.appendChild(this.element);
     } else {
@@ -869,60 +376,42 @@ private handlePromptClick = (e: Event): void => {
     }
   }
 
-  private generateTemplate(showToggle: boolean): string {
+  /**
+   * Generate widget template - TODO: Move to UIManager
+   */
+  private generateTemplate(): string {
+    const showToggle = this.config.variant === 'corner';
+    
     return `
       ${showToggle ? `
         <button class="am-chat-toggle" style="background-color: ${this.theme.toggleBackgroundColor} !important;">
           <div class="am-chat-toggle-content">
-            <div class="am-chat-logo" style="color: ${this.theme.toggleIconColor} !important;">
-              ${this.assets.logo}
-            </div>
-            <span class="am-chat-toggle-text" style="color: ${this.theme.toggleTextColor} !important;">${this.config.toggleText || 'Ask Agentman'}</span>
+            <span class="am-chat-toggle-text" style="color: ${this.theme.toggleTextColor} !important;">
+              ${this.config.toggleText || 'AI Assistant'}
+            </span>
           </div>
         </button>
       ` : ''}
-      <div class="am-chat-container">
-        <aside class="am-drawer" aria-label="Conversations">
-          <header>Chats <button class="am-new" aria-label="New chat">＋</button></header>
-          <ul>
-            ${this.persistenceManager?.list().map(m =>
-              `<li data-id="${m.id}" class="${m.id === this.conversationId ? "active" : ""}">${m.title}</li>`).join("") || ''}
-          </ul>
-          <button class="am-close">Close ▸</button>
-        </aside>
-        <div class="am-chat-header">
+      <div class="am-chat-container" style="display: ${this.state.isOpen || this.config.variant !== 'corner' ? 'flex' : 'none'};">
+        <div class="am-chat-header" style="background-color: white; color: #333;">
           <div class="am-chat-header-content">
-            <div class="am-chat-logo-title">
-              <button class="am-hamburger" aria-label="Menu">
-                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                  <path d="M3 12H21M3 6H21M3 18H21" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-                </svg>
-              </button>
-              <div class="am-chat-header-logo">${this.assets.headerLogo}</div>
-              <span>${this.config.title}</span>
-            </div>
-            <div class="am-chat-header-actions">
-              <button class="am-chat-expand am-chat-header-button desktop-only">
-                ${this.config.icons?.expandIcon || expand}
-              </button>
-              <button class="am-chat-minimize am-chat-header-button">
-                ${this.config.icons?.minimizeIcon || minimize}
-              </button>
-            </div>
+            <span>${this.config.title}</span>
+            <button class="am-chat-minimize">×</button>
           </div>
         </div>
-        <div class="am-chat-messages"></div>
+        <div class="am-chat-messages" style="background-color: ${this.theme.backgroundColor}; color: ${this.theme.textColor};"></div>
         <div class="am-chat-input-container">
           <textarea class="am-chat-input" placeholder="${this.config.placeholder || 'Type your message...'}"></textarea>
-          <button class="am-chat-send" disabled>
-            ${this.config.icons?.sendIcon || send}
-          </button>
+          <button class="am-chat-send" style="background-color: ${this.theme.buttonColor}; color: ${this.theme.buttonTextColor};">Send</button>
         </div>
-        <div class="am-chat-branding">Powered by ${this.config.hideBranding ? `<span style="color: #10b981;">Agentman.ai</span>` : `<a href="https://agentman.ai" target="_blank" rel="noopener noreferrer">Agentman.ai</a>`}</div>
+        <div class="am-chat-branding">Powered by <a href="https://agentman.ai" target="_blank">Agentman</a></div>
       </div>
     `;
   }
 
+  /**
+   * Attach event listeners - TODO: Move to appropriate components
+   */
   private attachEventListeners(): void {
     const toggle = this.element.querySelector('.am-chat-toggle');
     const minimize = this.element.querySelector('.am-chat-minimize');
@@ -930,204 +419,89 @@ private handlePromptClick = (e: Event): void => {
     const input = this.element.querySelector('.am-chat-input') as HTMLTextAreaElement;
 
     if (toggle) {
-      toggle.addEventListener('click', (e: Event) => {
-        if (e instanceof MouseEvent) {
-          this.handleToggleClick(e);
-        }
-      });
+      toggle.addEventListener('click', () => this.toggleChat());
     }
-    
-    // Conversation drawer handlers
-    const drawer = this.element.querySelector('.am-drawer') as HTMLElement;
-    const hamburger = this.element.querySelector('.am-hamburger');
-    const newConversationBtn = this.element.querySelector('.am-new');
-    const closeDrawerBtn = this.element.querySelector('.am-close');
-    
-    // Open drawer with hamburger menu
-    if (hamburger) {
-      hamburger.addEventListener('click', () => {
-        if (drawer) drawer.classList.add('open');
-      });
-    }
-    
-    // Create new conversation
-    if (newConversationBtn) {
-      newConversationBtn.addEventListener('click', () => {
-        this.newConversation();
-        if (drawer) drawer.classList.remove('open');
-      });
-    }
-    
-    // Close drawer with button
-    if (closeDrawerBtn) {
-      closeDrawerBtn.addEventListener('click', () => {
-        if (drawer) drawer.classList.remove('open');
-      });
-    }
-    
-    // Close drawer when clicking outside of it
-    const messagesContainer = this.element.querySelector('.am-chat-messages');
-    const headerContent = this.element.querySelector('.am-chat-header-content');
-    const inputContainer = this.element.querySelector('.am-chat-input-container');
-    
-    // Add click handlers to main UI elements
-    [messagesContainer, headerContent, inputContainer].forEach(element => {
-      if (element) {
-        element.addEventListener('click', (e: Event) => {
-          // Only close if drawer is open and click didn't originate from hamburger button
-          if (e instanceof MouseEvent && drawer && drawer.classList.contains('open')) {
-            const target = e.target as HTMLElement;
-            if (target && !target.closest('.am-hamburger') && !target.closest('.am-drawer')) {
-              drawer.classList.remove('open');
-              e.stopPropagation(); // Prevent other click handlers
-            }
-          }
-        });
-      }
-    });
-    
-    // Switch conversation on click
-    const conversationItems = this.element.querySelectorAll('.am-drawer li');
-    conversationItems.forEach(li => {
-      li.addEventListener('click', () => {
-        const id = li.getAttribute('data-id');
-        if (id) {
-          this.switchConversation(id);
-          if (drawer) drawer.classList.remove('open');
-        }
-      });
-    });
 
     if (minimize) {
-      minimize.addEventListener('click', (e: Event) => {
-        if (e instanceof MouseEvent) {
-          this.handleMinimizeClick(e);
-        }
-      });
+      minimize.addEventListener('click', () => this.toggleChat());
     }
 
     if (send) {
-      send.addEventListener('click', (e: Event) => {
-        if (e instanceof MouseEvent) {
-          this.handleSendClick(e);
-        }
-      });
+      send.addEventListener('click', () => this.handleSendMessage());
     }
 
     if (input) {
-      // Set initial height
-      input.style.height = '44px';
-      input.addEventListener('keydown', this.handleInputKeypress);
-      input.addEventListener('input', this.handleInputChange);
-    }
-
-    const expandButton = this.element.querySelector('.am-chat-expand');
-    if (expandButton) {
-      expandButton.addEventListener('click', this.handleExpandClick);
-    }
-
-    // Use a single resize handler that also updates prompt visibility
-    window.addEventListener('resize', () => {
-      this.handleResize();
-      // Update prompts visibility based on screen size
-      if (this.isDesktopDevice()) {
-        // Show prompts only on desktop
-        const promptsContainer = document.querySelector('.am-chat-message-prompts-container') as HTMLElement;
-        if (promptsContainer) {
-          promptsContainer.style.display = '';
+      input.addEventListener('keydown', (e: KeyboardEvent) => {
+        if (e.key === 'Enter' && !e.shiftKey) {
+          e.preventDefault();
+          this.handleSendMessage();
         }
-      } else {
-        // Hide prompts on mobile
-        const promptsContainer = document.querySelector('.am-chat-message-prompts-container') as HTMLElement;
-        if (promptsContainer) {
-          promptsContainer.style.display = 'none';
-        }
-      }
-    });
+      });
+    }
   }
 
-
-  setupOnlineStatusMonitoring() {
-    window.addEventListener('online', () => {
-      if (this.isOffline) {
-        this.loadDependencies()
-          .then(() => {
-            this.isOffline = false;
-          })
-          .catch(error => {
-            console.warn('Failed to switch to online mode:', error);
-          });
-      }
-    });
-
-    window.addEventListener('offline', () => {
-      this.isOffline = true;
-    });
+  /**
+   * Handle state changes
+   */
+  private handleStateChange(state: ChatState): void {
+    this.uiManager.updateUI(state);
+    this.updateFloatingPrompts(state);
   }
-  // Use arrow functions to preserve 'this' context
-  private handleToggleClick = (e: MouseEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-    this.toggleChat();
-  };
 
-  private handleInputChange = (e: Event): void => {
-    const input = e.target as HTMLTextAreaElement;
+  /**
+   * Manage floating prompt bubbles based on widget state
+   */
+  private updateFloatingPrompts(state: ChatState): void {
+    
+    if (this.config.variant !== 'corner') return;
 
-    // Update send button state immediately
-    const sendButton = this.element.querySelector('.am-chat-send') as HTMLButtonElement;
-    if (sendButton) {
-      sendButton.disabled = !input.value.trim();
-    }
+    // Show floating prompts when: closed + no conversation started + fresh conversation + desktop
+    const shouldShowFloating = !state.isOpen && 
+                               !this.hasUserStartedConversation && 
+                               this.isFreshConversation &&
+                               window.innerWidth > UI_CONSTANTS.TABLET_BREAKPOINT;
 
-    // Debounce resize calculations
-    if (this.resizeDebounceTimeout) {
-      window.clearTimeout(this.resizeDebounceTimeout);
-    }
-
-    this.resizeDebounceTimeout = window.setTimeout(() => {
-      // Reset height to recalculate
-      input.style.height = '32px';
-      // Set height to max of min-height and scroll height
-      const newHeight = Math.max(32, Math.min(input.scrollHeight, 120));
-      input.style.height = `${newHeight}px`;
-    }, 100);
-  };
-
-  // In ChatWidget.ts - Add these methods
-  private handleMinimizeClick = (e: MouseEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-    this.toggleChat();
-  };
-
-  private handleSendClick = async (e: MouseEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-    await this.handleSendMessage();
-  };
-
-  private handleInputKeypress = async (e: KeyboardEvent) => {
-    if (e.key === 'Enter' && !e.shiftKey) {
-      e.preventDefault();
-      e.stopPropagation();
-      const input = e.target as HTMLTextAreaElement;
-      const message = input.value.trim();
-
-      if (message) {
-        await this.handleSendMessage();
+    if (shouldShowFloating) {
+      // Schedule floating prompts to appear after 5 seconds
+      if (!this.floatingPromptTimer) {
+        this.floatingPromptTimer = window.setTimeout(() => {
+          this.uiManager.showFloatingPrompts();
+          this.floatingPromptTimer = null;
+        }, 5000);
       }
+    } else {
+      // Clear timer and hide floating prompts
+      if (this.floatingPromptTimer) {
+        clearTimeout(this.floatingPromptTimer);
+        this.floatingPromptTimer = null;
+      }
+      this.uiManager.hideFloatingPrompts();
     }
-  };
 
+    // Handle inline prompts (when chat is open)
+    // Show prompts only for truly fresh conversations where user hasn't interacted
+    const shouldShowInline = state.isOpen && !this.hasUserStartedConversation && this.isFreshConversation;
+    
+    if (shouldShowInline) {
+      this.uiManager.showMessagePrompts();
+    } else if (state.isOpen) {
+      this.uiManager.hideMessagePrompts();
+    }
+  }
+
+  /**
+   * Toggle chat open/closed
+   */
   public toggleChat(): void {
     if (this.config.variant === 'corner') {
       const newState = !this.stateManager.getState().isOpen;
       this.stateManager.setOpen(newState);
-      this.updateUI(this.stateManager.getState());
     }
   }
 
+  /**
+   * Initialize chat with welcome message from API
+   */
   private async initializeChat(): Promise<void> {
     console.log('🌟 initializeChat() called');
     if (this.state.isInitialized || this.isInitializing) {
@@ -1136,7 +510,7 @@ private handlePromptClick = (e: Event): void => {
     }
 
     this.isInitializing = true;
-    this.showInitializingMessage(true);
+    this.showLoadingIndicator();
     this.lastMessageCount = 0;
     console.log('🚧 Starting chat initialization');
 
@@ -1155,7 +529,8 @@ private handlePromptClick = (e: Event): void => {
           agent_token: this.config.agentToken,
           force_load: false,
           conversation_id: this.conversationId,
-          user_input: initialMessage
+          user_input: initialMessage,
+          ...(Object.keys(this.clientMetadata).length > 0 ? { client_metadata: this.clientMetadata } : {})
         })
       });
 
@@ -1163,12 +538,22 @@ private handlePromptClick = (e: Event): void => {
         throw new Error(`HTTP error! status: ${response.status}`);
       }
 
-      const data = await response.json();
+      const responseText = await response.text();
+      const data = ValidationUtils.parseAndValidatePayload(responseText);
+      
+      if (!data) {
+        throw new Error('Invalid response format from server');
+      }
       
       // Handle the response directly
       if (data.response) {
         console.log('📡 Received initial response data');
         this.handleInitialResponse(data.response);
+        
+        // Extract and process agent capabilities from metadata
+        if (data.metadata) {
+          this.processAgentCapabilities(data.metadata);
+        }
         
         // Check if persistenceManager is saving after welcome message
         if (this.persistenceManager) {
@@ -1182,20 +567,34 @@ private handlePromptClick = (e: Event): void => {
     } catch (error) {
       console.error('Chat initialization error:', error);
       this.stateManager.setError('Failed to initialize chat. Please try again.');
+      
+      // Fallback to local welcome message if API fails
+      if (this.config.initialMessage) {
+        this.addMessage({
+          id: this.generateUUID(),
+          sender: 'agent',
+          content: this.config.initialMessage,
+          timestamp: new Date().toISOString(),
+          type: 'text'
+        });
+      }
     } finally {
       this.isInitializing = false;
-      this.showInitializingMessage(false);
+      this.hideLoadingIndicator();
     }
   }
 
-  private handleInitialResponse(responseData: APIResponse[]): void {
+  /**
+   * Handle initial API response
+   */
+  private handleInitialResponse(responseData: any[]): void {
     console.log('👋 handleInitialResponse() called');
     if (!Array.isArray(responseData)) {
       console.error('Invalid response format:', responseData);
       return;
     }
 
-    // If this.lastMessageCount is undefined (e.g., not yet set), initialize it
+    // If this.lastMessageCount is undefined, initialize it
     if (typeof this.lastMessageCount === 'undefined') {
       this.lastMessageCount = 0;
     }
@@ -1227,153 +626,57 @@ private handlePromptClick = (e: Event): void => {
     this.lastMessageCount = responseData.length;
   }
 
-
-  private isValidMessage(msg: APIResponse): boolean {
-    return (
-      typeof msg === 'object' &&
-      msg !== null &&
-      'type' in msg &&
-      'content' in msg &&
-      typeof msg.content === 'string'
-    );
-  }
-
-  private generateUUID(): string {
-    return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, (c) => {
-      const r = Math.random() * 16 | 0;
-      const v = c === 'x' ? r : (r & 0x3 | 0x8);
-      return v.toString(16);
-    });
-  }
-
-  private showInitializingMessage(show: boolean): void {
-    const initializingElement = this.element.querySelector('.am-chat-initializing') as HTMLElement;
-    const sendButton = this.element.querySelector('.am-chat-send') as HTMLButtonElement;
-    const inputElement = this.element.querySelector('.am-chat-input') as HTMLTextAreaElement;
-
-    if (initializingElement) {
-      initializingElement.style.display = show ? 'block' : 'none';
-    }
-
-    if (sendButton) {
-      sendButton.disabled = show;
-    }
-
-    if (inputElement) {
-      inputElement.disabled = show;
-    }
-  }
-
-  private async sendMessage(message: string): Promise<void> {
-    const messageId = this.generateUUID();
-    const newMessage: Message = {
-      id: messageId,
-      sender: 'user',
-      content: message,
-      timestamp: new Date().toISOString(),
-      type: 'text'
-    };
-
-    // Add user message
-    this.addMessage(newMessage);
-
-    // Show loading indicator
-    this.showLoadingIndicator();
-
-    try {
-      const response = await fetch(
-        `${this.config.apiUrl}/v2/agentman_runtime/agent`,
-        {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            agent_token: this.config.agentToken,
-            force_load: false,
-            conversation_id: this.conversationId,
-            user_input: message
-          }),
-        }
-      );
-
-      if (!response.ok) {
-        throw new Error('Failed to send message');
-      }
-
-      const data = await response.json();
-
-      // Hide loading before showing response
-      this.hideLoadingIndicator();
-
-
-
-      // Process the response array
-      if (Array.isArray(data.response)) {
-        await this.handleResponse(data.response);
-        
-        // Save messages after response is processed
-        if (this.persistenceManager && !this.isLoadingConversation) {
-          console.log('💾 Saving messages after response processed');
-          this.persistenceManager.saveMessages();
-          
-          // Update the conversation drawer to reflect new titles
-          this.updateConversationDrawer();
-        } else if (this.isLoadingConversation) {
-          console.log('⏭️ Skipping save during conversation loading');
-        }
-      } else {
-        console.error('Invalid response format:', data);
-      }
-    } catch (error) {
-      console.error('Message sending error:', error);
-      this.hideLoadingIndicator();
-
-      const errorMessage: Message = {
-        id: this.generateUUID(),
-        sender: 'agent',
-        content: 'Sorry, I encountered an error. Please try again.',
-        timestamp: new Date().toISOString(),
-        type: 'text'
-      };
-      this.addMessage(errorMessage);
-    }
-  }
-
-  // Update handleSendMessage to properly handle state
-  private async handleSendMessage(directMessage?: string): Promise<void> {
-    let message: string;
+  /**
+   * Handle sending messages - TODO: Move to MessageHandler
+   */
+  private async handleSendMessage(): Promise<void> {
+    const input = this.uiManager.getElement('.am-chat-input') as HTMLTextAreaElement;
+    const rawMessage = input?.value || '';
     
-    if (directMessage) {
-      // Use the provided message directly
-      message = directMessage.trim();
-    } else {
-      // Get message from input field
-      const input = this.element.querySelector('.am-chat-input') as HTMLTextAreaElement;
-      message = input.value.trim();
-      
-      // Clear input field if we're using it
-      if (message) {
-        input.value = '';
-        input.style.height = 'auto';
-      }
-    }
-
-    if (!message || this.state.isSending) {
+    // Sanitize user input
+    const message = ValidationUtils.sanitizeUserInput(rawMessage).trim();
+    
+    // Check if we have attachments
+    const pendingAttachments = this.stateManager.getState().pendingAttachments || [];
+    const hasAttachments = pendingAttachments.length > 0;
+    
+    // Allow sending if we have either message text OR attachments
+    if ((!message && !hasAttachments) || this.state.isSending) {
       return;
     }
 
-    // Set sending state
+    // Rate limiting check
+    if (!ValidationUtils.checkRateLimit(`chat_${this.containerId}`, 30, 60000)) {
+      console.warn('Rate limit exceeded for chat messages');
+      return;
+    }
+
+    // Mark that user has started conversation BEFORE any state changes
+    this.hasUserStartedConversation = true;
+    this.isFreshConversation = false; // No longer fresh once user sends a message
+    
+    // Hide prompts immediately since user is now interacting
+    this.uiManager.hideMessagePrompts();
+    this.uiManager.hideFloatingPrompts();
+
+    // Set sending state (this triggers handleStateChange, but hasUserStartedConversation is already true)
     this.stateManager.setSending(true);
 
     try {
+      // Clear input
+      if (input) {
+        input.value = '';
+        input.style.height = 'auto';
+      }
+
       // Disable send button
-      const sendButton = this.element.querySelector('.am-chat-send') as HTMLButtonElement;
+      const sendButton = this.uiManager.getElement('.am-chat-send') as HTMLButtonElement;
       if (sendButton) {
         sendButton.disabled = true;
       }
 
-      await this.sendMessage(message);
+      // Use message text or empty string if only attachments
+      await this.sendMessage(message || '');
     } catch (error) {
       console.error('Error sending message:', error);
     } finally {
@@ -1381,74 +684,148 @@ private handlePromptClick = (e: Event): void => {
     }
   }
 
-  public addMessage(message: Message): void {
-    const messagesContainer = this.element.querySelector('.am-chat-messages');
-    if (!messagesContainer) {
-      console.error('Messages container not found');
-      return;
-    }
-
-    this.stateManager.addMessage(message);
+  /**
+   * Send message to agent API
+   */
+  private async sendMessage(message: string): Promise<void> {
+    const messageId = this.generateUUID();
     
-    // Save message to persistence storage
-    if (this.persistenceManager && !this.isLoadingConversation) {
-      console.log('💾 Saving message in addMessage() method');
-      this.persistenceManager.saveMessages();
-    } else if (this.isLoadingConversation) {
-      console.log('⏭️ Skipping save in addMessage() during conversation loading');
+    // Get successfully uploaded attachments
+    const successfulAttachments = this.config.enableAttachments ? 
+      this.stateManager.getState().pendingAttachments.filter(a => a.upload_status === 'success') : [];
+    
+    // Create user message
+    const newMessage: Message = {
+      id: messageId,
+      sender: 'user',
+      content: message,
+      timestamp: new Date().toISOString(),
+      type: 'text',
+      attachments: successfulAttachments.length > 0 ? successfulAttachments : undefined
+    };
+
+    // Add user message
+    this.addMessage(newMessage);
+
+    // Clear pending attachments after adding to message
+    if (this.config.enableAttachments && successfulAttachments.length > 0) {
+      this.stateManager.clearPendingAttachments();
+      this.updateAttachmentPreview();
     }
 
-    const messageElement = document.createElement('div');
-    messageElement.className = `am-message ${message.sender}`;
+    // Show loading indicator
+    this.showLoadingIndicator();
 
-    const renderedContent = this.messageRenderer.render(message);
-    const icon = message.sender === 'user' 
-      ? this.config.icons?.userIcon || ChatWidget.defaultIcons.userIcon 
-      : this.config.icons?.agentIcon || ChatWidget.defaultIcons.agentIcon;
+    try {
+      // Prepare request body
+      const requestBody: any = {
+        agent_token: this.config.agentToken,
+        force_load: false,
+        conversation_id: this.conversationId,
+        user_input: message,
+        ...(Object.keys(this.clientMetadata).length > 0 ? { client_metadata: this.clientMetadata } : {})
+      };
 
-    // For SVG icons, we need to ensure they're treated as SVG content
-    const iconHtml = typeof icon === 'string' && (icon.includes('<svg') || isImageUrl(icon))
-      ? getIconHtml(icon, `${message.sender} avatar`)
-      : icon; // If it's already an SVG object, use it directly
+      // Add attachment URLs if available
+      if (successfulAttachments.length > 0) {
+        const attachmentUrls = successfulAttachments
+          .filter(a => a.url)
+          .map(a => a.url);
+        if (attachmentUrls.length > 0) {
+          requestBody.attachment_urls = attachmentUrls;
+        }
+      }
+      
+      console.log('🔄 Sending message to API:', {
+        url: `${this.config.apiUrl}/v2/agentman_runtime/agent`,
+        body: requestBody
+      });
+      
+      const response = await fetch(
+        `${this.config.apiUrl}/v2/agentman_runtime/agent`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(requestBody),
+        }
+      );
 
-    // Only show avatar for agent messages, not for user messages
-    if (message.sender === 'user') {
-      messageElement.innerHTML = `
-        <div class="am-message-content">
-          ${renderedContent}
-        </div>
-      `;
-    } else {
-      messageElement.innerHTML = `
-        <div class="am-message-avatar ${message.sender}" style="color: ${this.theme.agentIconColor}">
-          ${iconHtml}
-        </div>
-        <div class="am-message-content">
-          ${renderedContent}
-        </div>
-      `;
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      const responseText = await response.text();
+      const data = ValidationUtils.parseAndValidatePayload(responseText);
+      
+      if (!data) {
+        throw new Error('Invalid response format from server');
+      }
+      console.log('📨 Received API response:', data);
+
+      // Hide loading before showing response
+      this.hideLoadingIndicator();
+
+      // Process the response array first
+      if (Array.isArray(data.response)) {
+        await this.handleResponse(data.response);
+        
+        // Process agent metadata after messages are handled (prevents race condition)
+        if (data.metadata) {
+          console.log('💾 Processing updated agent metadata from response');
+          this.processAgentCapabilities(data.metadata);
+        }
+        
+        // Save messages and metadata atomically
+        if (this.persistenceManager) {
+          console.log('💾 Saving messages after response processed');
+          this.persistenceManager.saveMessages();
+        }
+      } else {
+        console.error('Invalid response format:', data);
+        this.addErrorMessage('Invalid response format from agent');
+      }
+    } catch (error) {
+      console.error('Message sending error:', error);
+      this.hideLoadingIndicator();
+
+      let errorContent = 'Sorry, I encountered an error. Please try again.';
+      
+      // Parse API errors
+      if (error instanceof Error) {
+        if (error.message.includes('Failed to fetch')) {
+          errorContent = 'Unable to connect to the agent service. Please check your connection and try again.';
+        } else if (error.message.includes('401')) {
+          errorContent = 'Authentication failed. Please check your agent token.';
+        } else if (error.message.includes('404')) {
+          errorContent = 'Agent service not found. Please check the API URL.';
+        }
+      }
+
+      this.addErrorMessage(errorContent);
     }
-
-    messagesContainer.appendChild(messageElement);
-    messagesContainer.scrollTop = messagesContainer.scrollHeight;
   }
 
-  private async handleResponse(responseData: APIResponse[]): Promise<void> {
+  /**
+   * Handle API response
+   */
+  private async handleResponse(responseData: any[]): Promise<void> {
     if (!Array.isArray(responseData)) {
       console.error('Invalid response format:', responseData);
       return;
     }
 
-    // If this.lastMessageCount is undefined (e.g., not yet set), initialize it
+    // If this.lastMessageCount is undefined, initialize it
     if (typeof this.lastMessageCount === 'undefined') {
       this.lastMessageCount = 0;
     }
     
-    console.log(`🔍 handleResponse: Processing response with ${responseData.length} messages, lastMessageCount=${this.lastMessageCount}`);
+    console.log(`🔍 Processing response with ${responseData.length} messages, lastMessageCount=${this.lastMessageCount}`);
 
     // Get only the new messages that appear after the last known count
     const newMessages = responseData.slice(this.lastMessageCount);
-    console.log(`🔄 handleResponse: Found ${newMessages.length} new messages`);
+    console.log(`🔄 Found ${newMessages.length} new messages`);
     
     // Get current messages to check for duplicates
     const currentMessages = this.stateManager.getState().messages;
@@ -1457,7 +834,7 @@ private handlePromptClick = (e: Event): void => {
     for (const msg of newMessages) {
       // Skip human messages since we already display them when sending
       if (msg.type !== 'ai') {
-        console.log('⏭️ handleResponse: Skipping human message');
+        console.log('⏭️ Skipping human message');
         continue;
       }
       
@@ -1465,12 +842,12 @@ private handlePromptClick = (e: Event): void => {
       
       // Skip if this message content already exists in the UI
       if (existingContents.includes(content)) {
-        console.log('⏭️ handleResponse: Skipping duplicate message: ' + content.substring(0, 30) + '...');
+        console.log('⏭️ Skipping duplicate message: ' + content.substring(0, 30) + '...');
         continue;
       }
 
       if (this.isValidMessage(msg) && content) {
-        console.log('➕ handleResponse: Adding new message');
+        console.log('➕ Adding new agent message');
         this.addMessage({
           id: msg.id ?? this.generateUUID(),
           sender: 'agent',
@@ -1483,16 +860,45 @@ private handlePromptClick = (e: Event): void => {
 
     // Update lastMessageCount to reflect the total messages processed
     this.lastMessageCount = responseData.length;
-    console.log(`✅ handleResponse: Updated lastMessageCount to ${this.lastMessageCount}`);
+    console.log(`✅ Updated lastMessageCount to ${this.lastMessageCount}`);
   }
 
+  /**
+   * Add error message to chat
+   */
+  private addErrorMessage(content: string): void {
+    const errorMessage: Message = {
+      id: this.generateUUID(),
+      sender: 'agent',
+      content: content,
+      timestamp: new Date().toISOString(),
+      type: 'text'
+    };
+    this.addMessage(errorMessage);
+  }
 
+  /**
+   * Check if message is valid
+   */
+  private isValidMessage(msg: any): boolean {
+    return (
+      typeof msg === 'object' &&
+      msg !== null &&
+      'type' in msg &&
+      'content' in msg &&
+      typeof msg.content === 'string'
+    );
+  }
+
+  /**
+   * Show loading indicator
+   */
   private showLoadingIndicator(): void {
     if (this.loadingMessageElement) {
       return;
     }
 
-    const messagesContainer = this.element.querySelector('.am-chat-messages');
+    const messagesContainer = this.uiManager.getElement('.am-chat-messages');
     if (!messagesContainer) {
       return;
     }
@@ -1500,24 +906,12 @@ private handlePromptClick = (e: Event): void => {
     this.loadingMessageElement = document.createElement('div');
     this.loadingMessageElement.className = 'am-message agent am-chat-loading-message';
 
-    const icon = this.config.icons?.agentIcon || ChatWidget.defaultIcons.agentIcon;
-    
-    // For SVG icons, we need to ensure they're treated as SVG content
-    const iconHtml = typeof icon === 'string' && (icon.includes('<svg') || isImageUrl(icon))
-      ? getIconHtml(icon, 'agent avatar')
-      : icon; // If it's already an SVG object, use it directly
-
     this.loadingMessageElement.innerHTML = `
-      <div class="am-message-avatar" style="color: ${this.theme.agentIconColor}">
-        ${iconHtml}
-      </div>
+      <div class="am-message-role">Assistant</div>
       <div class="am-message-content">
         <div class="loading-container">
-          <div class="loading-bars">
-            <span></span><span></span><span></span>
-          </div>
-          <div class="loading-text-wrapper">
-            <span class="loading-text">${this.loadingStates[0]}...</span>
+          <div class="loading-waves">
+            <span></span><span></span><span></span><span></span><span></span>
           </div>
         </div>
       </div>
@@ -1525,266 +919,828 @@ private handlePromptClick = (e: Event): void => {
 
     messagesContainer.appendChild(this.loadingMessageElement);
     messagesContainer.scrollTop = messagesContainer.scrollHeight;
-    this.startLoadingAnimation();
+    // Wave animation is CSS-based, no need for JavaScript animation
   }
 
+  /**
+   * Hide loading indicator
+   */
   private hideLoadingIndicator(): void {
     if (this.loadingMessageElement) {
-      this.loadingMessageElement.classList.add('loading-fade-out');
-      setTimeout(() => {
-        this.loadingMessageElement?.remove();
-        this.loadingMessageElement = null;
-      }, 150);
+      this.loadingMessageElement.remove();
+      this.loadingMessageElement = null;
     }
 
+    // No longer needed - wave animation is CSS-based
     if (this.loadingAnimationInterval) {
       window.clearInterval(this.loadingAnimationInterval);
       this.loadingAnimationInterval = null;
     }
   }
-  
-  // Conversation management methods for Stage 2
-  public newConversation(): void {
-    console.log('⭐ newConversation() called');
-    
-    if (!this.persistenceManager) {
-      console.error('😱 persistenceManager is not available');
-      return;
-    }
-    
-    console.log('📝 Current conversation ID before new:', this.conversationId);
-    
-    // Explicitly clear the chat UI first
-    console.log('🚮 Clearing chat UI messages');
-    const messagesContainer = this.element.querySelector('.am-chat-messages');
-    if (messagesContainer) {
-      messagesContainer.innerHTML = '';
-    }
-    
-    console.log('🧹 Clearing messages from state manager');
-    // Clear memory state
-    this.stateManager.setMessages([]);
-    this.stateManager.clearMessages();
-    
-    // Create new conversation with empty message array
-    console.log('🆕 Creating new conversation');
-    const id = this.persistenceManager.create();
-    console.log('✅ New conversation created with ID:', id);
-    
-    // Switch to the new conversation
-    console.log('🔄 Switching to new conversation');
-    this.switchConversation(id);
-    
-    // Update just the conversation drawer instead of rebuilding entire UI
-    console.log('🔄 Updating conversation drawer');
-    this.updateConversationDrawer();
-    
-    // Initialize the new conversation with a welcome message
-    console.log('📡 Initializing new conversation with welcome message');
-    this.initializeChat();
-    
-    console.log('✨ newConversation() complete');
-  }
-  
-  private updateConversationDrawer(): void {
-    if (!this.persistenceManager) return;
-    
-    // Find the conversation list in the drawer
-    const drawerList = this.element.querySelector('.am-drawer ul');
-    if (!drawerList) return;
-    
-    // Get all conversations and generate the list items
-    const conversations = this.persistenceManager.list();
-    const listHTML = conversations.map(conv => {
-      // Format the timestamp as a relative time (e.g., "2 min ago")
-      const timeAgo = this.getRelativeTimeString(conv.lastUpdated);
-      
-      // Check if this conversation has unread messages (for badge)
-      // This is a placeholder - implement actual unread count logic as needed
-      const unreadCount = 0; // Replace with actual unread count
-      const badgeHtml = unreadCount > 0 ? `<span class="badge">${unreadCount}</span>` : '';
-      
-      return `<li data-id="${conv.id}" class="${conv.id === this.conversationId ? 'active' : ''}">
-        <span class="title">${conv.title}</span>
-        <span class="time">${timeAgo}</span>
-        ${badgeHtml}
-      </li>`;
-    }).join('');
-    
-    // Update the drawer list
-    drawerList.innerHTML = listHTML;
-    
-    // Re-attach event listeners just for the conversation items
-    const conversationItems = drawerList.querySelectorAll('li');
-    conversationItems.forEach(li => {
-      // Remove any existing click listeners to prevent duplicates
-      const newLi = li.cloneNode(true) as HTMLElement;
-      li.parentNode?.replaceChild(newLi, li);
-      
-      // Add click event listener with proper binding
-      newLi.addEventListener('click', (e: Event) => {
-        e.preventDefault(); // Prevent any default behavior
-        e.stopPropagation(); // Stop event bubbling
-        
-        const id = newLi.getAttribute('data-id');
-        console.log('🖱️ Conversation item clicked:', id);
-        
-        if (id) {
-          // Close drawer first
-          const drawer = this.element.querySelector('.am-drawer');
-          if (drawer) drawer.classList.remove('open');
-          
-          // Then switch conversation
-          setTimeout(() => {
-            this.switchConversation(id);
-          }, 50); // Small delay to ensure UI updates properly
-        }
-      });
-    });
-  }
-  
-  private isLoadingConversation = false;
-  
+
   /**
-   * Formats a timestamp into a relative time string (e.g., "2m ago", "5h ago")
-   * @param timestamp The timestamp to format
-   * @returns A formatted relative time string
+   * Start loading animation (deprecated - now using CSS-based wave animation)
    */
-  private getRelativeTimeString(timestamp: number): string {
-    const now = Date.now();
-    const diff = now - timestamp;
-    
-    // Convert to seconds
-    const seconds = Math.floor(diff / 1000);
-    
-    if (seconds < 60) {
-      return 'just now';
-    }
-    
-    // Convert to minutes
-    const minutes = Math.floor(seconds / 60);
-    if (minutes < 60) {
-      return `${minutes}m ago`;
-    }
-    
-    // Convert to hours
-    const hours = Math.floor(minutes / 60);
-    if (hours < 24) {
-      return `${hours}h ago`;
-    }
-    
-    // Convert to days
-    const days = Math.floor(hours / 24);
-    if (days < 30) {
-      return `${days}d ago`;
-    }
-    
-    // Format as date for older timestamps
-    const date = new Date(timestamp);
-    return date.toLocaleDateString();
+  private startLoadingAnimation(): void {
+    // No longer needed - wave animation is CSS-based
+    // Keeping method for backward compatibility
   }
 
-  public switchConversation(id: string): void {
-    console.log('🔁 switchConversation() called with ID:', id);
-    
-    if (!this.persistenceManager) {
-      console.error('😱 persistenceManager is not available');
-      return;
+  /**
+   * Handle input keypress events
+   */
+  private handleInputKeypress(e: KeyboardEvent): void {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      this.handleSendMessage();
     }
-    
-    if (id === this.conversationId) {
-      console.log('⏸️ Already in this conversation, skipping switch');
-      return;
+  }
+
+  /**
+   * Handle resize events
+   */
+  private handleResize(): void {
+    // UIManager handles the actual resize logic
+    // This is just for any additional resize handling needed
+  }
+
+  /**
+   * Handle prompt button clicks
+   * Note: Only used for floating prompts now, chat area prompts are disabled
+   */
+  private handlePromptClick(prompt: string): void {
+    // Fill the input with the prompt text and send it
+    const input = this.uiManager.getElement('.am-chat-input') as HTMLTextAreaElement;
+    if (input) {
+      input.value = prompt;
+      input.focus();
+      
+      // Trigger send message
+      this.handleSendMessage();
     }
+  }
+
+  /**
+   * Handle expand button clicks (toggle fullscreen mode)
+   */
+  private handleExpandClick(): void {
+    if (!this.element) return;
+
+    const isExpanded = this.element.classList.contains('am-chat-expanded');
     
-    console.log('🔄 Switching to conversation:', id);
-    // Switch to new conversation
-    this.persistenceManager.switchTo(id);
-    this.conversationId = id;
-    
-    console.log('🗑 Clearing message DOM elements');
-    // Clear both DOM and state - use innerHTML for complete clearing
-    const messagesContainer = this.element.querySelector('.am-chat-messages');
-    if (messagesContainer) {
-      messagesContainer.innerHTML = '';
+    if (isExpanded) {
+      // Collapse
+      this.element.classList.remove('am-chat-expanded');
+      const expandButton = this.uiManager.getElement('.am-chat-expand');
+      if (expandButton) {
+        expandButton.innerHTML = icons.expand2;
+        expandButton.title = 'Expand chat';
+      }
     } else {
-      // Fallback to individual element removal if container not found
-      this.element.querySelectorAll('.am-chat-message').forEach(el => el.remove());
+      // Expand
+      this.element.classList.add('am-chat-expanded');
+      const expandButton = this.uiManager.getElement('.am-chat-expand');
+      if (expandButton) {
+        expandButton.innerHTML = icons.collapse2;
+        expandButton.title = 'Collapse chat';
+      }
+    }
+  }
+
+  /**
+   * Setup conversation management UI
+   */
+  private setupConversationManagement(): void {
+    if (!this.persistenceManager || !this.element) return;
+
+    // Create conversation list view and add to main container (will replace entire chat area)
+    const mainContainer = this.uiManager.getElement('.am-chat-container');
+    if (mainContainer) {
+      const conversationListView = this.conversationManager.createConversationListView();
+      mainContainer.appendChild(conversationListView);
+    }
+
+    // Get conversation count to determine if we should show the hamburger menu
+    const conversations = this.persistenceManager.list();
+    const hasConversations = conversations.length > 1; // Show when more than current conversation
+
+    // Add navigation buttons to header
+    const header = this.uiManager.getElement('.am-chat-header');
+    if (header) {
+      this.conversationManager.addConversationButton(header, hasConversations);
+      this.conversationManager.addNewConversationButton(header); // Always show + button
+      this.conversationManager.addHeaderDivider(header); // Add divider between button groups
+      this.conversationManager.addBackButton(header);
+    }
+
+    // Update conversation list
+    this.updateConversationList();
+  }
+
+  /**
+   * Update conversation list in the UI
+   */
+  private updateConversationList(): void {
+    if (!this.persistenceManager) return;
+
+    const conversations = this.persistenceManager.list();
+    const currentId = this.persistenceManager.getCurrentId();
+    this.conversationManager.updateConversationList(conversations, currentId);
+
+    // Update header button visibility
+    this.updateConversationHeaderButtons();
+  }
+
+  /**
+   * Update conversation header button visibility
+   */
+  private updateConversationHeaderButtons(): void {
+    if (!this.persistenceManager) return;
+
+    const conversations = this.persistenceManager.list();
+    const hasConversations = conversations.length > 1;
+    const header = this.uiManager.getElement('.am-chat-header');
+    
+    console.log(`🔍 [DEBUG] Updating header buttons - ${conversations.length} conversations, hasConversations: ${hasConversations}`);
+    
+    if (header) {
+      // Handle conversation list button (hamburger menu)
+      let conversationButton = header.querySelector('.am-conversation-toggle') as HTMLElement;
+      
+      if (hasConversations && !conversationButton) {
+        // Add the button if it doesn't exist but should
+        console.log(`🔍 [DEBUG] Adding missing conversation button`);
+        this.conversationManager.addConversationButton(header, hasConversations);
+        conversationButton = header.querySelector('.am-conversation-toggle') as HTMLElement;
+      }
+      
+      if (conversationButton) {
+        conversationButton.style.display = hasConversations && !this.conversationManager.isListViewActive() ? 'block' : 'none';
+        console.log(`🔍 [DEBUG] Conversation button display: ${conversationButton.style.display}`);
+      }
+
+      // Update all header button states
+      this.conversationManager.updateHeaderButtons(header);
+    }
+  }
+
+  /**
+   * Handle new conversation creation
+   */
+  private handleNewConversation(): void {
+    if (!this.persistenceManager) return;
+
+    // Save current messages before switching
+    this.persistenceManager.saveMessages();
+
+    // Create new conversation
+    const newId = this.persistenceManager.create();
+    this.conversationId = newId;
+
+    // Clear current messages and initialize
+    this.stateManager.clearMessages();
+    this.clearMessagesUI();
+    this.hasUserStartedConversation = false; // Reset conversation state
+    this.isFreshConversation = true; // This is a brand new conversation
+    this.initializeChat();
+
+    // Update conversation list
+    this.updateConversationList();
+
+    // Update prompts based on new conversation state
+    this.updateFloatingPrompts(this.stateManager.getState());
+
+    // Close conversation list view and return to chat
+    if (this.conversationManager.isListViewActive()) {
+      this.conversationManager.toggleListView();
+    }
+
+    console.log(`✅ Created new conversation: ${newId}`);
+  }
+
+  /**
+   * Handle conversation switching
+   */
+  private handleSwitchConversation(conversationId: string): void {
+    
+    if (!this.persistenceManager || conversationId === this.conversationId) return;
+
+    // Save current messages before switching
+    this.persistenceManager.saveMessages();
+
+    // Switch to the selected conversation
+    this.persistenceManager.switchTo(conversationId);
+    this.conversationId = conversationId;
+
+    // Load messages for the selected conversation
+    const messages = this.persistenceManager.loadMessages();
+    
+    // Load and restore metadata for the selected conversation
+    const metadata = this.persistenceManager.loadMetadata();
+    if (metadata) {
+      this.processAgentCapabilities(metadata);
+    } else {
+      console.log('⚠️ No metadata found for conversation, keeping current capabilities');
     }
     
-    console.log('🗑️ Clearing message state');
+    // Update conversation state FIRST, before any UI updates
+    const userMessages = messages.filter(msg => msg.sender === 'user');
+    const previousState = this.hasUserStartedConversation;
+    this.hasUserStartedConversation = userMessages.length > 0;
+    this.isFreshConversation = false; // This is an existing conversation we're switching to
+    
     this.stateManager.clearMessages();
-    this.stateManager.setMessages([]);
+    this.clearMessagesUI();
+
+    // Load messages into UI (now with correct conversation state)
+    messages.forEach(msg => this.addMessage(msg));
+
+    // Update conversation list
+    this.updateConversationList();
+
+    // Final update of prompts based on conversation state
+    this.updateFloatingPrompts(this.stateManager.getState());
+
+    // Close conversation list view and return to chat
+    if (this.conversationManager.isListViewActive()) {
+      this.conversationManager.toggleListView();
+    }
+
+    console.log(`✅ Switched to conversation: ${conversationId}`);
+  }
+
+  /**
+   * Handle conversation deletion
+   */
+  private handleDeleteConversation(conversationId: string): void {
+    if (!this.persistenceManager) return;
+
+    const currentId = this.persistenceManager.getCurrentId();
     
-    // Set loading flag to prevent saveMessages() from updating timestamps
-    console.log('🚧 Setting isLoadingConversation flag to true');
-    this.isLoadingConversation = true;
+    // Delete the conversation
+    this.persistenceManager.delete(conversationId);
+
+    // If we deleted the current conversation, switch to another or create new
+    if (conversationId === currentId) {
+      const conversations = this.persistenceManager.list();
+      if (conversations.length > 0) {
+        this.handleSwitchConversation(conversations[0].id);
+      } else {
+        this.handleNewConversation();
+      }
+    }
+
+    // Update conversation list
+    this.updateConversationList();
+
+    console.log(`✅ Deleted conversation: ${conversationId}`);
+  }
+
+  /**
+   * Handle conversation list view toggle
+   */
+  private handleToggleListView(): void {
+    const mainContainer = this.uiManager.getElement('.am-chat-container');
+    const header = this.uiManager.getElement('.am-chat-header');
     
-    console.log('📚 Loading messages for conversation:', id);
-    // Reload messages from persistence
-    const messages = this.persistenceManager.loadMessages();
-    console.log('📃 Found', messages.length, 'messages to restore');
+    if (mainContainer && header) {
+      const isListViewActive = this.conversationManager.isListViewActive();
+      
+      // Get chat area elements
+      const messagesContainer = mainContainer.querySelector('.am-chat-messages') as HTMLElement;
+      const branding = mainContainer.querySelector('.am-chat-branding') as HTMLElement;
+      const inputElements = mainContainer.querySelectorAll('.am-chat-input-prompts, .am-chat-input-container, .chat-attachments-preview');
+      
+      if (isListViewActive) {
+        // Opening list view - animate chat elements out
+        if (messagesContainer) {
+          messagesContainer.classList.add('sliding-out');
+        }
+        inputElements.forEach(el => {
+          (el as HTMLElement).classList.add('sliding-out');
+        });
+        
+        // Hide elements after animation
+        setTimeout(() => {
+          if (messagesContainer) {
+            messagesContainer.style.display = 'none';
+          }
+          inputElements.forEach(el => {
+            (el as HTMLElement).style.display = 'none';
+          });
+        }, UI_CONSTANTS.TRANSITION_NORMAL);
+        
+      } else {
+        // Closing list view - show and animate chat elements back
+        if (messagesContainer) {
+          messagesContainer.style.display = '';
+          messagesContainer.classList.remove('sliding-out');
+        }
+        inputElements.forEach(el => {
+          (el as HTMLElement).style.display = '';
+          (el as HTMLElement).classList.remove('sliding-out');
+        });
+      }
+      
+      // Keep branding visible
+      if (branding) {
+        branding.style.display = '';
+      }
+      
+      // Update header buttons
+      this.conversationManager.updateHeaderButtons(header);
+      
+      // Update header title
+      const headerTitle = header.querySelector('.am-chat-header-content span');
+      if (headerTitle) {
+        headerTitle.textContent = isListViewActive ? 'Conversations' : (this.config.title || 'Chat Agent');
+      }
+    }
     
-    console.log('📄 Updating state manager with messages');
-    // Update state manager first
-    messages.forEach(m => {
-      this.stateManager.addMessage(m);
+    console.log('📂 Conversation list view toggled:', this.conversationManager.isListViewActive());
+  }
+
+  /**
+   * Clear messages from UI
+   */
+  private clearMessagesUI(): void {
+    const messagesContainer = this.uiManager.getElement('.am-chat-messages');
+    if (messagesContainer) {
+      // Keep the prompts, only clear actual messages
+      const existingMessages = messagesContainer.querySelectorAll('.am-message');
+      existingMessages.forEach(msg => msg.remove());
+    }
+  }
+
+  /**
+   * Handle attachment button click
+   */
+  private handleAttachmentClick(): void {
+    const fileInput = this.uiManager.getElement('.chat-file-input') as HTMLInputElement;
+    if (fileInput) {
+      fileInput.click();
+    }
+  }
+
+  /**
+   * Handle file selection
+   */
+  private handleFileSelect(files: FileList): void {
+    if (!this.config.enableAttachments || !this.fileUploadManager) return;
+
+    Array.from(files).forEach(async (file) => {
+      // Security validation first
+      const fileValidation = ValidationUtils.sanitizeFileData(file);
+      if (!fileValidation.valid) {
+        console.warn(`🚫 File validation failed: ${fileValidation.errors.join(', ')}`);
+        // TODO: Show user-friendly error message in UI
+        return;
+      }
+
+      // Validate mime type if agent capabilities are available
+      if (this.supportedMimeTypes.length > 0 && !this.supportedMimeTypes.includes(file.type)) {
+        console.warn(`🚫 File type not supported: ${file.type}. Supported types: ${this.supportedMimeTypes.join(', ')}`);
+        
+        // Show user-friendly error message
+        this.stateManager.setError(`File type "${file.type || 'unknown'}" is not supported. Supported types: ${this.supportedMimeTypes.map(type => type.split('/')[1]?.toUpperCase()).join(', ')}`);
+        return;
+      }
+      
+      // Create temporary attachment object
+      const tempAttachment = {
+        file_id: `temp_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+        filename: file.name,
+        content_type: file.type || 'application/octet-stream',
+        file_type: this.getFileType(file),
+        size_bytes: file.size,
+        upload_status: 'uploading' as const,
+        upload_progress: 0
+      };
+
+      // Add to pending attachments
+      this.stateManager.addPendingAttachment(tempAttachment);
+      this.updateAttachmentPreview();
+
+      try {
+        // Upload the file
+        const uploadedAttachment = await this.fileUploadManager.uploadFile(file, (progress) => {
+          this.stateManager.updateAttachmentStatus(tempAttachment.file_id, { upload_progress: progress });
+          this.updateAttachmentPreview();
+        });
+
+        // Update with success status
+        this.stateManager.updateAttachmentStatus(tempAttachment.file_id, {
+          ...uploadedAttachment,
+          upload_status: 'success'
+        });
+        this.updateAttachmentPreview();
+
+      } catch (error) {
+        console.error('File upload failed:', error);
+        // Update with error status
+        this.stateManager.updateAttachmentStatus(tempAttachment.file_id, {
+          upload_status: 'error',
+          error_message: error instanceof Error ? error.message : 'Upload failed'
+        });
+        this.updateAttachmentPreview();
+      }
+    });
+
+    // Clear the file input
+    this.uiManager.clearFileInput();
+  }
+
+  /**
+   * Get file type from file extension/mime type
+   */
+  private getFileType(file: File): 'image' | 'document' | 'audio' | 'video' | 'text' | 'data' {
+    const mimeType = file.type.toLowerCase();
+    
+    if (mimeType.startsWith('image/')) return 'image';
+    if (mimeType.startsWith('audio/')) return 'audio';
+    if (mimeType.startsWith('video/')) return 'video';
+    if (mimeType.startsWith('text/') || mimeType.includes('text')) return 'text';
+    
+    // Check by extension
+    const extension = file.name.split('.').pop()?.toLowerCase();
+    switch (extension) {
+      case 'pdf':
+      case 'doc':
+      case 'docx':
+      case 'ppt':
+      case 'pptx':
+      case 'xls':
+      case 'xlsx':
+        return 'document';
+      case 'mp3':
+      case 'wav':
+      case 'ogg':
+        return 'audio';
+      case 'mp4':
+      case 'avi':
+      case 'mov':
+        return 'video';
+      case 'txt':
+      case 'md':
+      case 'json':
+      case 'csv':
+        return 'text';
+      default:
+        return 'data';
+    }
+  }
+
+  /**
+   * Handle attachment removal
+   */
+  private handleAttachmentRemove(fileId: string): void {
+    this.stateManager.removePendingAttachment(fileId);
+    this.updateAttachmentPreview();
+  }
+
+  /**
+   * Update attachment preview in UI
+   */
+  private updateAttachmentPreview(): void {
+    if (!this.config.enableAttachments) return;
+
+    const attachments = this.stateManager.getState().pendingAttachments;
+    this.uiManager.updateAttachmentPreview(attachments);
+  }
+
+  /**
+   * Add message to chat - TODO: Move to MessageContainer
+   */
+  public addMessage(message: Message): void {
+    const messagesContainer = this.uiManager.getElement('.am-chat-messages');
+    if (!messagesContainer) {
+      console.error('Messages container not found');
+      return;
+    }
+
+    this.stateManager.addMessage(message);
+
+    const messageElement = document.createElement('div');
+    messageElement.className = `am-message ${message.sender}`;
+    // Remove inline styling to use CSS for Claude-style layout
+    
+    const renderedContent = this.messageRenderer.render(message);
+    const attachmentsHtml = this.renderMessageAttachments(message);
+    
+    // Claude-style layout: role labels and no bubbles, both left-aligned
+    if (message.sender === 'user') {
+      messageElement.innerHTML = `
+        <div class="am-message-role">You</div>
+        <div class="am-message-content">
+          ${renderedContent}
+          ${attachmentsHtml}
+        </div>
+      `;
+    } else {
+      messageElement.innerHTML = `
+        <div class="am-message-role">Assistant</div>
+        <div class="am-message-content">
+          ${renderedContent}
+          ${attachmentsHtml}
+        </div>
+      `;
+    }
+
+    messagesContainer.appendChild(messageElement);
+    messagesContainer.scrollTop = messagesContainer.scrollHeight;
+  }
+
+  /**
+   * Render message attachments HTML
+   */
+  private renderMessageAttachments(message: Message): string {
+    if (!message.attachments || message.attachments.length === 0) {
+      return '';
+    }
+
+    const attachmentsHtml = message.attachments.map(attachment => {
+      const isImage = attachment.file_type === 'image' && attachment.url;
+      const iconType = this.getAttachmentIcon(attachment.file_type);
+      const escapedFilename = this.escapeHtml(attachment.filename);
+      const formattedSize = this.formatFileSize(attachment.size_bytes);
+      
+      if (isImage) {
+        return `
+          <div class="chat-message-attachment">
+            <img src="${attachment.url}" 
+                 alt="${escapedFilename}" 
+                 class="message-attachment-image"
+                 onclick="window.open('${attachment.url}', '_blank')"
+                 loading="lazy">
+          </div>
+        `;
+      } else {
+        return `
+          <a href="${attachment.url || '#'}" 
+             class="chat-message-attachment" 
+             target="_blank" 
+             rel="noopener noreferrer"
+             ${!attachment.url ? 'onclick="return false;" style="cursor: not-allowed; opacity: 0.5;"' : ''}>
+            <div class="message-attachment-icon">${iconType}</div>
+            <div class="chat-attachment-info">
+              <div class="chat-attachment-name">${escapedFilename}</div>
+              <div class="chat-attachment-size">${formattedSize}</div>
+            </div>
+          </a>
+        `;
+      }
+    }).join('');
+
+    return `<div class="chat-message-attachments">${attachmentsHtml}</div>`;
+  }
+
+  /**
+   * Get attachment icon based on file type
+   */
+  private getAttachmentIcon(fileType: string): string {
+    switch (fileType) {
+      case 'image':
+        return '🖼️';
+      case 'document':
+        return '📄';
+      case 'audio':
+        return '🎵';
+      case 'video':
+        return '🎬';
+      case 'text':
+        return '📝';
+      case 'data':
+        return '📊';
+      default:
+        return '📎';
+    }
+  }
+
+  /**
+   * Format file size for display
+   */
+  private formatFileSize(bytes: number): string {
+    if (bytes === 0) return '0 Bytes';
+    
+    const k = 1024;
+    const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+  }
+
+  /**
+   * Escape HTML to prevent XSS
+   */
+  private escapeHtml(text: string): string {
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
+  }
+
+  /**
+   * Clear conversation storage
+   */
+  public clearStorage(): void {
+    if (this.persistenceManager) {
+      this.persistenceManager.clearStorage();
+      this.stateManager.clearMessages();
+      
+      // Clear UI
+      const messagesContainer = this.uiManager.getElement('.am-chat-messages');
+      if (messagesContainer) {
+        messagesContainer.innerHTML = '';
+      }
+    }
+  }
+
+  /**
+   * Destroy widget instance
+   */
+  public destroy(): void {
+    console.log('🧹 ChatWidget destroying...');
+
+    // Clean up timers
+    if (this.promptTimer) window.clearTimeout(this.promptTimer);
+    if (this.resizeTimeout) window.clearTimeout(this.resizeTimeout);
+    if (this.resizeDebounceTimeout) window.clearTimeout(this.resizeDebounceTimeout);
+    if (this.loadingAnimationInterval) window.clearInterval(this.loadingAnimationInterval);
+
+    // Clean up managers
+    this.styleManager.cleanup();
+    this.stateManager.clearListeners();
+    this.uiManager.destroy();
+    if (this.conversationManager) {
+      this.conversationManager.destroy();
+    }
+
+    // Remove from instances map
+    ChatWidget.instances.delete(this.containerId);
+    
+    console.log('✅ ChatWidget destroyed');
+  }
+
+  /**
+   * Get instance by containerId
+   */
+  public static getInstance(containerId: string): ChatWidget | undefined {
+    return ChatWidget.instances.get(containerId);
+  }
+
+  /**
+   * Destroy all instances
+   */
+  public static destroyAll(): void {
+    Array.from(ChatWidget.instances.values()).forEach(instance => {
+      instance.destroy();
+    });
+    ChatWidget.instances.clear();
+  }
+
+  // Utility methods
+  private mergeWithDefaultConfig(config: ChatConfig): ChatConfig {
+    return {
+      ...config,
+      title: config.title || 'Chat Widget',
+      theme: {
+        textColor: '#111827',
+        backgroundColor: '#FFFFFF',
+        buttonColor: '#2563eb',
+        buttonTextColor: '#FFFFFF',
+        ...config.theme
+      },
+      placeholder: config.placeholder || 'Type your message...',
+      initiallyOpen: config.initiallyOpen || false
+    };
+  }
+
+  private initializeTheme(): ChatTheme {
+    return {
+      textColor: this.config.theme?.textColor || '#111827',
+      backgroundColor: this.config.theme?.backgroundColor || '#FFFFFF',
+      buttonColor: this.config.theme?.buttonColor || UI_CONSTANTS.PRIMARY_COLOR,
+      buttonTextColor: this.config.theme?.buttonTextColor || '#FFFFFF',
+      agentForegroundColor: this.config.theme?.agentForegroundColor || '#111827',
+      userForegroundColor: this.config.theme?.userForegroundColor || '#2563eb',
+      toggleBackgroundColor: this.config.theme?.toggleBackgroundColor || '#2563eb',
+      toggleTextColor: this.config.theme?.toggleTextColor || '#FFFFFF',
+      toggleIconColor: this.config.theme?.toggleIconColor || '#2563eb'
+    };
+  }
+
+  private initializeAssets(): ChatAssets {
+    return {
+      logo: this.config.logo || '',
+      headerLogo: this.config.headerLogo || ''
+    };
+  }
+
+  // updateColors method moved to UIManager
+
+  private generateUUID(): string {
+    return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, (c) => {
+      const r = Math.random() * 16 | 0;
+      const v = c === 'x' ? r : (r & 0x3 | 0x8);
+      return v.toString(16);
+    });
+  }
+
+  /**
+   * Process agent capabilities from API metadata
+   */
+  private processAgentCapabilities(metadata: any): void {
+    console.log('🔍 Processing agent capabilities from metadata:', metadata);
+    
+    // Validate metadata structure
+    const validatedMetadata = ValidationUtils.validateAgentMetadata(metadata);
+    if (!validatedMetadata) {
+      console.warn('⚠️ Invalid agent metadata received, using defaults');
+      this.agentCapabilities = {};
+      this.supportedMimeTypes = [];
+      this.supportsAttachments = false;
+      return;
+    }
+    
+    this.agentCapabilities = validatedMetadata;
+    this.supportedMimeTypes = validatedMetadata.supported_mime_types || [];
+    this.supportsAttachments = validatedMetadata.supports_attachments || false;
+    
+    console.log('📋 Agent capabilities extracted:', {
+      supportedMimeTypes: this.supportedMimeTypes,
+      supportsAttachments: this.supportsAttachments
     });
     
-    console.log('💬 Rendering messages in DOM');
-    // Then update DOM
-    messages.forEach(m => this.addMessage(m));
+    // Persist metadata with the conversation
+    if (this.persistenceManager) {
+      this.persistenceManager.saveMetadata(validatedMetadata);
+    }
     
-    console.log('🔄 Forcing UI refresh');
-    // Force UI refresh
-    this.init();
-    
-    // Update the conversation drawer to highlight the active conversation
-    console.log('🔄 Updating conversation drawer to highlight active conversation');
-    this.updateConversationDrawer();
-    
-    // Reset loading flag after everything is done
-    console.log('🚧 Setting isLoadingConversation flag to false');
-    this.isLoadingConversation = false;
-    
-    console.log('✨ switchConversation() complete');
+    // Update file input accept attribute if attachments are enabled
+    if (this.config.enableAttachments && this.supportsAttachments) {
+      this.updateFileInputAccept();
+    } else if (this.config.enableAttachments && !this.supportsAttachments) {
+      console.warn('⚠️ Attachments enabled in config but agent does not support attachments');
+      // Optionally disable attachment button here
+      this.disableAttachmentButton();
+    }
   }
 
-  private startLoadingAnimation(): void {
-    this.currentLoadingStateIndex = 0;
-
-    if (this.loadingAnimationInterval) {
-      window.clearInterval(this.loadingAnimationInterval);
-    }
-
-    this.loadingAnimationInterval = window.setInterval(() => {
-      if (!this.loadingMessageElement) return;
-
-      this.currentLoadingStateIndex = (this.currentLoadingStateIndex + 1) % this.loadingStates.length;
-      const loadingText = this.loadingMessageElement.querySelector('.loading-text');
-      if (loadingText) {
-        loadingText.textContent = `${this.loadingStates[this.currentLoadingStateIndex]}...`;
+  /**
+   * Update file input accept attribute based on supported mime types
+   */
+  private updateFileInputAccept(): void {
+    const fileInput = this.uiManager.getElement('.chat-file-input') as HTMLInputElement;
+    
+    if (fileInput && this.supportedMimeTypes.length > 0) {
+      fileInput.accept = this.supportedMimeTypes.join(',');
+      console.log(`📎 Updated file input accept attribute: ${fileInput.accept}`);
+      
+      // Add capture attribute for mobile camera access if image types are supported
+      const hasImageTypes = this.supportedMimeTypes.some(type => type.startsWith('image/'));
+      if (hasImageTypes) {
+        fileInput.setAttribute('capture', 'environment'); // Use rear camera by default
+        console.log(`📱 Added camera capture support for mobile devices`);
       }
-    }, 2000);
+    }
+    
+    // Update attachment button tooltip with supported types
+    this.updateAttachmentButtonTooltip();
   }
 
-  private handleExpandClick = (e: Event) => {
-    e.preventDefault();
-    e.stopPropagation();
-    
-    const isExpanded = this.element.classList.contains('am-chat-expanded');
-    if (isExpanded) {
-      this.element.classList.remove('am-chat-expanded');
-      const expandButton = this.element.querySelector('.am-chat-expand');
-      if (expandButton) {
-        expandButton.innerHTML = this.config.icons?.expandIcon || expand;
-      }
-    } else {
-      this.element.classList.add('am-chat-expanded');
-      const expandButton = this.element.querySelector('.am-chat-expand');
-      if (expandButton) {
-        expandButton.innerHTML = this.config.icons?.collapseIcon || collapse;
-      }
+  /**
+   * Update attachment button tooltip to show supported file types
+   */
+  private updateAttachmentButtonTooltip(): void {
+    const attachmentButton = this.uiManager.getElement('.chat-attachment-button') as HTMLButtonElement;
+    if (attachmentButton && this.supportedMimeTypes.length > 0) {
+      const supportedTypes = this.supportedMimeTypes
+        .map(type => type.split('/')[1]?.toUpperCase())
+        .filter(Boolean)
+        .join(', ');
+      
+      const hasImageTypes = this.supportedMimeTypes.some(type => type.startsWith('image/'));
+      const cameraText = hasImageTypes ? ' or take photo' : '';
+      
+      attachmentButton.title = `Attach files (${supportedTypes} supported)${cameraText}`;
+      console.log(`📎 Updated attachment button tooltip: ${attachmentButton.title}`);
     }
+  }
+
+  /**
+   * Disable attachment button when agent doesn't support attachments
+   */
+  private disableAttachmentButton(): void {
+    const attachmentButton = this.uiManager.getElement('.chat-attachment-button') as HTMLButtonElement;
+    if (attachmentButton) {
+      attachmentButton.disabled = true;
+      attachmentButton.title = 'File attachments not supported by this agent';
+      attachmentButton.style.opacity = '0.5';
+      console.log('📎 Disabled attachment button - agent does not support attachments');
+    }
+  }
+
+  private async fetchAgentCapabilities(): Promise<void> {
+    // This method is no longer needed as capabilities are extracted from initial response metadata
+    console.log('🔍 fetchAgentCapabilities() called - capabilities now extracted from initial response metadata');
   }
 }

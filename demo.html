@@ -138,29 +138,39 @@
                         <span class="color-preview" style="background-color: #ffffff"></span>
                     </div>
                     <div class="form-group">
-                        <label>Header Background</label>
-                        <input type="color" id="headerBackgroundColor" value="#059669">
-                        <span class="color-preview" style="background-color: #059669"></span>
+                        <label>Button Color</label>
+                        <input type="color" id="buttonColor" value="#2563eb">
+                        <span class="color-preview" style="background-color: #2563eb"></span>
                     </div>
                     <div class="form-group">
-                        <label>User Background</label>
-                        <input type="color" id="userBackgroundColor" value="#10b981">
-                        <span class="color-preview" style="background-color: #10b981"></span>
+                        <label>Button Text Color</label>
+                        <input type="color" id="buttonTextColor" value="#ffffff">
+                        <span class="color-preview" style="background-color: #ffffff"></span>
                     </div>
                     <div class="form-group">
-                        <label>Agent Background</label>
-                        <input type="color" id="agentBackgroundColor" value="#f3f4f6">
-                        <span class="color-preview" style="background-color: #f3f4f6"></span>
+                        <label>Agent Text Color</label>
+                        <input type="color" id="agentForegroundColor" value="#111827">
+                        <span class="color-preview" style="background-color: #111827"></span>
                     </div>
                     <div class="form-group">
-                        <label>User Icon Color</label>
-                        <input type="color" id="userIconColor" value="#059669">
-                        <span class="color-preview" style="background-color: #059669"></span>
+                        <label>User Text Color</label>
+                        <input type="color" id="userForegroundColor" value="#2563eb">
+                        <span class="color-preview" style="background-color: #2563eb"></span>
                     </div>
                     <div class="form-group">
-                        <label>Agent Icon Color</label>
-                        <input type="color" id="agentIconColor" value="#059669">
-                        <span class="color-preview" style="background-color: #059669"></span>
+                        <label>Toggle Background Color</label>
+                        <input type="color" id="toggleBackgroundColor" value="#2563eb">
+                        <span class="color-preview" style="background-color: #2563eb"></span>
+                    </div>
+                    <div class="form-group">
+                        <label>Toggle Text Color</label>
+                        <input type="color" id="toggleTextColor" value="#ffffff">
+                        <span class="color-preview" style="background-color: #ffffff"></span>
+                    </div>
+                    <div class="form-group">
+                        <label>Toggle Icon Color</label>
+                        <input type="color" id="toggleIconColor" value="#ffffff">
+                        <span class="color-preview" style="background-color: #ffffff"></span>
                     </div>
                 </div>
 
@@ -217,17 +227,13 @@
             theme: {
                 backgroundColor: '#ffffff',
                 textColor: '#1f2937',
-                buttonColor: '#10b981',
+                buttonColor: '#2563eb',
                 buttonTextColor: '#ffffff',
-                agentBackgroundColor: '#f3f4f6',
-                userBackgroundColor: '#10b981',
-                agentForegroundColor: '#000000',
-                userForegroundColor: '#ffffff',
-                headerBackgroundColor: '#059669',
-                headerTextColor: '#ffffff',
-                agentIconColor: '#059669',
-                userIconColor: '#059669',
-                sendIconColor: '#ffffff'
+                agentForegroundColor: '#111827',
+                userForegroundColor: '#2563eb',
+                toggleBackgroundColor: '#2563eb',
+                toggleTextColor: '#ffffff',
+                toggleIconColor: '#ffffff'
             }
         };
 
@@ -278,11 +284,13 @@
             config.theme = {
                 ...config.theme,
                 backgroundColor: document.getElementById('backgroundColor').value,
-                headerBackgroundColor: document.getElementById('headerBackgroundColor').value,
-                userBackgroundColor: document.getElementById('userBackgroundColor').value,
-                agentBackgroundColor: document.getElementById('agentBackgroundColor').value,
-                userIconColor: document.getElementById('userIconColor').value,
-                agentIconColor: document.getElementById('agentIconColor').value,
+                buttonColor: document.getElementById('buttonColor').value,
+                buttonTextColor: document.getElementById('buttonTextColor').value,
+                agentForegroundColor: document.getElementById('agentForegroundColor').value,
+                userForegroundColor: document.getElementById('userForegroundColor').value,
+                toggleBackgroundColor: document.getElementById('toggleBackgroundColor').value,
+                toggleTextColor: document.getElementById('toggleTextColor').value,
+                toggleIconColor: document.getElementById('toggleIconColor').value,
             };
 
             // Icons
@@ -314,11 +322,13 @@
             document.getElementById('variant').value = defaultConfig.variant;
             document.getElementById('initialMessage').value = defaultConfig.initialMessage;
             document.getElementById('backgroundColor').value = defaultConfig.theme.backgroundColor;
-            document.getElementById('headerBackgroundColor').value = defaultConfig.theme.headerBackgroundColor;
-            document.getElementById('userBackgroundColor').value = defaultConfig.theme.userBackgroundColor;
-            document.getElementById('agentBackgroundColor').value = defaultConfig.theme.agentBackgroundColor;
-            document.getElementById('userIconColor').value = defaultConfig.theme.userIconColor;
-            document.getElementById('agentIconColor').value = defaultConfig.theme.agentIconColor;
+            document.getElementById('buttonColor').value = defaultConfig.theme.buttonColor;
+            document.getElementById('buttonTextColor').value = defaultConfig.theme.buttonTextColor;
+            document.getElementById('agentForegroundColor').value = defaultConfig.theme.agentForegroundColor;
+            document.getElementById('userForegroundColor').value = defaultConfig.theme.userForegroundColor;
+            document.getElementById('toggleBackgroundColor').value = defaultConfig.theme.toggleBackgroundColor;
+            document.getElementById('toggleTextColor').value = defaultConfig.theme.toggleTextColor;
+            document.getElementById('toggleIconColor').value = defaultConfig.theme.toggleIconColor;
             document.getElementById('userIcon').value = '';
             document.getElementById('agentIcon').value = '';
 

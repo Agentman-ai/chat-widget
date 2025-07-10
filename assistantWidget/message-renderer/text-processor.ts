@@ -1,17 +1,19 @@
 // src/components/assistant/message-renderer/text-processor.ts
 import type { MessageRendererOptions, EmojiMap } from './types';
+import { OfflineParser } from './offline-parser';
 
 export class TextProcessor {
   constructor(private emojiMap: EmojiMap) {}
 
   public processText(content: string, options: MessageRendererOptions): string {
+    // Don't double-sanitize since OfflineParser handles this
     let processed = content;
-    
-    // First sanitize the text
-    processed = this.sanitizeText(processed);
     
     // If marked is available and markdown is enabled, use it
     if (options.enableMarkdown !== false && window.marked) {
+      // Sanitize first for marked.js
+      processed = this.sanitizeText(processed);
+      
       window.marked.setOptions({
         gfm: true,
         breaks: true,
@@ -28,8 +30,8 @@ export class TextProcessor {
       );
             
     } else {
-      // Fallback markdown processing
-      processed = this.applyMarkdown(processed);
+      // Use enhanced offline parser as fallback (handles its own sanitization)
+      processed = OfflineParser.parse(processed);
     }
 
     return processed;

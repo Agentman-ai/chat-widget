@@ -2,18 +2,19 @@
 export type ChatVariant = 'inline' | 'corner' | 'centered';
 
 export interface ChatTheme {
+  // Core Colors
   textColor: string;
   backgroundColor: string;
+  
+  // Buttons
   buttonColor: string;
   buttonTextColor: string;
-  agentBackgroundColor: string;
-  userBackgroundColor: string;
+  
+  // Messages (No Bubbles - Text Only)
   agentForegroundColor: string;
   userForegroundColor: string;
-  headerBackgroundColor: string;
-  headerTextColor: string;
-  agentIconColor: string;
-  userIconColor: string;
+  
+  // Toggle Button (Including agentmanLogo)
   toggleBackgroundColor: string;
   toggleTextColor: string;
   toggleIconColor: string;
@@ -34,8 +35,6 @@ export interface ChatIcons {
   expandIcon?: string;
   collapseIcon?: string;
   reduceIcon?: string;
-  userIcon?: string;
-  agentIcon?: string;
 }
 
 export interface ChatConfig {
@@ -63,14 +62,6 @@ export interface ChatConfig {
   initialWidth?: string;
   assets?: Partial<ChatAssets>;
   icons?: Partial<ChatIcons>;
-  agentBackgroundColor?: string;
-  userBackgroundColor?: string;
-  agentForegroundColor?: string;
-  userForegroundColor?: string;
-  headerBackgroundColor?: string;
-  headerTextColor?: string;
-  agentIconColor?: string;
-  userIconColor?: string;
   toggleText?: string;
   /** Custom toggle button colors from WordPress settings */
   toggleStyle?: {
@@ -86,6 +77,28 @@ export interface ChatConfig {
   placeholder?: string;
   persistence?: PersistenceConfig;
   hideBranding?: boolean;
+  /** Enable/disable file attachments (disabled by default) */
+  enableAttachments?: boolean;
+  /** Client metadata to send with API requests */
+  clientMetadata?: Partial<ClientMetadata>;
+  /** Enable automatic client metadata collection */
+  collectClientMetadata?: boolean;
+  /** Enable IP address collection (requires external API call) */
+  collectIPAddress?: boolean;
+}
+
+export interface FileAttachment {
+  file_id: string;
+  filename: string;
+  content_type: string;
+  file_type: 'image' | 'document' | 'audio' | 'video' | 'text' | 'data';
+  size_bytes: number;
+  url?: string;
+  upload_status: 'pending' | 'uploading' | 'success' | 'error';
+  upload_progress?: number;
+  error_message?: string;
+  created_at?: string;
+  expires_at?: string;
 }
 
 export interface Message {
@@ -95,6 +108,7 @@ export interface Message {
   timestamp: string;
   type: 'text' | 'html' | 'custom' | 'svg';
   data?: any;
+  attachments?: FileAttachment[];
 }
 
 export interface ChatState {
@@ -104,6 +118,8 @@ export interface ChatState {
   isSending: boolean;
   messages: Message[];
   error?: string;
+  pendingAttachments: FileAttachment[];
+  isUploadingFiles: boolean;
 }
 
 export interface APIResponse {
@@ -116,4 +132,32 @@ export interface PersistenceConfig {
   enabled?: boolean;
   days?: number;
   key?: string;
+}
+
+export interface AgentMetadata {
+  supported_mime_types?: string[];
+  supports_attachments?: boolean;
+  model_name?: string;
+  model_version?: string;
+  capabilities?: string[];
+  max_file_size?: number;
+  max_attachments?: number;
+  [key: string]: any;
+}
+
+export interface ClientMetadata {
+  user_id?: string | number;
+  user_email_address?: string;
+  device_id?: string;
+  browser_language?: string;
+  browser_device?: string;
+  browser_timezone?: string;
+  ip_address?: string;
+  session_id?: string;
+  user_agent?: string;
+  referer_url?: string;
+  page_url?: string;
+  geo_location?: string;
+  is_authenticated?: boolean;
+  custom_tags?: Record<string, any>;
 }
