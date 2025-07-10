@@ -8,7 +8,14 @@ set -e
 # Configuration
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 BUILD_DIR="$SCRIPT_DIR/dist"
-VERSION="1.0.0"
+
+# Read version from version.json if it exists
+if [ -f "$SCRIPT_DIR/version.json" ]; then
+    VERSION=$(grep -o '"version": "[^"]*"' "$SCRIPT_DIR/version.json" | cut -d'"' -f4)
+else
+    VERSION="1.0.0"
+fi
+
 BUILD_DATE=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
 
 # Colors

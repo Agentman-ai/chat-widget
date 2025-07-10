@@ -20,7 +20,11 @@
       "Bash(bash:*)",
       "Bash(npm test)",
       "Bash(npm run release:*)",
-      "Bash(npm view:*)"
+      "Bash(npm view:*)",
+      "Bash(chmod:*)",
+      "Bash(./release.sh:*)",
+      "Bash(sed:*)",
+      "Bash(rm:*)"
     ],
     "deny": []
   }
