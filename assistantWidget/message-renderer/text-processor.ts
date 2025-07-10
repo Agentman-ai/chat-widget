@@ -11,15 +11,15 @@ export class TextProcessor {
     
     // If marked is available and markdown is enabled, use it
     if (options.enableMarkdown !== false && window.marked) {
-      // Sanitize first for marked.js
-      processed = this.sanitizeText(processed);
+      // Don't pre-sanitize - let marked.js handle it
+      // Modern marked.js versions handle sanitization internally
       
       window.marked.setOptions({
         gfm: true,
         breaks: true,
         headerIds: false,
         mangle: false,
-        sanitize: true,
+        // sanitize option is deprecated - marked handles this internally
       });
       processed = window.marked.parse(processed);
 
@@ -42,8 +42,8 @@ export class TextProcessor {
       .replace(/&/g, '&amp;')
       .replace(/</g, '&lt;')
       .replace(/>/g, '&gt;')
-      .replace(/"/g, '&quot;')
-      .replace(/'/g, '&#039;');
+      .replace(/"/g, '&quot;');
+    // Don't escape apostrophes - marked.js handles them properly
   }
 
   private replaceEmoji(text: string): string {

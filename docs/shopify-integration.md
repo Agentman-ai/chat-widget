@@ -105,7 +105,6 @@ shopify-integration/
             enabled: true,
             days: 7
         },
-        hideBranding: true,
         
         // Shopify-specific
         shopifyIntegration: {
@@ -315,13 +314,6 @@ shopify-integration/
                     <input type="number" id="persistenceDays" value="7" min="1" max="30"> days
                 </div>
 
-                <div class="form-group">
-                    <label>
-                        <input type="checkbox" id="hideBranding" checked>
-                        Hide External Links
-                    </label>
-                </div>
-
                 <h3>Shopify Integration</h3>
                 <div class="form-group">
                     <label>
@@ -485,7 +477,6 @@ class ShopifyConfigTool {
                     enabled: document.getElementById('persistenceEnabled').checked,
                     days: parseInt(document.getElementById('persistenceDays').value)
                 };
-                this.config.hideBranding = document.getElementById('hideBranding').checked;
                 this.config.shopifyIntegration = {
                     customerData: document.getElementById('customerData').checked,
                     cartSync: document.getElementById('cartSync').checked

@@ -3,7 +3,7 @@ Contributors: Agentman.ai
 Tags: chatbot, agent, sales, support, assistant
 Requires at least: 5.6
 Tested up to: 6.5
-Stable tag: 0.22.1
+Stable tag: 0.25.0
 Requires PHP: 7.2
 License: MIT
 License URI: https://opensource.org/licenses/MIT
@@ -18,6 +18,8 @@ Agentman AI Assistant provides a modern, customizable chat interface for your Wo
 * Fully customizable appearance to match your brand
 * Independent toggle button styling to prevent theme conflicts
 * Built-in conversation persistence across page reloads and tabs
+* File attachment support (images, documents, etc.)
+* Multiple conversation management with history
 * Responsive design for all devices (mobile, tablet, desktop)
 * Easy configuration through WordPress admin
 * Secure token-based authentication
@@ -110,6 +112,16 @@ We recommend that website owners using this plugin update their privacy policies
 4. Mobile view of the chat widget
 
 == Changelog ==
+
+= 0.25.0 =
+* Fixed widget title configuration - now properly uses configured title instead of hardcoded text
+* Added conversation management UI with "Chats" and "New" buttons in header
+* Fixed toggle button color theming to properly apply configured colors
+* Added vertical divider between conversation and window control buttons
+* Improved header spacing and prevented title wrapping
+* Fixed HTML entity encoding for apostrophes in messages
+* Fixed button visibility for different widget variants (corner vs centered/inline)
+* File attachments enabled by default
 
 = 0.22.1 =
 * Fixed toggle button display issues on various WordPress themes

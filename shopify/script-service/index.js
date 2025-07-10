@@ -44,7 +44,6 @@
         toggleText: extractDataAttribute('toggle-text', 'Ask Agentman'),
         initiallyOpen: extractDataAttribute('initially-open', false, v => v === 'true'),
         enableAttachments: extractDataAttribute('enable-attachments', true, v => v === 'true'),
-        hideBranding: extractDataAttribute('hide-branding', true, v => v === 'true'),
         
         // Theme colors
         'theme.backgroundColor': extractDataAttribute('bg-color', '#ffffff'),
@@ -153,7 +152,6 @@
             enabled: true,
             days: 7
         },
-        hideBranding: true,
         
         // Shopify-specific enhancements
         shopifyIntegration: {

@@ -76,7 +76,6 @@ export interface ChatConfig {
   initialMessage?: string;
   placeholder?: string;
   persistence?: PersistenceConfig;
-  hideBranding?: boolean;
   /** Enable/disable file attachments (disabled by default) */
   enableAttachments?: boolean;
   /** Client metadata to send with API requests */

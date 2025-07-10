@@ -19,7 +19,8 @@
       "Bash(node:*)",
       "Bash(bash:*)",
       "Bash(npm test)",
-      "Bash(npm run release:*)"
+      "Bash(npm run release:*)",
+      "Bash(npm view:*)"
     ],
     "deny": []
   }

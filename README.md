@@ -195,25 +195,26 @@ const config = {
   containerId: 'chat-widget-container',
   
   // Optional: Override default API URL
-  apiUrl: 'https://studio-api.agentman.ai', // Default value
+  apiUrl: 'https://api.agentman.ai', // Default value
   
   // Widget appearance
   variant: 'corner', // 'corner' | 'centered' | 'inline'
   position: 'bottom-right', // 'bottom-right' | 'bottom-left' | 'top-right' | 'top-left'
+  initiallyOpen: false,
   initialHeight: '600px',
   initialWidth: '400px',
   
   // Content and behavior
-  title: 'Agentman Assistant',
-  placeholder: 'Ask me anything...',
-  toggleText: 'Ask Agentman',
-  initiallyOpen: false,
-  initialMessage: 'Hello! How can I help you today?',
+  title: 'AI Assistant',
+  placeholder: 'Type your message...',
+  toggleText: 'Ask AI',
+  initialMessage: 'Hello',
+  enableAttachments: true,
   
   // Message prompts
   messagePrompts: {
     show: true,
-    welcome_message: 'Welcome! How can I help you today?',
+    welcome_message: 'How can I help you today?',
     prompts: [
       'What can you do?',
       'Give me a tour',
@@ -237,7 +238,19 @@ const config = {
   // Persistence
   persistence: {
     enabled: true,
-    days: 7
+    storageKey: 'agentman_chat',
+    maxConversations: 10,
+    ttlDays: 7
+  },
+  
+  // Assets (optional)
+  logo: '<svg>...</svg>',
+  headerLogo: '<svg>...</svg>',
+  
+  // Advanced (optional)
+  clientMetadata: {
+    userId: '123',
+    customField: 'value'
   }
 };
 
@@ -313,17 +326,18 @@ export default {
 | Option | Type | Required | Default | Description |
 |--------|------|----------|---------|-------------|
 | `agentToken` | `string` | Yes | - | Your Agentman agent token |
-| `apiUrl` | `string` | No | `'https://studio-api.agentman.ai'` | The API endpoint URL |
 | `containerId` | `string` | Yes | - | ID of the container element |
+| `apiUrl` | `string` | No | `'https://api.agentman.ai'` | Custom API endpoint URL |
 | `variant` | `'corner' \| 'centered' \| 'inline'` | No | `'corner'` | Widget placement style |
 | `position` | `'bottom-right' \| 'bottom-left' \| 'top-right' \| 'top-left'` | No | `'bottom-right'` | Position for corner variant |
+| `initiallyOpen` | `boolean` | No | `false` | Whether to open chat on load |
 | `initialHeight` | `string` | No | `'600px'` | Initial height of the widget |
 | `initialWidth` | `string` | No | `'400px'` | Initial width of the widget |
-| `title` | `string` | No | `'Chat Assistant'` | Chat widget title |
+| `title` | `string` | No | `'AI Assistant'` | Chat widget title |
 | `placeholder` | `string` | No | `'Type your message...'` | Input field placeholder |
-| `toggleText` | `string` | No | `'Ask Agentman'` | Text on toggle button (corner variant) |
-| `initiallyOpen` | `boolean` | No | `false` | Whether to open chat on load |
-| `initialMessage` | `string` | No | - | Initial bot message |
+| `toggleText` | `string` | No | `'Ask AI'` | Text on toggle button (corner variant) |
+| `initialMessage` | `string` | No | `'Hello'` | Initial message sent to agent |
+| `enableAttachments` | `boolean` | No | `true` | Enable file attachments |
 
 ### Message Prompts
 
@@ -409,18 +423,20 @@ Enable conversation history across page reloads:
 ```javascript
 const config = {
   persistence: {
-    enabled: true,     // Enable persistence
-    days: 7,          // Days to keep messages
-    key: 'my_custom_key'  // Optional custom storage key
+    enabled: true,           // Enable persistence
+    storageKey: 'agentman_chat',  // Storage key prefix
+    maxConversations: 10,    // Maximum stored conversations
+    ttlDays: 7              // Days to keep conversations
   }
 };
 ```
 
 | Option | Type | Required | Default | Description |
 |--------|------|----------|---------|-------------|
-| `enabled` | `boolean` | No | `false` | Enable/disable persistence |
-| `days` | `number` | No | `7` | Number of days to keep messages |
-| `key` | `string` | No | `chatwidget_{containerId}_data` | Custom storage key |
+| `enabled` | `boolean` | No | `true` | Enable/disable persistence |
+| `storageKey` | `string` | No | `'agentman_chat'` | LocalStorage key prefix |
+| `maxConversations` | `number` | No | `10` | Maximum conversations to store |
+| `ttlDays` | `number` | No | `7` | Days before conversation cleanup |
 
 Features:
 - Saves messages to localStorage
@@ -430,15 +446,7 @@ Features:
 
 ### Branding
 
-Control branding elements:
-
-```javascript
-const config = {
-  hideBranding: false  // Show/hide "Powered by Agentman.ai" link
-};
-```
-
-Note: The "Powered by Agentman.ai" text will always appear but the `hideBranding` option controls whether it's clickable.
+The widget displays "Powered by Agentman.ai" with a link to the Agentman website. This branding helps users identify the AI technology powering the chat experience.
 
 ## Advanced Usage
 

@@ -265,6 +265,10 @@ export class UIManager {
    * Generate header HTML
    */
   private generateHeader(): string {
+    // For centered and inline variants, don't show expand/close buttons
+    // They will be replaced by conversation buttons
+    const showWindowControls = this.config.variant === 'corner';
+    
     return `
       <div class="am-chat-header">
         <div class="am-chat-header-content">
@@ -272,14 +276,16 @@ export class UIManager {
             <span>${this.config.title || 'AI Assistant'}</span>
           </div>
           <div class="am-chat-header-actions">
-            <button class="am-chat-expand am-chat-header-button desktop-only" 
-                    title="Expand">
-              ${icons.expand2}
-            </button>
-            <button class="am-chat-minimize am-chat-header-button" 
-                    title="Close">
-              ${icons.close2}
-            </button>
+            ${showWindowControls ? `
+              <button class="am-chat-expand am-chat-header-button desktop-only" 
+                      title="Expand">
+                ${icons.expand2}
+              </button>
+              <button class="am-chat-minimize am-chat-header-button" 
+                      title="Close">
+                ${icons.close2}
+              </button>
+            ` : ''}
           </div>
         </div>
       </div>
@@ -381,13 +387,9 @@ export class UIManager {
    * Generate branding HTML
    */
   private generateBranding(): string {
-    const brandingText = this.config.hideBranding 
-      ? `<span style="color: #10b981;">ChatAgent</span>`
-      : `<a href="https://agentman.ai" target="_blank" rel="noopener noreferrer">Agentman.ai</a>`;
-    
     return `
       <div class="am-chat-branding">
-        Powered by Agentman.ai
+        Powered by <a href="https://agentman.ai" target="_blank" rel="noopener noreferrer">Agentman.ai</a>
       </div>
     `;
   }

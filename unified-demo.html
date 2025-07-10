@@ -349,13 +349,13 @@
                             <input type="text" id="persistenceKey" placeholder="Leave blank for default">
                         </div>
 
-                        <h2 class="section-title">Branding Settings</h2>
+                        <h2 class="section-title">Attachment Settings</h2>
                         
                         <div class="form-group">
                             <label>
-                                <input type="checkbox" id="hideBranding" checked> Hide external links in "Powered by Agentman.ai"
+                                <input type="checkbox" id="enableAttachments"> Enable file attachments
                             </label>
-                            <p class="description">When enabled, the "Powered by Agentman.ai" text will still appear but without a clickable link.</p>
+                            <p class="description">When enabled, users can attach files to their messages. Files are validated based on agent capabilities.</p>
                         </div>
                         
                         <h2 class="section-title">Attachment Settings</h2>
@@ -672,7 +672,9 @@
                 agentIconColor: document.getElementById('agentIconColor').value,
                 
                 // Branding settings
-                hideBranding: document.getElementById('hideBranding').checked,
+                
+                // Attachment settings
+                enableAttachments: document.getElementById('enableAttachments').checked,
                 
                 // Attachment settings
                 enableAttachments: document.getElementById('enableAttachments').checked,
@@ -756,7 +758,9 @@
             document.getElementById('persistenceKey').value = '';
             
             // Branding settings
-            document.getElementById('hideBranding').checked = true;
+            
+            // Attachment settings
+            document.getElementById('enableAttachments').checked = false;
             
             // Attachment settings
             document.getElementById('enableAttachments').checked = false;
