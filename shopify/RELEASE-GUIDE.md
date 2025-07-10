@@ -211,7 +211,7 @@ git push origin shopify-v1.0.10
 | Attribute | Default | Description |
 |-----------|---------|-------------|
 | `data-agent-token` | Required | Your Agentman agent token |
-| `data-api-url` | `https://run.agentman.ai` | API endpoint |
+| `data-api-url` | `https://studio-api.agentman.ai` | API endpoint |
 | `data-title` | `AI Assistant` | Widget header title |
 | `data-toggle-text` | `Ask AI` | Toggle button text |
 | `data-variant` | `corner` | Widget style: corner, centered, inline |

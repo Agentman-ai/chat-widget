@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Persistence Fix</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            background-color: #f5f5f5;
+        }
+        .test-info {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .test-info h2 {
+            margin-top: 0;
+        }
+        .test-steps {
+            background: #e8f4fd;
+            padding: 15px;
+            border-radius: 5px;
+            margin: 10px 0;
+        }
+        .test-steps ol {
+            margin: 10px 0;
+        }
+        .test-steps li {
+            margin: 5px 0;
+        }
+        code {
+            background: #f0f0f0;
+            padding: 2px 5px;
+            border-radius: 3px;
+        }
+    </style>
+</head>
+<body>
+    <div class="test-info">
+        <h2>Test: Persistence Fix for Duplicate "Hello" Messages</h2>
+        <p>This page tests that the widget no longer sends "Hello" when loading existing conversations from localStorage.</p>
+        
+        <div class="test-steps">
+            <h3>Test Steps:</h3>
+            <ol>
+                <li>Open the chat widget below</li>
+                <li>The agent will respond to the initial "Hello" message</li>
+                <li>Send a few messages to establish a conversation</li>
+                <li>Refresh the page (F5)</li>
+                <li><strong>Expected:</strong> The previous conversation should load WITHOUT sending a new "Hello" message</li>
+                <li><strong>Bug behavior (fixed):</strong> Previously, it would send "Hello" again on every page load</li>
+            </ol>
+        </div>
+
+        <div class="test-steps">
+            <h3>Additional Tests:</h3>
+            <ol>
+                <li>Click the "New" button to create a new conversation - it SHOULD send "Hello" for new conversations</li>
+                <li>Switch between conversations using the "Chats" button - it should NOT send "Hello" when switching</li>
+                <li>Delete a conversation and the widget should handle it gracefully</li>
+            </ol>
+        </div>
+    </div>
+
+    <!-- Container for the chat widget -->
+    <div id="chat-widget-container"></div>
+
+    <!-- Load the chat widget from parent directory -->
+    <script src="../dist/agentman-chat-widget.js"></script>
+    
+    <script>
+        // Initialize the widget
+        new AgentmanChatWidget({
+            containerId: 'chat-widget-container',
+            agentToken: 'test-token',
+            apiUrl: 'https://api.agentman.com',
+            variant: 'corner',
+            initiallyOpen: true,
+            theme: {
+                primaryColor: '#007bff',
+                userMessageColor: '#007bff',
+                agentMessageColor: '#f1f3f5'
+            }
+        });
+    </script>
+</body>
+</html>

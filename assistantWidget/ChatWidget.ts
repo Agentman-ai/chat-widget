@@ -305,7 +305,7 @@ export class ChatWidget {
     }
 
     // Handle persistence restoration
-    let shouldInitChat = true;
+    let shouldInitChat = true; // Only init chat for truly new conversations
     if (this.persistenceManager) {
       const messages = this.persistenceManager.loadMessages();
       
@@ -328,8 +328,8 @@ export class ChatWidget {
         this.hasUserStartedConversation = userMessages.length > 0;
         this.isFreshConversation = false; // This is an existing conversation being loaded
         
-        // If we have metadata, don't need to init chat (avoid duplicate API call)
-        shouldInitChat = !metadata;
+        // If we have existing messages, don't initialize chat (avoid duplicate "Hello" message)
+        shouldInitChat = false;
       }
     }
 
