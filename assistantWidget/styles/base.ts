@@ -345,7 +345,7 @@ export const baseStyles = `
     text-align: left;
     font-size: 10px;
     padding: 4px 16px;
-    color: #9CA3AF;
+    color: #334155;
     background: white;
   }
 

@@ -79,12 +79,16 @@ shopify/
 <script src="https://storage.googleapis.com/chatwidget-shopify-storage-for-cdn/shopify/v1/widget.js" 
         data-agent-token="YOUR_AGENT_TOKEN"
         data-title="{{ shop.name }} Assistant"
-        data-bg-color="{{ settings.background_color }}"
-        data-button-color="{{ settings.accent_color }}"
+        data-bg-color="{{ settings.colors_background_1 }}"
+        data-button-color="{{ settings.colors_accent_1 }}"
+        data-text-color="{{ settings.colors_text }}"
         data-toggle-text="Chat with us"
+        data-welcome-message="Welcome to {{ shop.name }}! How can I help you today?"
         data-prompt-1="Track my order"
         data-prompt-2="Product information"
-        data-prompt-3="Return policy"></script>
+        data-prompt-3="Return policy"
+        data-persistence-enabled="true"
+        data-enable-attachments="true"></script>
 ```
 
 ## Configuration Options
@@ -96,6 +100,8 @@ All ChatWidget options can now be customized directly in your Shopify theme usin
 
 | Category | Data Attribute | Default | Description |
 |----------|---------------|---------|-------------|
+| **Required** | `data-agent-token` | - | Your Agentman agent token |
+| **API** | `data-api-url` | `https://api.agentman.ai` | Custom API endpoint |
 | **Behavior** | `data-variant` | `corner` | Widget style: corner, centered, inline |
 | | `data-position` | `bottom-right` | Position: bottom-right, bottom-left, etc. |
 | | `data-initially-open` | `false` | Open widget on page load |
@@ -103,17 +109,27 @@ All ChatWidget options can now be customized directly in your Shopify theme usin
 | **Appearance** | `data-initial-height` | `600px` | Widget height when opened |
 | | `data-initial-width` | `400px` | Widget width when opened |
 | | `data-title` | `AI Assistant` | Widget title in header |
-| | `data-placeholder` | `Ask me anything...` | Input placeholder text |
-| | `data-toggle-text` | `Ask Agentman` | Toggle button text |
+| | `data-placeholder` | `Type your message...` | Input placeholder text |
+| | `data-toggle-text` | `Ask AI` | Toggle button text |
+| | `data-initial-message` | `Hello` | Initial message to agent |
 | **Colors** | `data-bg-color` | `#ffffff` | Widget background color |
 | | `data-text-color` | `#111827` | Text color |
 | | `data-button-color` | `#2563eb` | Primary button color |
 | | `data-button-text-color` | `#ffffff` | Button text color |
+| | `data-agent-color` | `#111827` | Agent message text color |
+| | `data-user-color` | `#2563eb` | User message text color |
 | | `data-toggle-bg-color` | `#2563eb` | Toggle button background |
-| **Content** | `data-welcome-message` | `How can I help you today?` | Welcome message |
-| | `data-prompt-1` | `Track my order` | First quick prompt |
-| | `data-prompt-2` | `Product information` | Second quick prompt |
-| | `data-prompt-3` | `Return policy` | Third quick prompt |
+| | `data-toggle-text-color` | `#ffffff` | Toggle button text color |
+| | `data-toggle-icon-color` | `#ffffff` | Toggle button icon color |
+| **Content** | `data-show-prompts` | `true` | Show message prompts |
+| | `data-welcome-message` | `How can I help you today?` | Welcome message |
+| | `data-prompt-1` | - | First quick prompt |
+| | `data-prompt-2` | - | Second quick prompt |
+| | `data-prompt-3` | - | Third quick prompt |
+| **Persistence** | `data-persistence-enabled` | `true` | Enable conversation persistence |
+| | `data-persistence-days` | `7` | Days to keep conversations |
+| | `data-persistence-key` | `agentman_chat` | Storage key prefix |
+| | `data-max-conversations` | `10` | Max conversations to store |
 
 ### Integration with Shopify Themes
 

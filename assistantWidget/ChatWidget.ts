@@ -1025,6 +1025,7 @@ export class ChatWidget {
     const hasConversations = conversations.length > 1; // Show when more than current conversation
 
     // Add navigation buttons to header
+    // Show conversation buttons for ALL variants
     const header = this.uiManager.getElement('.am-chat-header');
     if (header) {
       this.conversationManager.addConversationButton(header, hasConversations);

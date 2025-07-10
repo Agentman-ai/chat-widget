@@ -383,7 +383,6 @@ class ShopifyConfigTool {
                 enabled: document.getElementById('persistenceEnabled').checked,
                 days: parseInt(document.getElementById('persistenceDays').value) || 7
             },
-            hideBranding: document.getElementById('hideBranding').checked,
             initiallyOpen: document.getElementById('initiallyOpen').checked,
             shopifyIntegration: {
                 customerData: document.getElementById('customerData').checked,
@@ -411,7 +410,6 @@ class ShopifyConfigTool {
             theme: this.config.theme,
             messagePrompts: this.config.content.messagePrompts,
             persistence: this.config.advanced.persistence,
-            hideBranding: this.config.advanced.hideBranding,
             shopifyIntegration: this.config.advanced.shopifyIntegration
         };
 
@@ -503,7 +501,6 @@ class ShopifyConfigTool {
         // Reset checkboxes to defaults
         document.getElementById('showPrompts').checked = true;
         document.getElementById('persistenceEnabled').checked = true;
-        document.getElementById('hideBranding').checked = true;
         document.getElementById('customerData').checked = true;
         document.getElementById('cartSync').checked = true;
         document.getElementById('orderLookup').checked = true;

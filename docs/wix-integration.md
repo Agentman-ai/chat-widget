@@ -250,7 +250,6 @@ class WixConfigTool {
                 agentIcon: '',
                 userIcon: ''
             },
-            hideBranding: false
         };
     }
 
