@@ -2,6 +2,24 @@
 
 This document outlines how to bump the version, build the widget, and deploy a new release of the Agentman Chat Widget.
 
+## 🚀 Quick Start - Automated Release
+
+The easiest way to release is using our GitHub Actions workflows:
+
+1. Go to the [Actions tab](../../actions) in GitHub
+2. Select "Release All Components" workflow
+3. Click "Run workflow" and choose:
+   - `release_type`: patch, minor, or major
+   - `components`: all (or specific components)
+   - `dry_run`: true (to test) or false (to release)
+4. Monitor the workflow progress
+
+See [.github/workflows/README.md](.github/workflows/README.md) for detailed workflow documentation.
+
+## Manual Release Process
+
+If you prefer to release manually or need more control, follow the steps below. Otherwise, skip to the Prerequisites section.
+
 ## Prerequisites
 
 - Ensure all tests pass: `npm test`
@@ -144,6 +162,41 @@ For v0.23.0+, ensure users can migrate deprecated theme properties:
 - `agentBackgroundColor` → removed (Claude-style layout)
 - `userBackgroundColor` → removed (Claude-style layout)
 - Other bubble-related properties → removed
+
+## 🤖 Automated Release Workflows
+
+### Available GitHub Actions
+
+1. **Full Release Pipeline** (`full-release.yml`)
+   - Releases NPM package and WordPress plugin
+   - Handles version bumping, building, testing, and publishing
+   - Creates GitHub releases with artifacts
+
+2. **Shopify Widget Release** (`shopify-release.yml`)
+   - Deploys Shopify widget to Google Cloud Storage CDN
+   - Independent versioning from NPM package
+   - Handles cache invalidation
+
+3. **Release All Components** (`release-all.yml`)
+   - Orchestrates releases across all components
+   - Choose which components to release
+   - Single entry point for all releases
+
+### Workflow Features
+
+- **Dry Run Mode**: Test the release process without publishing
+- **Automatic Version Bumping**: Semantic versioning support
+- **Build Verification**: Ensures builds succeed before publishing
+- **Release Notes Generation**: Automatic changelog from commits
+- **Deployment Verification**: Checks that packages are accessible
+- **Artifact Management**: Handles WordPress plugin zips
+
+### Required Secrets
+
+Configure in GitHub repository settings:
+- `NPM_TOKEN`: For publishing to npm
+- `WIF_PROVIDER`: For Google Cloud authentication (Shopify)
+- `WIF_SERVICE_ACCOUNT`: For GCP deployment (Shopify)
 
 ---
 Keep this guide updated as your workflow evolves.

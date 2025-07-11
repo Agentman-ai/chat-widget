@@ -1,0 +1,389 @@
+name: Full Release Pipeline
+
+on:
+  workflow_dispatch:
+    inputs:
+      release_type:
+        description: 'Release type'
+        required: true
+        default: 'patch'
+        type: choice
+        options:
+          - patch
+          - minor
+          - major
+      dry_run:
+        description: 'Dry run (skip publishing)'
+        required: false
+        default: false
+        type: boolean
+
+permissions:
+  contents: write
+  packages: write
+  pull-requests: write
+
+jobs:
+  prepare-release:
+    name: Prepare Release
+    runs-on: ubuntu-latest
+    outputs:
+      new_version: ${{ steps.version.outputs.new_version }}
+      old_version: ${{ steps.version.outputs.old_version }}
+      release_notes: ${{ steps.notes.outputs.release_notes }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20.x'
+          registry-url: 'https://registry.npmjs.org'
+          cache: 'npm'
+
+      - name: Configure Git
+        run: |
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+
+      - name: Get current version
+        id: current
+        run: |
+          CURRENT_VERSION=$(node -p "require('./package.json').version")
+          echo "version=$CURRENT_VERSION" >> $GITHUB_OUTPUT
+
+      - name: Bump version
+        id: version
+        run: |
+          OLD_VERSION=$(node -p "require('./package.json').version")
+          echo "old_version=$OLD_VERSION" >> $GITHUB_OUTPUT
+          
+          if [ "${{ inputs.dry_run }}" = "true" ]; then
+            echo "🔧 Dry run mode - simulating version bump"
+            case "${{ inputs.release_type }}" in
+              major)
+                NEW_VERSION=$(npm version major --no-git-tag-version | sed 's/v//')
+                ;;
+              minor)
+                NEW_VERSION=$(npm version minor --no-git-tag-version | sed 's/v//')
+                ;;
+              patch)
+                NEW_VERSION=$(npm version patch --no-git-tag-version | sed 's/v//')
+                ;;
+            esac
+            git checkout -- package.json package-lock.json
+          else
+            NEW_VERSION=$(npm version ${{ inputs.release_type }} --no-git-tag-version | sed 's/v//')
+          fi
+          
+          echo "new_version=$NEW_VERSION" >> $GITHUB_OUTPUT
+          echo "📦 Version bumped from $OLD_VERSION to $NEW_VERSION"
+
+      - name: Generate release notes
+        id: notes
+        run: |
+          # Get the latest tag
+          LATEST_TAG=$(git describe --tags --abbrev=0 2>/dev/null || echo "")
+          
+          # Generate release notes
+          echo "# Release v${{ steps.version.outputs.new_version }}" > release_notes.md
+          echo "" >> release_notes.md
+          echo "## What's Changed" >> release_notes.md
+          echo "" >> release_notes.md
+          
+          if [ -n "$LATEST_TAG" ]; then
+            # Get commit messages since last tag
+            git log $LATEST_TAG..HEAD --pretty=format:"- %s (%h)" >> release_notes.md
+          else
+            echo "- Initial release" >> release_notes.md
+          fi
+          
+          echo "" >> release_notes.md
+          echo "## Installation" >> release_notes.md
+          echo "" >> release_notes.md
+          echo "### NPM" >> release_notes.md
+          echo '```bash' >> release_notes.md
+          echo "npm install @agentman/chat-widget@${{ steps.version.outputs.new_version }}" >> release_notes.md
+          echo '```' >> release_notes.md
+          echo "" >> release_notes.md
+          echo "### CDN" >> release_notes.md
+          echo '```html' >> release_notes.md
+          echo '<script src="https://unpkg.com/@agentman/chat-widget@${{ steps.version.outputs.new_version }}/dist/index.js"></script>' >> release_notes.md
+          echo '```' >> release_notes.md
+          echo "" >> release_notes.md
+          echo "### WordPress Plugin" >> release_notes.md
+          echo "Download the attached `agentman-chat-widget-${{ steps.version.outputs.new_version }}.zip` and install via WordPress admin." >> release_notes.md
+          
+          # Store release notes
+          NOTES=$(cat release_notes.md)
+          echo "release_notes<<EOF" >> $GITHUB_OUTPUT
+          echo "$NOTES" >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
+
+      - name: Update package files
+        if: inputs.dry_run == false
+        run: |
+          # Commit version bump
+          git add package.json package-lock.json
+          git commit -m "chore: release v${{ steps.version.outputs.new_version }}"
+          
+          # Create and push tag
+          git tag -a "v${{ steps.version.outputs.new_version }}" -m "Release v${{ steps.version.outputs.new_version }}"
+          git push origin main
+          git push origin "v${{ steps.version.outputs.new_version }}"
+
+  build-and-test:
+    name: Build and Test
+    needs: prepare-release
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.dry_run == false && format('v{0}', needs.prepare-release.outputs.new_version) || github.ref }}
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20.x'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run linter
+        run: npm run lint
+        continue-on-error: true
+
+      - name: Run tests
+        run: npm test
+
+      - name: Build package
+        run: npm run build
+
+      - name: Verify build output
+        run: |
+          echo "📦 Checking build output..."
+          ls -la dist/
+          
+          # Check if main files exist
+          if [ ! -f "dist/index.js" ]; then
+            echo "❌ dist/index.js not found!"
+            exit 1
+          fi
+          
+          if [ ! -f "dist/index.d.ts" ]; then
+            echo "❌ dist/index.d.ts not found!"
+            exit 1
+          fi
+          
+          echo "✅ Build output verified"
+
+      - name: Upload build artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: dist-files
+          path: dist/
+          retention-days: 1
+
+  build-wordpress-plugin:
+    name: Build WordPress Plugin
+    needs: [prepare-release, build-and-test]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.dry_run == false && format('v{0}', needs.prepare-release.outputs.new_version) || github.ref }}
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20.x'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Update WordPress plugin version
+        run: |
+          VERSION="${{ needs.prepare-release.outputs.new_version }}"
+          
+          # Update version in PHP file
+          sed -i \
+            -e "s/^ \* Version: .*/ * Version: $VERSION/" \
+            -e "s/define( 'AGENTMAN_CHAT_WIDGET_VERSION', .*/define( 'AGENTMAN_CHAT_WIDGET_VERSION', '$VERSION' );/" \
+            wordpress/agentman-chat-widget.php
+          
+          echo "✅ WordPress plugin version updated to $VERSION"
+
+      - name: Build WordPress bundle
+        run: |
+          echo "🔧 Building WordPress bundle..."
+          node wp-bundle.js
+          
+          # Verify the bundle was created
+          if [ ! -f "agentman-chat-widget-${{ needs.prepare-release.outputs.new_version }}.zip" ]; then
+            echo "❌ WordPress plugin zip not found!"
+            exit 1
+          fi
+          
+          echo "✅ WordPress plugin built successfully"
+
+      - name: Upload WordPress plugin
+        uses: actions/upload-artifact@v4
+        with:
+          name: wordpress-plugin
+          path: agentman-chat-widget-${{ needs.prepare-release.outputs.new_version }}.zip
+          retention-days: 1
+
+  publish-npm:
+    name: Publish to NPM
+    needs: [prepare-release, build-and-test]
+    runs-on: ubuntu-latest
+    if: inputs.dry_run == false
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          ref: v${{ needs.prepare-release.outputs.new_version }}
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20.x'
+          registry-url: 'https://registry.npmjs.org'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build package
+        run: npm run build
+
+      - name: Check if version exists on NPM
+        id: check_npm
+        run: |
+          VERSION="${{ needs.prepare-release.outputs.new_version }}"
+          if npm view @agentman/chat-widget@$VERSION &>/dev/null; then
+            echo "exists=true" >> $GITHUB_OUTPUT
+            echo "⚠️ Version $VERSION already exists on NPM"
+          else
+            echo "exists=false" >> $GITHUB_OUTPUT
+            echo "✅ Version $VERSION is new"
+          fi
+
+      - name: Publish to NPM
+        if: steps.check_npm.outputs.exists == 'false'
+        run: |
+          npm publish --access public
+          echo "✅ Published to NPM: @agentman/chat-widget@${{ needs.prepare-release.outputs.new_version }}"
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+
+      - name: Verify NPM publication
+        if: steps.check_npm.outputs.exists == 'false'
+        run: |
+          sleep 10  # Wait for NPM to update
+          VERSION="${{ needs.prepare-release.outputs.new_version }}"
+          
+          if npm view @agentman/chat-widget@$VERSION &>/dev/null; then
+            echo "✅ Package successfully published to NPM"
+          else
+            echo "❌ Package not found on NPM after publishing"
+            exit 1
+          fi
+
+  create-github-release:
+    name: Create GitHub Release
+    needs: [prepare-release, build-wordpress-plugin, publish-npm]
+    runs-on: ubuntu-latest
+    if: always() && needs.prepare-release.result == 'success' && needs.build-wordpress-plugin.result == 'success'
+    steps:
+      - name: Download WordPress plugin
+        uses: actions/download-artifact@v4
+        with:
+          name: wordpress-plugin
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: ${{ inputs.dry_run == false && format('v{0}', needs.prepare-release.outputs.new_version) || 'dry-run' }}
+          name: ${{ inputs.dry_run == false && format('Release v{0}', needs.prepare-release.outputs.new_version) || 'Dry Run Release' }}
+          body: ${{ needs.prepare-release.outputs.release_notes }}
+          files: |
+            agentman-chat-widget-${{ needs.prepare-release.outputs.new_version }}.zip
+          draft: ${{ inputs.dry_run }}
+          prerelease: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  verify-release:
+    name: Verify Release
+    needs: [prepare-release, publish-npm, create-github-release]
+    runs-on: ubuntu-latest
+    if: always() && needs.prepare-release.result == 'success'
+    steps:
+      - name: Verify NPM package
+        if: inputs.dry_run == false
+        run: |
+          VERSION="${{ needs.prepare-release.outputs.new_version }}"
+          echo "🔍 Verifying NPM package..."
+          
+          # Check NPM
+          if npm view @agentman/chat-widget@$VERSION &>/dev/null; then
+            echo "✅ NPM: Package available at @agentman/chat-widget@$VERSION"
+          else
+            echo "❌ NPM: Package not found"
+            exit 1
+          fi
+          
+          # Check unpkg CDN
+          CDN_URL="https://unpkg.com/@agentman/chat-widget@$VERSION/dist/index.js"
+          if curl -s -o /dev/null -w "%{http_code}" "$CDN_URL" | grep -q "200"; then
+            echo "✅ CDN: Available at $CDN_URL"
+          else
+            echo "⚠️ CDN: Not yet available (may take a few minutes)"
+          fi
+
+      - name: Summary
+        run: |
+          echo "# 🎉 Release Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "## Version Information" >> $GITHUB_STEP_SUMMARY
+          echo "- **Previous Version**: ${{ needs.prepare-release.outputs.old_version }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **New Version**: ${{ needs.prepare-release.outputs.new_version }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Release Type**: ${{ inputs.release_type }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Dry Run**: ${{ inputs.dry_run }}" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          
+          if [ "${{ inputs.dry_run }}" = "false" ]; then
+            echo "## Release Artifacts" >> $GITHUB_STEP_SUMMARY
+            echo "- ✅ NPM Package: [@agentman/chat-widget@${{ needs.prepare-release.outputs.new_version }}](https://www.npmjs.com/package/@agentman/chat-widget/v/${{ needs.prepare-release.outputs.new_version }})" >> $GITHUB_STEP_SUMMARY
+            echo "- ✅ GitHub Release: [v${{ needs.prepare-release.outputs.new_version }}](https://github.com/${{ github.repository }}/releases/tag/v${{ needs.prepare-release.outputs.new_version }})" >> $GITHUB_STEP_SUMMARY
+            echo "- ✅ WordPress Plugin: agentman-chat-widget-${{ needs.prepare-release.outputs.new_version }}.zip" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "## Installation" >> $GITHUB_STEP_SUMMARY
+            echo '```bash' >> $GITHUB_STEP_SUMMARY
+            echo "npm install @agentman/chat-widget@${{ needs.prepare-release.outputs.new_version }}" >> $GITHUB_STEP_SUMMARY
+            echo '```' >> $GITHUB_STEP_SUMMARY
+          else
+            echo "## Dry Run Complete" >> $GITHUB_STEP_SUMMARY
+            echo "This was a dry run. No packages were published." >> $GITHUB_STEP_SUMMARY
+          fi
+
+  cleanup:
+    name: Cleanup
+    needs: [verify-release]
+    runs-on: ubuntu-latest
+    if: always()
+    steps:
+      - name: Delete artifacts
+        uses: geekyeggo/delete-artifact@v2
+        with:
+          name: |
+            dist-files
+            wordpress-plugin

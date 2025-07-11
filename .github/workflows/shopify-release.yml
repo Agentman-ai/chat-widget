@@ -1,0 +1,435 @@
+name: Shopify Widget Release
+
+on:
+  workflow_dispatch:
+    inputs:
+      release_type:
+        description: 'Release type'
+        required: true
+        default: 'patch'
+        type: choice
+        options:
+          - patch
+          - minor
+          - major
+      deploy_to_gcp:
+        description: 'Deploy to Google Cloud Storage'
+        required: true
+        default: true
+        type: boolean
+      dry_run:
+        description: 'Dry run (skip deployment)'
+        required: false
+        default: false
+        type: boolean
+
+permissions:
+  contents: write
+  id-token: write
+
+jobs:
+  prepare-shopify-release:
+    name: Prepare Shopify Release
+    runs-on: ubuntu-latest
+    outputs:
+      new_version: ${{ steps.version.outputs.new_version }}
+      old_version: ${{ steps.version.outputs.old_version }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20.x'
+          cache: 'npm'
+
+      - name: Configure Git
+        run: |
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+
+      - name: Get current Shopify version
+        id: current
+        run: |
+          cd shopify
+          if [ -f "version.json" ]; then
+            CURRENT_VERSION=$(jq -r '.version' version.json)
+          else
+            CURRENT_VERSION="1.0.0"
+          fi
+          echo "version=$CURRENT_VERSION" >> $GITHUB_OUTPUT
+
+      - name: Bump Shopify version
+        id: version
+        run: |
+          cd shopify
+          OLD_VERSION="${{ steps.current.outputs.version }}"
+          echo "old_version=$OLD_VERSION" >> $GITHUB_OUTPUT
+          
+          # Calculate new version
+          IFS='.' read -r major minor patch <<< "$OLD_VERSION"
+          
+          case "${{ inputs.release_type }}" in
+            major)
+              NEW_VERSION="$((major + 1)).0.0"
+              ;;
+            minor)
+              NEW_VERSION="$major.$((minor + 1)).0"
+              ;;
+            patch)
+              NEW_VERSION="$major.$minor.$((patch + 1))"
+              ;;
+          esac
+          
+          echo "new_version=$NEW_VERSION" >> $GITHUB_OUTPUT
+          echo "📦 Shopify version will be bumped from $OLD_VERSION to $NEW_VERSION"
+
+      - name: Update Shopify version files
+        if: inputs.dry_run == false
+        run: |
+          cd shopify
+          VERSION="${{ steps.version.outputs.new_version }}"
+          
+          # Run bump-version.sh script
+          if [ -f "bump-version.sh" ]; then
+            chmod +x bump-version.sh
+            ./bump-version.sh "${{ inputs.release_type }}"
+          else
+            # Manual version update
+            echo '{"version": "'$VERSION'"}' > version.json
+            
+            # Update script-service/index.js
+            if [ -f "script-service/index.js" ]; then
+              sed -i "s/const SCRIPT_VERSION = '[^']*'/const SCRIPT_VERSION = '$VERSION'/" script-service/index.js
+            fi
+            
+            # Update config-tool/script.js if exists
+            if [ -f "config-tool/script.js" ]; then
+              sed -i "s/version: '[^']*'/version: '$VERSION'/" config-tool/script.js
+            fi
+          fi
+          
+          echo "✅ Shopify version updated to $VERSION"
+
+  build-shopify-widget:
+    name: Build Shopify Widget
+    needs: prepare-shopify-release
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20.x'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build core widget
+        run: |
+          echo "🔧 Building core chat widget..."
+          npm run build
+          
+          # Verify core build
+          if [ ! -f "dist/index.js" ]; then
+            echo "❌ Core widget build failed!"
+            exit 1
+          fi
+          echo "✅ Core widget built successfully"
+
+      - name: Build Shopify widget
+        run: |
+          cd shopify
+          VERSION="${{ needs.prepare-shopify-release.outputs.new_version }}"
+          
+          # Update version for build
+          if [ "${{ inputs.dry_run }}" = "true" ]; then
+            echo "🔧 Dry run - simulating version update"
+            if [ -f "script-service/index.js" ]; then
+              sed -i "s/const SCRIPT_VERSION = '[^']*'/const SCRIPT_VERSION = '$VERSION'/" script-service/index.js
+            fi
+          fi
+          
+          # Run local build script
+          if [ -f "deploy-local.sh" ]; then
+            chmod +x deploy-local.sh
+            ./deploy-local.sh build
+          else
+            echo "❌ deploy-local.sh not found!"
+            exit 1
+          fi
+          
+          # Verify build output
+          if [ ! -f "dist/cdn/shopify/v1/widget.js" ]; then
+            echo "❌ Shopify widget build failed!"
+            exit 1
+          fi
+          
+          echo "✅ Shopify widget v$VERSION built successfully"
+
+      - name: Test widget locally
+        run: |
+          cd shopify/dist
+          
+          # Start simple HTTP server in background
+          python3 -m http.server 8000 &
+          SERVER_PID=$!
+          sleep 2
+          
+          # Test widget availability
+          if curl -f -s http://localhost:8000/cdn/shopify/v1/widget.js > /dev/null; then
+            echo "✅ Widget accessible via local server"
+          else
+            echo "❌ Widget not accessible"
+            kill $SERVER_PID
+            exit 1
+          fi
+          
+          # Check version in widget
+          VERSION="${{ needs.prepare-shopify-release.outputs.new_version }}"
+          if curl -s http://localhost:8000/cdn/shopify/v1/widget.js | grep -q "Version: $VERSION"; then
+            echo "✅ Version $VERSION found in widget"
+          else
+            echo "⚠️ Version mismatch in widget"
+          fi
+          
+          kill $SERVER_PID
+
+      - name: Upload build artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: shopify-widget-dist
+          path: shopify/dist/
+          retention-days: 1
+
+  deploy-to-gcp:
+    name: Deploy to Google Cloud Storage
+    needs: [prepare-shopify-release, build-shopify-widget]
+    runs-on: ubuntu-latest
+    if: inputs.deploy_to_gcp && inputs.dry_run == false
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Download build artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: shopify-widget-dist
+          path: shopify/dist/
+
+      - name: Authenticate to Google Cloud
+        uses: google-github-actions/auth@v2
+        with:
+          workload_identity_provider: ${{ secrets.WIF_PROVIDER }}
+          service_account: ${{ secrets.WIF_SERVICE_ACCOUNT }}
+
+      - name: Setup Google Cloud SDK
+        uses: google-github-actions/setup-gcloud@v2
+        with:
+          project_id: agentman-public-cloud-storage
+
+      - name: Deploy to GCS
+        run: |
+          cd shopify
+          VERSION="${{ needs.prepare-shopify-release.outputs.new_version }}"
+          
+          if [ -f "deploy-gcp.sh" ]; then
+            chmod +x deploy-gcp.sh
+            ./deploy-gcp.sh deploy
+          else
+            # Manual deployment
+            BUCKET="gs://chatwidget-shopify-storage-for-cdn"
+            
+            # Deploy widget files
+            gsutil -m cp -r dist/cdn/* $BUCKET/
+            
+            # Update version.json
+            echo '{"version": "'$VERSION'", "updated": "'$(date -u +%Y-%m-%dT%H:%M:%SZ)'"}' > version.json
+            gsutil cp version.json $BUCKET/shopify/version.json
+            
+            # Set cache headers
+            gsutil -m setmeta -h "Cache-Control:public, max-age=300" "$BUCKET/shopify/v1/widget.js"
+            gsutil -m setmeta -h "Cache-Control:public, max-age=3600" "$BUCKET/core/chat-widget.js"
+          fi
+          
+          echo "✅ Deployed to Google Cloud Storage"
+
+      - name: Invalidate CDN cache
+        run: |
+          cd shopify
+          
+          if [ -f "deploy-gcp.sh" ]; then
+            ./deploy-gcp.sh invalidate
+          else
+            echo "⚠️ CDN invalidation script not found, skipping..."
+          fi
+
+      - name: Verify deployment
+        run: |
+          VERSION="${{ needs.prepare-shopify-release.outputs.new_version }}"
+          CDN_URL="https://storage.googleapis.com/chatwidget-shopify-storage-for-cdn/shopify/v1/widget.js"
+          
+          echo "🔍 Verifying deployment..."
+          
+          # Check widget availability
+          if curl -f -s "$CDN_URL" > /dev/null; then
+            echo "✅ Widget accessible at CDN"
+          else
+            echo "❌ Widget not accessible at CDN"
+            exit 1
+          fi
+          
+          # Check version
+          if curl -s "$CDN_URL" | grep -q "Version: $VERSION"; then
+            echo "✅ Version $VERSION deployed successfully"
+          else
+            echo "❌ Version mismatch in deployed widget"
+            exit 1
+          fi
+          
+          # Check version.json
+          VERSION_JSON_URL="https://storage.googleapis.com/chatwidget-shopify-storage-for-cdn/shopify/version.json"
+          DEPLOYED_VERSION=$(curl -s "$VERSION_JSON_URL" | jq -r '.version')
+          
+          if [ "$DEPLOYED_VERSION" = "$VERSION" ]; then
+            echo "✅ version.json updated correctly"
+          else
+            echo "⚠️ version.json shows $DEPLOYED_VERSION instead of $VERSION"
+          fi
+
+  create-shopify-release:
+    name: Create Shopify Release
+    needs: [prepare-shopify-release, build-shopify-widget, deploy-to-gcp]
+    runs-on: ubuntu-latest
+    if: always() && needs.prepare-shopify-release.result == 'success' && needs.build-shopify-widget.result == 'success'
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Commit version changes
+        if: inputs.dry_run == false
+        run: |
+          cd shopify
+          VERSION="${{ needs.prepare-shopify-release.outputs.new_version }}"
+          
+          # Check if there are changes to commit
+          if git diff --quiet; then
+            echo "No changes to commit"
+          else
+            git add -A
+            git commit -m "chore: release Shopify widget v$VERSION"
+            git push origin main
+          fi
+
+      - name: Create Git tag
+        if: inputs.dry_run == false
+        run: |
+          VERSION="${{ needs.prepare-shopify-release.outputs.new_version }}"
+          TAG_NAME="shopify-v$VERSION"
+          
+          # Create and push tag
+          git tag -a "$TAG_NAME" -m "Shopify Widget Release v$VERSION"
+          git push origin "$TAG_NAME"
+          
+          echo "✅ Created tag: $TAG_NAME"
+
+      - name: Generate release notes
+        id: notes
+        run: |
+          VERSION="${{ needs.prepare-shopify-release.outputs.new_version }}"
+          OLD_VERSION="${{ needs.prepare-shopify-release.outputs.old_version }}"
+          
+          cat > release_notes.md << EOF
+          # Shopify Widget v$VERSION
+          
+          ## What's Changed
+          - Updated from v$OLD_VERSION to v$VERSION
+          - Release type: ${{ inputs.release_type }}
+          
+          ## Installation
+          
+          Add this script to your Shopify theme:
+          
+          \`\`\`html
+          <script async 
+              src="https://storage.googleapis.com/chatwidget-shopify-storage-for-cdn/shopify/v1/widget.js"
+              data-agent-token="YOUR_AGENT_TOKEN">
+          </script>
+          \`\`\`
+          
+          ## CDN URLs
+          - Widget: https://storage.googleapis.com/chatwidget-shopify-storage-for-cdn/shopify/v1/widget.js
+          - Core: https://storage.googleapis.com/chatwidget-shopify-storage-for-cdn/core/chat-widget.js
+          - Config Tool: https://storage.googleapis.com/chatwidget-shopify-storage-for-cdn/shopify/config-tool/index.html
+          
+          ## Deployment Status
+          - Deployed to GCP: ${{ inputs.deploy_to_gcp && inputs.dry_run == false && '✅ Yes' || '❌ No' }}
+          - Dry Run: ${{ inputs.dry_run && '✅ Yes' || '❌ No' }}
+          EOF
+          
+          # Store release notes
+          NOTES=$(cat release_notes.md)
+          echo "release_notes<<EOF" >> $GITHUB_OUTPUT
+          echo "$NOTES" >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
+
+      - name: Create GitHub Release
+        if: inputs.dry_run == false
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: shopify-v${{ needs.prepare-shopify-release.outputs.new_version }}
+          name: Shopify Widget v${{ needs.prepare-shopify-release.outputs.new_version }}
+          body: ${{ steps.notes.outputs.release_notes }}
+          draft: false
+          prerelease: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  summary:
+    name: Release Summary
+    needs: [prepare-shopify-release, build-shopify-widget, deploy-to-gcp, create-shopify-release]
+    runs-on: ubuntu-latest
+    if: always()
+    steps:
+      - name: Generate summary
+        run: |
+          echo "# 🛍️ Shopify Widget Release Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "## Version Information" >> $GITHUB_STEP_SUMMARY
+          echo "- **Previous Version**: ${{ needs.prepare-shopify-release.outputs.old_version }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **New Version**: ${{ needs.prepare-shopify-release.outputs.new_version }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Release Type**: ${{ inputs.release_type }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Dry Run**: ${{ inputs.dry_run }}" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          
+          if [ "${{ inputs.dry_run }}" = "false" ]; then
+            VERSION="${{ needs.prepare-shopify-release.outputs.new_version }}"
+            echo "## Release Artifacts" >> $GITHUB_STEP_SUMMARY
+            echo "- ✅ Git Tag: shopify-v$VERSION" >> $GITHUB_STEP_SUMMARY
+            
+            if [ "${{ inputs.deploy_to_gcp }}" = "true" ]; then
+              echo "- ✅ CDN Widget: [View](https://storage.googleapis.com/chatwidget-shopify-storage-for-cdn/shopify/v1/widget.js)" >> $GITHUB_STEP_SUMMARY
+              echo "- ✅ Version JSON: [View](https://storage.googleapis.com/chatwidget-shopify-storage-for-cdn/shopify/version.json)" >> $GITHUB_STEP_SUMMARY
+              echo "- ✅ Config Tool: [View](https://storage.googleapis.com/chatwidget-shopify-storage-for-cdn/shopify/config-tool/index.html)" >> $GITHUB_STEP_SUMMARY
+            fi
+            
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "## Installation Script" >> $GITHUB_STEP_SUMMARY
+            echo '```html' >> $GITHUB_STEP_SUMMARY
+            echo '<script async src="https://storage.googleapis.com/chatwidget-shopify-storage-for-cdn/shopify/v1/widget.js" data-agent-token="YOUR_TOKEN"></script>' >> $GITHUB_STEP_SUMMARY
+            echo '```' >> $GITHUB_STEP_SUMMARY
+          else
+            echo "## Dry Run Complete" >> $GITHUB_STEP_SUMMARY
+            echo "This was a dry run. No files were deployed." >> $GITHUB_STEP_SUMMARY
+          fi
+
+      - name: Cleanup artifacts
+        uses: geekyeggo/delete-artifact@v2
+        with:
+          name: shopify-widget-dist
