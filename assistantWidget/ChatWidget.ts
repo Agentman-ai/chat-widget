@@ -318,18 +318,36 @@ export class ChatWidget {
         console.log('⚠️ Initial load - no persisted metadata found, will initialize from API');
       }
       
-      if (messages.length > 0) {
-        this.stateManager.clearMessages();
-        messages.forEach(msg => this.addMessage(msg));
-        this.lastMessageCount = messages.filter(m => m.sender === 'agent').length;
+      // Check if we have either messages OR metadata (indicating an existing conversation)
+      if (messages.length > 0 || metadata) {
+        if (messages.length > 0) {
+          this.stateManager.clearMessages();
+          messages.forEach(msg => this.addMessage(msg));
+          
+          // Important: Set lastMessageCount to the total number of messages from the agent perspective
+          // This should match how the API counts messages in its response array
+          // The API response includes both user and agent messages, so we count all messages
+          this.lastMessageCount = messages.length;
+          
+          // Set conversation state based on loaded messages
+          const userMessages = messages.filter(msg => msg.sender === 'user');
+          this.hasUserStartedConversation = userMessages.length > 0;
+          
+          console.log(`📊 Loaded ${messages.length} messages from persistence, lastMessageCount set to ${this.lastMessageCount}`);
+        } else if (metadata) {
+          // We have metadata but no messages - this is an edge case
+          // Could happen if messages failed to save or were cleared
+          console.log('⚠️ Found metadata but no messages - likely a persistence issue');
+          // Still prevent initialization to avoid duplicate Hello
+        }
         
-        // Set conversation state based on loaded messages
-        const userMessages = messages.filter(msg => msg.sender === 'user');
-        this.hasUserStartedConversation = userMessages.length > 0;
         this.isFreshConversation = false; // This is an existing conversation being loaded
         
-        // If we have existing messages, don't initialize chat (avoid duplicate "Hello" message)
+        // If we have existing messages or metadata, don't initialize chat (avoid duplicate "Hello" message)
         shouldInitChat = false;
+        
+        // Mark as initialized since we have an existing conversation
+        this.stateManager.setInitialized(true);
       }
     }
 
@@ -509,6 +527,14 @@ export class ChatWidget {
       return;
     }
 
+    // Double-check: Don't initialize if we already have messages
+    const currentMessages = this.stateManager.getState().messages;
+    if (currentMessages.length > 0) {
+      console.log(`⏭️ initializeChat() aborted - already have ${currentMessages.length} messages`);
+      this.stateManager.setInitialized(true);
+      return;
+    }
+
     this.isInitializing = true;
     this.showLoadingIndicator();
     this.lastMessageCount = 0;
@@ -589,6 +615,9 @@ export class ChatWidget {
    */
   private handleInitialResponse(responseData: any[]): void {
     console.log('👋 handleInitialResponse() called');
+    console.log(`📊 Response data contains ${responseData.length} total messages`);
+    console.log(`📊 Current lastMessageCount: ${this.lastMessageCount}`);
+    
     if (!Array.isArray(responseData)) {
       console.error('Invalid response format:', responseData);
       return;
@@ -601,7 +630,12 @@ export class ChatWidget {
 
     // Get only the new messages that appear after the last known count
     const newMessages = responseData.slice(this.lastMessageCount);
-    console.log(`💬 Processing ${newMessages.length} new messages from initial response`);
+    console.log(`💬 Processing ${newMessages.length} new messages from initial response (sliced from index ${this.lastMessageCount})`);
+
+    // Log message types for debugging
+    newMessages.forEach((msg, index) => {
+      console.log(`  Message ${this.lastMessageCount + index}: type=${msg.type}, content preview: "${msg.content?.substring(0, 50)}..."`);
+    });
 
     for (const msg of newMessages) {
       // Skip human messages since we already display them when sending
@@ -611,7 +645,7 @@ export class ChatWidget {
       }
 
       if (this.isValidMessage(msg) && msg.content.trim()) {
-        console.log('➕ Adding welcome message to UI');
+        console.log(`➕ Adding welcome message to UI: "${msg.content.substring(0, 50)}..."`);
         this.addMessage({
           id: msg.id ?? this.generateUUID(),
           sender: 'agent',
@@ -624,6 +658,13 @@ export class ChatWidget {
 
     // Update lastMessageCount to reflect the total messages processed
     this.lastMessageCount = responseData.length;
+    console.log(`✅ Updated lastMessageCount to ${this.lastMessageCount}`);
+    
+    // Save the initial messages to persistence
+    if (this.persistenceManager) {
+      console.log('💾 Saving initial messages to persistence');
+      this.persistenceManager.saveMessages();
+    }
   }
 
   /**
@@ -1102,6 +1143,8 @@ export class ChatWidget {
     this.clearMessagesUI();
     this.hasUserStartedConversation = false; // Reset conversation state
     this.isFreshConversation = true; // This is a brand new conversation
+    this.lastMessageCount = 0; // Reset message count for new conversation
+    console.log('🆕 New conversation created, resetting lastMessageCount to 0');
     this.initializeChat();
 
     // Update conversation list
@@ -1148,6 +1191,10 @@ export class ChatWidget {
     const previousState = this.hasUserStartedConversation;
     this.hasUserStartedConversation = userMessages.length > 0;
     this.isFreshConversation = false; // This is an existing conversation we're switching to
+    
+    // Update lastMessageCount to match the loaded messages
+    this.lastMessageCount = messages.length;
+    console.log(`📊 Switched to conversation with ${messages.length} messages, lastMessageCount set to ${this.lastMessageCount}`);
     
     this.stateManager.clearMessages();
     this.clearMessagesUI();

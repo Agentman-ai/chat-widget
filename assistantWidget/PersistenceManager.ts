@@ -206,9 +206,23 @@ export class PersistenceManager {
     const existingMsgs = existingRaw ? (JSON.parse(existingRaw) as ConversationPayload).messages : [];
     console.log(`📊 Existing messages count: ${existingMsgs.length}`);
     
-    // Compare message lengths as a quick check
-    // If they're the same length, we'll assume no changes (optimization)
-    if (existingMsgs.length === msgs.length && existingMsgs.length > 0) {
+    // More thorough comparison - check if messages are actually different
+    // Don't just compare lengths as duplicate messages might have same length
+    let hasChanges = existingMsgs.length !== msgs.length;
+    
+    if (!hasChanges && msgs.length > 0) {
+      // If same length, check if content is different
+      for (let i = 0; i < msgs.length; i++) {
+        if (!existingMsgs[i] || 
+            existingMsgs[i].content !== msgs[i].content ||
+            existingMsgs[i].sender !== msgs[i].sender) {
+          hasChanges = true;
+          break;
+        }
+      }
+    }
+    
+    if (!hasChanges) {
       console.log('⏭️ saveMessages() aborted - no changes detected');
       return;
     }
