@@ -1,7 +1,7 @@
 // styles/messages.ts
 export const messageStyles = `
   .am-message {
-    margin-bottom: 18px;
+    margin-bottom: 12px;
     display: flex;
     flex-direction: column;
     align-items: flex-start;
@@ -9,8 +9,8 @@ export const messageStyles = `
   }
 
   .am-message.user {
-    margin-top: 24px;
-    margin-bottom: 18px;
+    margin-top: 0px;
+    margin-bottom: 12px;
   }
 
   .am-message-content {

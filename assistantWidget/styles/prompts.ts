@@ -80,13 +80,6 @@ export const promptStyles = `
     right: 20px;
     max-width: 320px;
     z-index: 999; /* Below the toggle button which is 1000 */
-    opacity: 0;
-    transform: translateY(10px);
-    transition: all 0.3s ease;
-  }
-
-  /* Show animation */
-  .am-chat-floating-prompts-container {
     animation: fadeInUp 0.3s ease forwards;
   }
 
@@ -101,8 +94,20 @@ export const promptStyles = `
     }
   }
 
-  /* Left-aligned for bottom-left corner widget */
-  .am-chat-bottom-left .am-chat-floating-prompts-container {
+  /* Position-specific adjustments */
+  .am-chat-widget--corner[data-position="bottom-left"] .am-chat-floating-prompts-container {
+    right: auto;
+    left: 20px;
+  }
+  
+  .am-chat-widget--corner[data-position="top-right"] .am-chat-floating-prompts-container {
+    bottom: auto;
+    top: 80px;
+  }
+  
+  .am-chat-widget--corner[data-position="top-left"] .am-chat-floating-prompts-container {
+    bottom: auto;
+    top: 80px;
     right: auto;
     left: 20px;
   }

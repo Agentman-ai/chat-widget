@@ -477,6 +477,11 @@ export class ChatWidget {
     this.element = document.createElement('div');
     this.element.className = `am-chat-widget am-chat-widget--${this.config.variant}`;
     this.element.setAttribute('data-container', this.containerId);
+    
+    // Set position attribute for corner variant
+    if (this.config.variant === 'corner' && this.config.position) {
+      this.element.setAttribute('data-position', this.config.position);
+    }
 
     // Basic template for now - TODO: Move to UIManager
     this.element.innerHTML = this.generateTemplate();
@@ -1121,7 +1126,23 @@ export class ChatWidget {
    * Note: Only used for floating prompts now, chat area prompts are disabled
    */
   private handlePromptClick(prompt: string): void {
-    // Fill the input with the prompt text and send it
+    // If widget is closed, open it first
+    if (!this.stateManager.getState().isOpen && this.config.variant === 'corner') {
+      this.stateManager.setOpen(true);
+      
+      // Small delay to ensure widget is fully opened before sending
+      setTimeout(() => {
+        this.fillAndSendPrompt(prompt);
+      }, 300);
+    } else {
+      this.fillAndSendPrompt(prompt);
+    }
+  }
+  
+  /**
+   * Helper to fill input and send prompt message
+   */
+  private fillAndSendPrompt(prompt: string): void {
     const input = this.uiManager.getElement('.am-chat-input') as HTMLTextAreaElement;
     if (input) {
       input.value = prompt;

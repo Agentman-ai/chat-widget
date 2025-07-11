@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Floating Prompts</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            padding: 20px;
+            background-color: #f0f0f0;
+        }
+        .test-info {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .status {
+            font-weight: bold;
+            margin: 10px 0;
+        }
+        .success { color: green; }
+        .error { color: red; }
+        .warning { color: orange; }
+    </style>
+</head>
+<body>
+    <div class="test-info">
+        <h1>Floating Prompts Test</h1>
+        <p>This page tests the floating message prompts functionality.</p>
+        <div id="status"></div>
+        <button onclick="forceShowPrompts()">Force Show Prompts</button>
+        <button onclick="toggleWidget()">Toggle Widget</button>
+        <button onclick="clearStorage()">Clear Storage</button>
+    </div>
+
+    <div id="chat-container"></div>
+
+    <script src="./dist/index.js"></script>
+    <script>
+        let chatWidget = null;
+        const statusDiv = document.getElementById('status');
+
+        function log(message, type = 'info') {
+            const p = document.createElement('p');
+            p.className = `status ${type}`;
+            p.textContent = `[${new Date().toLocaleTimeString()}] ${message}`;
+            statusDiv.appendChild(p);
+            console.log(message);
+        }
+
+        function initializeWidget() {
+            try {
+                log('Initializing widget...');
+                
+                chatWidget = new ChatWidget({
+                    apiUrl: 'http://localhost:8000',
+                    agentToken: '.test',
+                    title: 'Test Assistant',
+                    variant: 'corner',
+                    position: 'bottom-right',
+                    containerId: 'chat-container',
+                    initiallyOpen: false,
+                    
+                    // Enable message prompts
+                    messagePrompts: {
+                        show: true,
+                        welcome_message: 'Hi! How can I help you today?',
+                        prompts: [
+                            'What services do you offer?',
+                            'Tell me about pricing',
+                            'I need help with my account'
+                        ]
+                    },
+                    
+                    // Enable debug mode
+                    debug: {
+                        enabled: true,
+                        logLevel: 'verbose',
+                        timestamps: true
+                    },
+                    
+                    // Theme
+                    theme: {
+                        buttonColor: '#2563eb'
+                    }
+                });
+
+                log('Widget initialized successfully', 'success');
+                
+                // Check widget state
+                setTimeout(() => {
+                    checkWidgetState();
+                }, 1000);
+                
+                // Check if prompts show after 5 seconds
+                setTimeout(() => {
+                    checkPromptsStatus();
+                }, 6000);
+                
+            } catch (error) {
+                log(`Error initializing widget: ${error.message}`, 'error');
+            }
+        }
+
+        function checkWidgetState() {
+            if (!chatWidget) return;
+            
+            const state = chatWidget.stateManager.getState();
+            log(`Widget state: isOpen=${state.isOpen}, messages=${state.messages.length}`);
+            log(`Fresh conversation: ${chatWidget.isFreshConversation}`);
+            log(`User started conversation: ${chatWidget.hasUserStartedConversation}`);
+            log(`Window width: ${window.innerWidth}px (tablet breakpoint: 768px)`);
+        }
+
+        function checkPromptsStatus() {
+            const floatingPrompts = document.querySelector('.am-chat-floating-prompts-container');
+            if (floatingPrompts) {
+                log('Floating prompts are visible!', 'success');
+            } else {
+                log('Floating prompts are NOT visible', 'warning');
+                
+                // Check conditions
+                if (chatWidget) {
+                    const state = chatWidget.stateManager.getState();
+                    log(`Checking conditions:`, 'warning');
+                    log(`- Variant is corner: ${chatWidget.config.variant === 'corner'}`);
+                    log(`- Widget is closed: ${!state.isOpen}`);
+                    log(`- Fresh conversation: ${chatWidget.isFreshConversation}`);
+                    log(`- User hasn't started: ${!chatWidget.hasUserStartedConversation}`);
+                    log(`- Window > 768px: ${window.innerWidth > 768}`);
+                }
+            }
+        }
+
+        function forceShowPrompts() {
+            if (!chatWidget || !chatWidget.uiManager) {
+                log('Widget not initialized', 'error');
+                return;
+            }
+            
+            log('Forcing prompts to show...');
+            chatWidget.uiManager.showFloatingPrompts();
+            
+            setTimeout(() => {
+                checkPromptsStatus();
+            }, 500);
+        }
+
+        function toggleWidget() {
+            if (!chatWidget) {
+                log('Widget not initialized', 'error');
+                return;
+            }
+            
+            chatWidget.toggleChat();
+            setTimeout(() => {
+                checkWidgetState();
+            }, 100);
+        }
+
+        function clearStorage() {
+            localStorage.clear();
+            log('Storage cleared. Reload page to test fresh state.', 'success');
+        }
+
+        // Initialize on load
+        window.addEventListener('DOMContentLoaded', () => {
+            initializeWidget();
+        });
+
+        // Listen for telemetry events
+        window.addEventListener('chatwidget:telemetry', (event) => {
+            log(`Telemetry: ${event.detail.eventName}`, 'info');
+        });
+    </script>
+</body>
+</html>
