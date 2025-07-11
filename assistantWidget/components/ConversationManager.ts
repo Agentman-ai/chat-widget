@@ -2,6 +2,7 @@
 import type { ChatConfig, ChatTheme } from '../types/types';
 import type { ConversationMeta } from '../PersistenceManager';
 import * as icons from '../assets/icons';
+import { Logger } from '../utils/logger';
 
 /**
  * ConversationManager - Handles multiple conversation management
@@ -14,6 +15,7 @@ import * as icons from '../assets/icons';
  * - Integration with PersistenceManager
  */
 export class ConversationManager {
+  private logger: Logger;
   private config: ChatConfig;
   private theme: ChatTheme;
   private element: HTMLElement | null = null;
@@ -37,6 +39,7 @@ export class ConversationManager {
   ) {
     this.config = config;
     this.theme = theme;
+    this.logger = new Logger(config.debug || false, "[ConversationManager]");
 
     // Bind event handlers
     this.boundNewConversationHandler = eventHandlers.onNewConversation;

@@ -1,7 +1,9 @@
 // PersistenceManager.ts
 import { v4 as uuid } from "uuid";
 import type { Message, AgentMetadata } from "./types/types";
+import type { PersistenceError, PersistenceResult, PersistenceEventCallback, StorageInfo, PersistenceEvent } from "./types/persistence-types";
 import { StateManager } from "./StateManager";
+import { Logger } from "./utils/logger";
 
 export interface ConversationMeta {
   id: string;
@@ -24,22 +26,134 @@ interface ConversationPayload {
 }
 
 export class PersistenceManager {
+  private logger: Logger;
+  private eventCallbacks: PersistenceEventCallback[] = [];
+  private inMemoryFallback: Map<string, any> = new Map();
+  private useInMemoryFallback: boolean = false;
+  
   constructor(
     private containerId: string,
     private stateManager: StateManager,
     private enabled = true,
-  ) {}
+    debugConfig?: boolean | import('./types/types').DebugConfig,
+  ) {
+    this.logger = new Logger(debugConfig || false, "[PersistenceManager]");
+    this.checkStorageAvailability();
+  }
+
+  /* ——— Event Management ——— */
+  public onPersistenceEvent(callback: PersistenceEventCallback): void {
+    this.eventCallbacks.push(callback);
+  }
+  
+  private emitEvent(type: PersistenceEvent['type'], error?: PersistenceError, details?: any): void {
+    const event = { type, error, details };
+    this.eventCallbacks.forEach(cb => {
+      try {
+        cb(event);
+      } catch (e) {
+        this.logger.error('Error in persistence event callback:', e);
+      }
+    });
+  }
+
+  /* ——— Storage Availability ——— */
+  private checkStorageAvailability(): void {
+    try {
+      const testKey = `chatwidget_test_${Date.now()}`;
+      localStorage.setItem(testKey, 'test');
+      localStorage.removeItem(testKey);
+      this.useInMemoryFallback = false;
+    } catch (error) {
+      this.logger.warn('localStorage not available, using in-memory fallback:', error);
+      this.useInMemoryFallback = true;
+      this.emitEvent('save_failed', {
+        type: 'ACCESS_DENIED',
+        message: 'localStorage is not available. Chat history will not persist across sessions.',
+        originalError: error as Error,
+        recoverable: false
+      });
+    }
+  }
 
   /* ——— helpers ——— */
   private get indexKey() {return `chatwidget_${this.containerId}_index`;}
   private convKey = (id: string) => `chatwidget_${this.containerId}_conv_${id}`;
+  
+  // Public method to get storage key for debugging
+  public getStorageKey(): string {
+    const currentId = this.getCurrentId();
+    return currentId ? this.convKey(currentId) : this.indexKey;
+  }
 
   private readIndex(): IndexPayload {
-    const raw = localStorage.getItem(this.indexKey);
-    return raw ? JSON.parse(raw) : { version: 2, conversations: [] };
+    try {
+      if (this.useInMemoryFallback) {
+        const data = this.inMemoryFallback.get(this.indexKey);
+        return data ? JSON.parse(data) : { version: 2, conversations: [] };
+      }
+      const raw = localStorage.getItem(this.indexKey);
+      return raw ? JSON.parse(raw) : { version: 2, conversations: [] };
+    } catch (error) {
+      this.logger.error('Failed to read index:', error);
+      return { version: 2, conversations: [] };
+    }
   }
-  private writeIndex(ix: IndexPayload) {
-    localStorage.setItem(this.indexKey, JSON.stringify(ix));
+  
+  private writeIndex(ix: IndexPayload): boolean {
+    try {
+      const data = JSON.stringify(ix);
+      if (this.useInMemoryFallback) {
+        this.inMemoryFallback.set(this.indexKey, data);
+        return true;
+      }
+      localStorage.setItem(this.indexKey, data);
+      return true;
+    } catch (error) {
+      this.handleStorageError(error as Error);
+      return false;
+    }
+  }
+  
+  private handleStorageError(error: Error): PersistenceError {
+    let errorType: PersistenceError['type'] = 'UNKNOWN_ERROR';
+    let recoverable = false;
+    
+    if (error.name === 'QuotaExceededError' || error.message.includes('quota')) {
+      errorType = 'QUOTA_EXCEEDED';
+      recoverable = true;
+    } else if (error.name === 'SecurityError') {
+      errorType = 'ACCESS_DENIED';
+    } else if (error instanceof SyntaxError) {
+      errorType = 'PARSE_ERROR';
+    }
+    
+    const persistenceError: PersistenceError = {
+      type: errorType,
+      message: this.getErrorMessage(errorType),
+      originalError: error,
+      recoverable
+    };
+    
+    this.emitEvent('save_failed', persistenceError);
+    this.logger.error(`Storage error (${errorType}):`, error);
+    
+    return persistenceError;
+  }
+  
+  private getErrorMessage(errorType: PersistenceError['type']): string {
+    switch (errorType) {
+      case 'QUOTA_EXCEEDED':
+        return 'Storage quota exceeded. Please clear some chat history to continue saving.';
+      case 'ACCESS_DENIED':
+        return 'Storage access denied. Chat history will not be saved.';
+      case 'PARSE_ERROR':
+        return 'Corrupted data detected. Some chat history may be lost.';
+      case 'INVALID_STATE':
+        return 'Invalid storage state. Please refresh the page.';
+      default:
+        return 'An error occurred while saving chat history.';
+    }
   }
 
   /* ——— public API ——— */
@@ -64,16 +178,16 @@ export class PersistenceManager {
   }
 
   switchTo(id: string) {
-    console.log(`🔄 switchTo(${id}) called`);
+    this.logger.debug(`🔄 switchTo(${id}) called`);
     const ix = this.readIndex();
     if (!ix.conversations.find(c => c.id === id)) {
-      console.log(`❌ switchTo() failed - unknown conversation id: ${id}`);
+      this.logger.debug(`❌ switchTo() failed - unknown conversation id: ${id}`);
       throw new Error("unknown conversation id");
     }
     
     // Only update currentId, don't touch lastUpdated
     ix.currentId = id;
-    console.log(`✅ switchTo() - setting currentId to ${id}`);
+    this.logger.debug(`✅ switchTo() - setting currentId to ${id}`);
     this.writeIndex(ix);
   }
 
@@ -96,7 +210,7 @@ export class PersistenceManager {
       const payload = this.parseAndValidatePayload(raw);
       return payload?.messages || [];
     } catch (error) {
-      console.error('Failed to load messages:', error);
+      this.logger.error('Failed to load messages:', error);
       return [];
     }
   }
@@ -112,28 +226,28 @@ export class PersistenceManager {
       const payload = this.parseAndValidatePayload(raw);
       return payload?.metadata || null;
     } catch (error) {
-      console.error('Failed to load metadata:', error);
+      this.logger.error('Failed to load metadata:', error);
       return null;
     }
   }
 
   saveMetadata(metadata: AgentMetadata) {
-    console.log('💾 saveMetadata() called', metadata);
+    this.logger.debug('💾 saveMetadata() called', metadata);
     if (!this.enabled) {
-      console.log('⏭️ saveMetadata() aborted - persistence not enabled');
+      this.logger.debug('⏭️ saveMetadata() aborted - persistence not enabled');
       return;
     }
     
     const id = this.getCurrentId();
     if (!id) {
-      console.log('⏭️ saveMetadata() aborted - no current conversation ID');
+      this.logger.debug('⏭️ saveMetadata() aborted - no current conversation ID');
       return;
     }
 
     try {
       this.saveMetadataAtomic(id, metadata);
     } catch (error) {
-      console.error('Failed to save metadata:', error);
+      this.logger.error('Failed to save metadata:', error);
     }
   }
   
@@ -165,7 +279,7 @@ export class PersistenceManager {
     // Update index
     this.updateIndexMetadata(id, metadata);
     
-    console.log('✅ Metadata saved atomically');
+    this.logger.debug('✅ Metadata saved atomically');
   }
   
   /**
@@ -180,31 +294,40 @@ export class PersistenceManager {
         this.writeIndex(ix);
       }
     } catch (error) {
-      console.error('Failed to update index metadata:', error);
+      this.logger.error('Failed to update index metadata:', error);
     }
   }
 
-  saveMessages() {
-    console.log('📝 saveMessages() called');
+  saveMessages(): PersistenceResult {
+    this.logger.debug('📝 saveMessages() called');
     if (!this.enabled) {
-      console.log('⏭️ saveMessages() aborted - persistence not enabled');
-      return;
+      this.logger.debug('⏭️ saveMessages() aborted - persistence not enabled');
+      return { success: true }; // Not an error, just disabled
     }
     
     const id = this.getCurrentId();
     if (!id) {
-      console.log('⏭️ saveMessages() aborted - no current conversation ID');
-      return;
+      this.logger.debug('⏭️ saveMessages() aborted - no current conversation ID');
+      return { success: false, error: {
+        type: 'INVALID_STATE',
+        message: 'No active conversation',
+        recoverable: true
+      }};
     }
 
     const msgs = this.stateManager.getState().messages;
-    console.log(`📊 Current messages count: ${msgs.length}`);
+    this.logger.debug(`📊 Current messages count: ${msgs.length}`);
     const key = this.convKey(id);
     
     // Check if messages have changed before saving
-    const existingRaw = localStorage.getItem(key);
+    let existingRaw: string | null = null;
+    if (this.useInMemoryFallback) {
+      existingRaw = this.inMemoryFallback.get(key) || null;
+    } else {
+      existingRaw = localStorage.getItem(key);
+    }
     const existingMsgs = existingRaw ? (JSON.parse(existingRaw) as ConversationPayload).messages : [];
-    console.log(`📊 Existing messages count: ${existingMsgs.length}`);
+    this.logger.debug(`📊 Existing messages count: ${existingMsgs.length}`);
     
     // More thorough comparison - check if messages are actually different
     // Don't just compare lengths as duplicate messages might have same length
@@ -223,11 +346,11 @@ export class PersistenceManager {
     }
     
     if (!hasChanges) {
-      console.log('⏭️ saveMessages() aborted - no changes detected');
-      return;
+      this.logger.debug('⏭️ saveMessages() aborted - no changes detected');
+      return { success: true };
     }
     
-    console.log('💾 Saving messages - changes detected');
+    this.logger.debug('💾 Saving messages - changes detected');
     
     // Preserve existing metadata when saving messages
     let existingMetadata: AgentMetadata | undefined;
@@ -236,7 +359,7 @@ export class PersistenceManager {
         const existingPayload = this.parseAndValidatePayload(existingRaw);
         existingMetadata = existingPayload?.metadata;
       } catch (error) {
-        console.warn('Failed to parse existing metadata, continuing without it:', error);
+        this.logger.warn('Failed to parse existing metadata, continuing without it:', error);
       }
     }
     
@@ -248,10 +371,15 @@ export class PersistenceManager {
     };
     
     try {
-      localStorage.setItem(key, JSON.stringify(payload));
+      const data = JSON.stringify(payload);
+      if (this.useInMemoryFallback) {
+        this.inMemoryFallback.set(key, data);
+      } else {
+        localStorage.setItem(key, data);
+      }
     } catch (error) {
-      console.error('Failed to save messages:', error);
-      throw error;
+      const persistenceError = this.handleStorageError(error as Error);
+      return { success: false, error: persistenceError };
     }
 
     // Update index meta only when messages have changed
@@ -271,8 +399,13 @@ export class PersistenceManager {
         m.title = "Chat with Agentman";
       }
       
-      this.writeIndex(ix);
+      const success = this.writeIndex(ix);
+      if (!success) {
+        this.logger.warn('Failed to update conversation index');
+      }
     }
+    
+    return { success: true };
   }
 
   /* ——— legacy migration (single‑chat ⇒ multi) ——— */
@@ -290,7 +423,7 @@ export class PersistenceManager {
       );
       localStorage.removeItem(legacyKey);
     } catch (e) {
-      console.error("Error migrating legacy data:", e);
+      this.logger.error("Error migrating legacy data:", e);
     }
   }
 
@@ -335,7 +468,19 @@ export class PersistenceManager {
       
       return data as ConversationPayload;
     } catch (error) {
-      console.warn('Failed to parse conversation payload:', error);
+      this.logger.warn('Failed to parse conversation payload:', error);
+      
+      // Emit corrupted data event for telemetry
+      this.emitEvent('corrupted_data', {
+        type: 'PARSE_ERROR',
+        message: 'Failed to parse conversation payload',
+        originalError: error as Error,
+        recoverable: true
+      }, {
+        rawDataLength: raw.length,
+        errorMessage: (error as Error).message
+      });
+      
       return null;
     }
   }
@@ -349,5 +494,86 @@ export class PersistenceManager {
       messages: [],
       timestamp: Date.now()
     };
+  }
+  
+  /**
+   * Get storage usage information
+   */
+  public async getStorageInfo(): Promise<StorageInfo> {
+    try {
+      // Calculate current usage
+      let used = 0;
+      for (let i = 0; i < localStorage.length; i++) {
+        const key = localStorage.key(i);
+        if (key && key.startsWith(`chatwidget_${this.containerId}`)) {
+          const value = localStorage.getItem(key);
+          if (value) {
+            used += key.length + value.length;
+          }
+        }
+      }
+      
+      // Try to get quota information (Chrome/Edge)
+      let quota: number | undefined;
+      let available: number | undefined;
+      
+      if ('storage' in navigator && 'estimate' in navigator.storage) {
+        try {
+          const estimate = await navigator.storage.estimate();
+          quota = estimate.quota;
+          available = estimate.quota ? estimate.quota - (estimate.usage || 0) : undefined;
+        } catch (e) {
+          this.logger.debug('Could not estimate storage quota:', e);
+        }
+      }
+      
+      return {
+        used,
+        quota,
+        available,
+        percentUsed: quota ? (used / quota) * 100 : undefined
+      };
+    } catch (error) {
+      this.logger.error('Failed to get storage info:', error);
+      return { used: 0 };
+    }
+  }
+  
+  /**
+   * Clear old conversations to free up space
+   */
+  public clearOldConversations(keepCount: number = 5): PersistenceResult<number> {
+    try {
+      const conversations = this.list();
+      if (conversations.length <= keepCount) {
+        return { success: true };
+      }
+      
+      // Keep the most recent conversations
+      const toDelete = conversations.slice(keepCount);
+      let deletedCount = 0;
+      
+      for (const conv of toDelete) {
+        try {
+          this.delete(conv.id);
+          deletedCount++;
+        } catch (e) {
+          this.logger.warn(`Failed to delete conversation ${conv.id}:`, e);
+        }
+      }
+      
+      this.logger.info(`Cleared ${deletedCount} old conversations`);
+      return { success: true, data: deletedCount };
+    } catch (error) {
+      return { 
+        success: false, 
+        error: {
+          type: 'UNKNOWN_ERROR',
+          message: 'Failed to clear old conversations',
+          originalError: error as Error,
+          recoverable: false
+        }
+      };
+    }
   }
 }

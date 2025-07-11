@@ -54,6 +54,9 @@ export const UI_CONSTANTS = {
 } as const;
 
 export const API_CONSTANTS = {
+  // Endpoints
+  CAPABILITIES_ENDPOINT: '/api/agent/capabilities',
+  
   // Request timeouts
   DEFAULT_TIMEOUT: 30000,
   UPLOAD_TIMEOUT: 120000,

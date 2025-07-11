@@ -9,6 +9,7 @@ import { loadingStyles } from './loading';
 import { promptStyles } from './prompts';
 import { attachmentStyles } from './attachments';
 import { conversationStyles } from './conversations';
+import { notificationStyles } from './notifications';
 
 export class StyleManager {
   private styleElement: HTMLStyleElement | null = null;
@@ -25,6 +26,7 @@ export class StyleManager {
       promptStyles,
       attachmentStyles,
       conversationStyles,
+      notificationStyles,
       variantStyles[this.variant],
       animationStyles,
       responsiveStyles

@@ -400,6 +400,35 @@
     <!-- Debug Tab -->
     <div class="tab-content" id="debug-tab">
         <div class="config-panel">
+            <h2 class="section-title">Debug Configuration</h2>
+            
+            <div class="form-row">
+                <div class="form-column">
+                    <div class="form-group">
+                        <label>
+                            <input type="checkbox" id="debugEnabled" onchange="updateDebugMode()"> Enable Debug Mode
+                        </label>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="debugLogLevel">Log Level</label>
+                        <select id="debugLogLevel" onchange="updateDebugMode()">
+                            <option value="error">Error</option>
+                            <option value="warn">Warning</option>
+                            <option value="info" selected>Info</option>
+                            <option value="debug">Debug</option>
+                            <option value="verbose">Verbose</option>
+                        </select>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label>
+                            <input type="checkbox" id="debugTimestamps" checked onchange="updateDebugMode()"> Include Timestamps
+                        </label>
+                    </div>
+                </div>
+            </div>
+            
             <h2 class="section-title">Debug Information</h2>
             
             <div class="form-row">
@@ -407,6 +436,7 @@
                     <button onclick="showWidgetState()">Show Widget State</button>
                     <button onclick="showWidgetMethods()">Show Widget Methods</button>
                     <button onclick="showPersistenceManager()">Show Persistence Manager</button>
+                    <button onclick="testLogging()">Test Logging Levels</button>
                 </div>
             </div>
             
@@ -428,19 +458,19 @@
             // Get the ChatWidget class
             const ChatWidget = window.AgentmanChatWidget?.ChatWidget || window.AgentmanChatWidget;
             
-            console.log('Using built-in persistence functionality');
+            // console.log('Using built-in persistence functionality');
             
-            // Debug the ChatWidget prototype
-            console.log('ChatWidget prototype methods:', 
-                Object.getOwnPropertyNames(ChatWidget.prototype).filter(prop => 
-                    typeof ChatWidget.prototype[prop] === 'function'
-                )
-            );
+            // Debug the ChatWidget prototype (commented out for cleaner output)
+            // console.log('ChatWidget prototype methods:', 
+            //     Object.getOwnPropertyNames(ChatWidget.prototype).filter(prop => 
+            //         typeof ChatWidget.prototype[prop] === 'function'
+            //     )
+            // );
             
             // Create widget instance with persistence enabled
             chatWidget = new ChatWidget(getFormConfig());
             
-            console.log('Widget initialized with persistence');
+            // console.log('Widget initialized with persistence');
         }
         
         // UI Helper Functions
@@ -614,6 +644,50 @@
             }
         }
         
+        function updateDebugMode() {
+            if (!chatWidget || !chatWidget.logger) {
+                console.log('Widget not initialized or logger not available');
+                return;
+            }
+            
+            const enabled = document.getElementById('debugEnabled').checked;
+            const logLevel = document.getElementById('debugLogLevel').value;
+            const timestamps = document.getElementById('debugTimestamps').checked;
+            
+            // Update logger configuration
+            chatWidget.logger.setConfig({
+                enabled: enabled,
+                logLevel: logLevel,
+                timestamps: timestamps,
+                console: true
+            });
+            
+            console.log(`Debug mode updated: enabled=${enabled}, level=${logLevel}, timestamps=${timestamps}`);
+        }
+        
+        function testLogging() {
+            if (!chatWidget || !chatWidget.logger) {
+                console.log('Widget not initialized or logger not available');
+                return;
+            }
+            
+            const debugInfo = document.getElementById('debugInfo');
+            debugInfo.textContent = 'Testing logging levels...\n\n';
+            
+            // Test each log level
+            chatWidget.logger.error('This is an ERROR message');
+            chatWidget.logger.warn('This is a WARNING message');
+            chatWidget.logger.info('This is an INFO message');
+            chatWidget.logger.debug('This is a DEBUG message');
+            chatWidget.logger.verbose('This is a VERBOSE message');
+            
+            debugInfo.textContent += 'Check the browser console to see which messages appear based on the current log level.\n\n';
+            debugInfo.textContent += `Current settings:\n`;
+            debugInfo.textContent += `- Enabled: ${document.getElementById('debugEnabled').checked}\n`;
+            debugInfo.textContent += `- Log Level: ${document.getElementById('debugLogLevel').value}\n`;
+            debugInfo.textContent += `- Timestamps: ${document.getElementById('debugTimestamps').checked}\n`;
+        }
+        
         function getFormConfig() {
             // Read message prompts fields
             const promptsShow = document.getElementById('promptsShow')?.checked;
@@ -684,7 +758,15 @@
                     enabled: document.getElementById('persistenceEnabled').checked,
                     days: parseInt(document.getElementById('persistenceDays').value, 10),
                     key: document.getElementById('persistenceKey').value || undefined
-                }
+                },
+                
+                // Debug settings
+                debug: document.getElementById('debugEnabled').checked ? {
+                    enabled: true,
+                    logLevel: document.getElementById('debugLogLevel').value,
+                    timestamps: document.getElementById('debugTimestamps').checked,
+                    console: true
+                } : false
             };
         }
         
@@ -807,6 +889,16 @@
                     preview.style.backgroundColor = this.value;
                 }
             });
+        });
+        
+        // Listen for telemetry events from the chat widget
+        window.addEventListener('chatwidget:telemetry', function(event) {
+            // console.log('📊 Telemetry Event:', event.detail);
+            
+            // Show critical telemetry events in the console (only when debug is enabled)
+            if (event.detail.eventName === 'metadata_without_messages') {
+                console.warn('⚠️ Critical telemetry event detected:', event.detail);
+            }
         });
         
         // Initialize on page load

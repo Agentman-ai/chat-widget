@@ -1,5 +1,5 @@
 // ChatWidget.ts - Refactored component-based chat widget
-import type { ChatConfig, Message, ChatState, ChatTheme, ChatAssets, ClientMetadata } from './types/types';
+import type { ChatConfig, Message, ChatState, ChatTheme, ChatAssets, ClientMetadata, AgentMetadata } from './types/types';
 import { PersistenceManager } from './PersistenceManager';
 import { FileUploadManager } from './FileUploadManager';
 import { ConfigManager } from './ConfigManager';
@@ -11,6 +11,7 @@ import { ConversationManager } from './components/ConversationManager';
 import { ClientMetadataCollector } from './utils/client-metadata';
 import { ValidationUtils } from './utils/validation';
 import { OfflineParser } from './message-renderer/offline-parser';
+import { Logger } from './utils/logger';
 import * as icons from './assets/icons';
 import { UI_CONSTANTS, API_CONSTANTS, STORAGE_CONSTANTS } from './constants';
 
@@ -45,6 +46,9 @@ export class ChatWidget {
   private uiManager!: UIManager;
   private conversationManager!: ConversationManager;
 
+  // Logger instance
+  private logger!: Logger;
+
   // Runtime state
   private isInitialized: boolean = false;
   private isInitializing: boolean = false;
@@ -71,9 +75,16 @@ export class ChatWidget {
   // Loading states
   private loadingMessageElement: HTMLElement | null = null;
   private currentLoadingStateIndex: number = 0;
+  
+  // Unload handler
+  private boundUnloadHandler?: (event: BeforeUnloadEvent) => string | undefined;
+  private hasUnsavedChanges: boolean = false;
+  private saveDebounceTimer: number | null = null;
 
   constructor(config: ChatConfig & { containerId: string }) {
-    console.log('🚀 ChatWidget initializing...');
+    // Initialize logger first
+    this.logger = new Logger(config.debug, '[ChatWidget]');
+    this.logger.info('🚀 ChatWidget initializing...');
     
     this.containerId = config.containerId;
 
@@ -172,8 +183,18 @@ export class ChatWidget {
     this.persistenceManager = new PersistenceManager(
       this.containerId,
       this.stateManager,
-      true // enabled
+      true, // enabled
+      this.config.debug // pass debug config
     );
+    
+    // Listen for persistence errors
+    this.persistenceManager.onPersistenceEvent((event) => {
+      if (event.type === 'save_failed' && event.error) {
+        this.handlePersistenceError(event.error);
+      } else if (event.type === 'quota_warning') {
+        this.showQuotaWarning();
+      }
+    });
     
     // Migrate any legacy data
     this.persistenceManager.migrateLegacy();
@@ -188,11 +209,11 @@ export class ChatWidget {
    */
   async init(): Promise<void> {
     try {
-      console.log('📦 ChatAgent loading dependencies...');
+      this.logger.info('📦 ChatAgent loading dependencies...');
       await this.loadDependencies();
       this.isOffline = false;
     } catch (error) {
-      console.warn('Failed to load dependencies:', error);
+      this.logger.warn('Failed to load dependencies:', error);
       this.fallbackToOfflineMode();
     }
 
@@ -204,7 +225,10 @@ export class ChatWidget {
       this.fetchAgentCapabilities();
     }
 
-    console.log('✅ ChatWidget initialized successfully');
+    // Set up beforeunload handler to save messages on page exit
+    this.setupUnloadHandler();
+
+    this.logger.debug('✅ ChatWidget initialized successfully');
   }
 
   /**
@@ -254,113 +278,190 @@ export class ChatWidget {
   private initialize(): void {
     if (this.isInitialized) return;
 
-    console.log('🎨 ChatWidget creating UI...');
-    this.styleManager.injectStyles();
-    this.element = this.uiManager.createAndMount();
+    this.logger.info('🎨 ChatWidget creating UI...');
     
-    // Initialize markdown processing (fallback to offline mode since we don't load CDN)
-    this.fallbackToOfflineMode();
+    // Step 1: Initialize UI
+    this.initializeUI();
     
-    // Collect client metadata if enabled
-    if (this.config.collectClientMetadata !== false) {
-      // Collect basic metadata synchronously
-      this.clientMetadata = ClientMetadataCollector.collect(this.config.clientMetadata);
-      console.log('🔍 Collected client metadata:', this.clientMetadata);
-      
-      // Optionally collect IP address asynchronously with race condition prevention
-      if (this.config.collectIPAddress) {
-        console.log('🌐 Fetching IP address and geolocation...');
-        const currentMetadata = { ...this.clientMetadata };
-        
-        ClientMetadataCollector.collectWithIP(this.config.clientMetadata)
-          .then(metadataWithIP => {
-            // Only update if no other updates have occurred
-            if (JSON.stringify(this.clientMetadata) === JSON.stringify(currentMetadata)) {
-              this.clientMetadata = metadataWithIP;
-              console.log('✅ Updated metadata with IP:', metadataWithIP);
-            } else {
-              console.log('⚠️ Metadata changed during IP collection, merging...');
-              // Merge IP data with current metadata
-              if (metadataWithIP.ip_address && !this.clientMetadata.ip_address) {
-                this.clientMetadata.ip_address = metadataWithIP.ip_address;
-              }
-              if (metadataWithIP.geo_location && !this.clientMetadata.geo_location) {
-                this.clientMetadata.geo_location = metadataWithIP.geo_location;
-              }
-            }
-          })
-          .catch(error => {
-            console.warn('⚠️ Failed to fetch IP address:', error);
-          });
-      }
-    } else if (this.config.clientMetadata) {
-      // Use only the provided metadata without auto-collection
-      this.clientMetadata = this.config.clientMetadata;
-      console.log('📋 Using provided client metadata:', this.clientMetadata);
-    }
+    // Step 2: Initialize markdown processing
+    this.initializeMarkdownProcessing();
+    
+    // Step 3: Collect client metadata
+    this.initializeClientMetadata();
 
-    // Add conversation management UI if persistence is enabled
+    // Step 4: Setup conversation management
     if (this.persistenceManager) {
       this.setupConversationManagement();
     }
 
-    // Handle persistence restoration
-    let shouldInitChat = true; // Only init chat for truly new conversations
-    if (this.persistenceManager) {
-      const messages = this.persistenceManager.loadMessages();
-      
-      // Load persisted metadata for current conversation
-      const metadata = this.persistenceManager.loadMetadata();
-      if (metadata) {
-        console.log('📋 Initial load - restoring agent capabilities from persisted metadata:', metadata);
-        this.processAgentCapabilities(metadata);
-      } else {
-        console.log('⚠️ Initial load - no persisted metadata found, will initialize from API');
-      }
-      
-      // Check if we have either messages OR metadata (indicating an existing conversation)
-      if (messages.length > 0 || metadata) {
-        if (messages.length > 0) {
-          this.stateManager.clearMessages();
-          messages.forEach(msg => this.addMessage(msg));
-          
-          // Important: Set lastMessageCount to the total number of messages from the agent perspective
-          // This should match how the API counts messages in its response array
-          // The API response includes both user and agent messages, so we count all messages
-          this.lastMessageCount = messages.length;
-          
-          // Set conversation state based on loaded messages
-          const userMessages = messages.filter(msg => msg.sender === 'user');
-          this.hasUserStartedConversation = userMessages.length > 0;
-          
-          console.log(`📊 Loaded ${messages.length} messages from persistence, lastMessageCount set to ${this.lastMessageCount}`);
-        } else if (metadata) {
-          // We have metadata but no messages - this is an edge case
-          // Could happen if messages failed to save or were cleared
-          console.log('⚠️ Found metadata but no messages - likely a persistence issue');
-          // Still prevent initialization to avoid duplicate Hello
-        }
-        
-        this.isFreshConversation = false; // This is an existing conversation being loaded
-        
-        // If we have existing messages or metadata, don't initialize chat (avoid duplicate "Hello" message)
-        shouldInitChat = false;
-        
-        // Mark as initialized since we have an existing conversation
-        this.stateManager.setInitialized(true);
-      }
-    }
+    // Step 5: Restore or initialize conversation
+    const shouldInitChat = this.restoreOrInitializeConversation();
 
     if (shouldInitChat) {
       this.initializeChat();
     }
 
+    // Step 6: Final UI updates
+    this.finalizeInitialization();
+  }
+
+  /**
+   * Initialize UI components
+   */
+  private initializeUI(): void {
+    this.styleManager.injectStyles();
+    this.element = this.uiManager.createAndMount();
+  }
+
+  /**
+   * Initialize markdown processing
+   */
+  private initializeMarkdownProcessing(): void {
+    // Fallback to offline mode since we don't load CDN
+    this.fallbackToOfflineMode();
+  }
+
+  /**
+   * Initialize client metadata collection
+   */
+  private initializeClientMetadata(): void {
+    if (this.config.collectClientMetadata === false) {
+      if (this.config.clientMetadata) {
+        // Use only the provided metadata without auto-collection
+        this.clientMetadata = this.config.clientMetadata;
+        this.logger.verbose('📋 Using provided client metadata:', this.clientMetadata);
+      }
+      return;
+    }
+
+    // Collect basic metadata synchronously
+    this.clientMetadata = ClientMetadataCollector.collect(this.config.clientMetadata);
+    this.logger.verbose('🔍 Collected client metadata:', this.clientMetadata);
+    
+    // Optionally collect IP address asynchronously
+    if (this.config.collectIPAddress) {
+      this.collectIPAddressAsync();
+    }
+  }
+
+  /**
+   * Asynchronously collect IP address and geolocation
+   */
+  private collectIPAddressAsync(): void {
+    this.logger.info('🌐 Fetching IP address and geolocation...');
+    const currentMetadata = { ...this.clientMetadata };
+    
+    ClientMetadataCollector.collectWithIP(this.config.clientMetadata)
+      .then(metadataWithIP => {
+        this.mergeIPMetadata(metadataWithIP, currentMetadata);
+      })
+      .catch(error => {
+        this.logger.warn('⚠️ Failed to fetch IP address:', error);
+      });
+  }
+
+  /**
+   * Merge IP metadata with current metadata
+   */
+  private mergeIPMetadata(metadataWithIP: ClientMetadata, originalMetadata: ClientMetadata): void {
+    // Only update if no other updates have occurred
+    if (JSON.stringify(this.clientMetadata) === JSON.stringify(originalMetadata)) {
+      this.clientMetadata = metadataWithIP;
+      this.logger.debug('✅ Updated metadata with IP:', metadataWithIP);
+    } else {
+      this.logger.warn('⚠️ Metadata changed during IP collection, merging...');
+      // Merge IP data with current metadata
+      if (metadataWithIP.ip_address && !this.clientMetadata.ip_address) {
+        this.clientMetadata.ip_address = metadataWithIP.ip_address;
+      }
+      if (metadataWithIP.geo_location && !this.clientMetadata.geo_location) {
+        this.clientMetadata.geo_location = metadataWithIP.geo_location;
+      }
+    }
+  }
+
+  /**
+   * Restore conversation from persistence or prepare for new conversation
+   * @returns {boolean} Whether to initialize a new chat
+   */
+  private restoreOrInitializeConversation(): boolean {
+    if (!this.persistenceManager) {
+      return true; // No persistence, always init new chat
+    }
+
+    const messages = this.persistenceManager.loadMessages();
+    const metadata = this.persistenceManager.loadMetadata();
+    
+    // Load persisted metadata
+    if (metadata) {
+      this.logger.verbose('📋 Initial load - restoring agent capabilities from persisted metadata:', metadata);
+      this.processAgentCapabilities(metadata);
+    } else {
+      this.logger.warn('⚠️ Initial load - no persisted metadata found, will initialize from API');
+    }
+    
+    // Check if we have existing conversation data
+    if (messages.length > 0 || metadata) {
+      if (messages.length > 0) {
+        this.restoreMessages(messages);
+      } else if (metadata) {
+        this.handleMetadataWithoutMessages(metadata);
+      }
+      
+      this.isFreshConversation = false;
+      this.stateManager.setInitialized(true);
+      return false; // Don't init new chat
+    }
+
+    return true; // Init new chat
+  }
+
+  /**
+   * Restore messages from persistence
+   */
+  private restoreMessages(messages: Message[]): void {
+    this.stateManager.clearMessages();
+    messages.forEach(msg => this.addMessage(msg));
+    
+    // Set lastMessageCount to match API response array counting
+    this.lastMessageCount = messages.length;
+    
+    // Set conversation state based on loaded messages
+    const userMessages = messages.filter(msg => msg.sender === 'user');
+    this.hasUserStartedConversation = userMessages.length > 0;
+    
+    // Clear unsaved flag since we just loaded from persistence
+    this.hasUnsavedChanges = false;
+    
+    this.logger.verbose(`📊 Loaded ${messages.length} messages from persistence, lastMessageCount set to ${this.lastMessageCount}`);
+  }
+
+  /**
+   * Handle edge case of metadata without messages
+   */
+  private handleMetadataWithoutMessages(metadata: AgentMetadata): void {
+    // This is an edge case that shouldn't normally occur
+    this.logger.warn('⚠️ Found metadata but no messages - likely a persistence issue');
+    
+    // Track this edge case for telemetry
+    this.trackTelemetryEvent('metadata_without_messages', {
+      conversationId: this.persistenceManager?.getCurrentId(),
+      metadata: metadata,
+      timestamp: Date.now(),
+      userAgent: navigator.userAgent
+    });
+  }
+
+  /**
+   * Finalize initialization with UI updates
+   */
+  private finalizeInitialization(): void {
     // Update UI based on initial state
     this.uiManager.updateUI(this.stateManager.getState());
     this.uiManager.updateTheme(this.theme);
     
     this.isInitialized = true;
-    console.log('🎉 ChatWidget UI initialized');
+    this.logger.info('🎉 ChatWidget UI initialized');
   }
 
   /**
@@ -384,7 +485,7 @@ export class ChatWidget {
     if (this.config.variant === 'inline') {
       const container = document.getElementById(this.containerId);
       if (!container) {
-        console.error(`Container with id "${this.containerId}" not found`);
+        this.logger.error(`Container with id "${this.containerId}" not found`);
         return;
       }
       container.innerHTML = '';
@@ -521,16 +622,16 @@ export class ChatWidget {
    * Initialize chat with welcome message from API
    */
   private async initializeChat(): Promise<void> {
-    console.log('🌟 initializeChat() called');
+    this.logger.info('🌟 initializeChat() called');
     if (this.state.isInitialized || this.isInitializing) {
-      console.log('⏭️ initializeChat() aborted - already initialized or initializing');
+      this.logger.debug('⏭️ initializeChat() aborted - already initialized or initializing');
       return;
     }
 
     // Double-check: Don't initialize if we already have messages
     const currentMessages = this.stateManager.getState().messages;
     if (currentMessages.length > 0) {
-      console.log(`⏭️ initializeChat() aborted - already have ${currentMessages.length} messages`);
+      this.logger.debug(`⏭️ initializeChat() aborted - already have ${currentMessages.length} messages`);
       this.stateManager.setInitialized(true);
       return;
     }
@@ -538,13 +639,13 @@ export class ChatWidget {
     this.isInitializing = true;
     this.showLoadingIndicator();
     this.lastMessageCount = 0;
-    console.log('🚧 Starting chat initialization');
+    this.logger.info('🚧 Starting chat initialization');
 
     try {
       // Use the initialMessage if provided, otherwise default to 'Hello'
       const initialMessage = this.config.initialMessage || 'Hello';
-      console.log(`💬 Using initial message: "${initialMessage}"`);
-      console.log(`🔗 Conversation ID: ${this.conversationId}`);
+      this.logger.info(`💬 Using initial message: "${initialMessage}"`);
+      this.logger.info(`🔗 Conversation ID: ${this.conversationId}`);
       
       const response = await fetch(`${this.config.apiUrl}/v2/agentman_runtime/agent`, {
         method: 'POST',
@@ -573,7 +674,7 @@ export class ChatWidget {
       
       // Handle the response directly
       if (data.response) {
-        console.log('📡 Received initial response data');
+        this.logger.debug('📡 Received initial response data');
         this.handleInitialResponse(data.response);
         
         // Extract and process agent capabilities from metadata
@@ -583,15 +684,15 @@ export class ChatWidget {
         
         // Check if persistenceManager is saving after welcome message
         if (this.persistenceManager) {
-          console.log('🔍 Checking if welcome message is saved to persistence');
+          this.logger.verbose('🔍 Checking if welcome message is saved to persistence');
           const currentMessages = this.stateManager.getState().messages;
-          console.log(`📊 Current message count after welcome: ${currentMessages.length}`);
+          this.logger.verbose(`📊 Current message count after welcome: ${currentMessages.length}`);
         }
       }
 
       this.stateManager.setInitialized(true);
     } catch (error) {
-      console.error('Chat initialization error:', error);
+      this.logger.error('Chat initialization error:', error);
       this.stateManager.setError('Failed to initialize chat. Please try again.');
       
       // Fallback to local welcome message if API fails
@@ -614,12 +715,12 @@ export class ChatWidget {
    * Handle initial API response
    */
   private handleInitialResponse(responseData: any[]): void {
-    console.log('👋 handleInitialResponse() called');
-    console.log(`📊 Response data contains ${responseData.length} total messages`);
-    console.log(`📊 Current lastMessageCount: ${this.lastMessageCount}`);
+    this.logger.info('👋 handleInitialResponse() called');
+    this.logger.verbose(`📊 Response data contains ${responseData.length} total messages`);
+    this.logger.verbose(`📊 Current lastMessageCount: ${this.lastMessageCount}`);
     
     if (!Array.isArray(responseData)) {
-      console.error('Invalid response format:', responseData);
+      this.logger.error('Invalid response format:', responseData);
       return;
     }
 
@@ -630,22 +731,22 @@ export class ChatWidget {
 
     // Get only the new messages that appear after the last known count
     const newMessages = responseData.slice(this.lastMessageCount);
-    console.log(`💬 Processing ${newMessages.length} new messages from initial response (sliced from index ${this.lastMessageCount})`);
+    this.logger.info(`💬 Processing ${newMessages.length} new messages from initial response (sliced from index ${this.lastMessageCount})`);
 
     // Log message types for debugging
     newMessages.forEach((msg, index) => {
-      console.log(`  Message ${this.lastMessageCount + index}: type=${msg.type}, content preview: "${msg.content?.substring(0, 50)}..."`);
+      this.logger.info(`  Message ${this.lastMessageCount + index}: type=${msg.type}, content preview: "${msg.content?.substring(0, 50)}..."`);
     });
 
     for (const msg of newMessages) {
       // Skip human messages since we already display them when sending
       if (msg.type !== 'ai') {
-        console.log('⏭️ Skipping human message in initial response');
+        this.logger.debug('⏭️ Skipping human message in initial response');
         continue;
       }
 
       if (this.isValidMessage(msg) && msg.content.trim()) {
-        console.log(`➕ Adding welcome message to UI: "${msg.content.substring(0, 50)}..."`);
+        this.logger.info(`➕ Adding welcome message to UI: "${msg.content.substring(0, 50)}..."`);
         this.addMessage({
           id: msg.id ?? this.generateUUID(),
           sender: 'agent',
@@ -658,12 +759,17 @@ export class ChatWidget {
 
     // Update lastMessageCount to reflect the total messages processed
     this.lastMessageCount = responseData.length;
-    console.log(`✅ Updated lastMessageCount to ${this.lastMessageCount}`);
+    this.logger.debug(`✅ Updated lastMessageCount to ${this.lastMessageCount}`);
     
     // Save the initial messages to persistence
     if (this.persistenceManager) {
-      console.log('💾 Saving initial messages to persistence');
-      this.persistenceManager.saveMessages();
+      this.logger.debug('💾 Saving initial messages to persistence');
+      const result = this.persistenceManager.saveMessages();
+      if (result.success) {
+        this.hasUnsavedChanges = false;
+      } else {
+        this.logger.warn('Failed to save initial messages');
+      }
     }
   }
 
@@ -688,7 +794,7 @@ export class ChatWidget {
 
     // Rate limiting check
     if (!ValidationUtils.checkRateLimit(`chat_${this.containerId}`, 30, 60000)) {
-      console.warn('Rate limit exceeded for chat messages');
+      this.logger.warn('Rate limit exceeded for chat messages');
       return;
     }
 
@@ -719,7 +825,7 @@ export class ChatWidget {
       // Use message text or empty string if only attachments
       await this.sendMessage(message || '');
     } catch (error) {
-      console.error('Error sending message:', error);
+      this.logger.error('Error sending message:', error);
     } finally {
       this.stateManager.setSending(false);
     }
@@ -777,7 +883,7 @@ export class ChatWidget {
         }
       }
       
-      console.log('🔄 Sending message to API:', {
+      this.logger.debug('🔄 Sending message to API:', {
         url: `${this.config.apiUrl}/v2/agentman_runtime/agent`,
         body: requestBody
       });
@@ -803,7 +909,7 @@ export class ChatWidget {
       if (!data) {
         throw new Error('Invalid response format from server');
       }
-      console.log('📨 Received API response:', data);
+      this.logger.info('📨 Received API response:', data);
 
       // Hide loading before showing response
       this.hideLoadingIndicator();
@@ -814,21 +920,26 @@ export class ChatWidget {
         
         // Process agent metadata after messages are handled (prevents race condition)
         if (data.metadata) {
-          console.log('💾 Processing updated agent metadata from response');
+          this.logger.debug('💾 Processing updated agent metadata from response');
           this.processAgentCapabilities(data.metadata);
         }
         
         // Save messages and metadata atomically
         if (this.persistenceManager) {
-          console.log('💾 Saving messages after response processed');
-          this.persistenceManager.saveMessages();
+          this.logger.debug('💾 Saving messages after response processed');
+          const result = this.persistenceManager.saveMessages();
+          if (result.success) {
+            this.hasUnsavedChanges = false;
+          } else {
+            this.logger.warn('Failed to save messages after response');
+          }
         }
       } else {
-        console.error('Invalid response format:', data);
+        this.logger.error('Invalid response format:', data);
         this.addErrorMessage('Invalid response format from agent');
       }
     } catch (error) {
-      console.error('Message sending error:', error);
+      this.logger.error('Message sending error:', error);
       this.hideLoadingIndicator();
 
       let errorContent = 'Sorry, I encountered an error. Please try again.';
@@ -853,7 +964,7 @@ export class ChatWidget {
    */
   private async handleResponse(responseData: any[]): Promise<void> {
     if (!Array.isArray(responseData)) {
-      console.error('Invalid response format:', responseData);
+      this.logger.error('Invalid response format:', responseData);
       return;
     }
 
@@ -862,11 +973,11 @@ export class ChatWidget {
       this.lastMessageCount = 0;
     }
     
-    console.log(`🔍 Processing response with ${responseData.length} messages, lastMessageCount=${this.lastMessageCount}`);
+    this.logger.verbose(`🔍 Processing response with ${responseData.length} messages, lastMessageCount=${this.lastMessageCount}`);
 
     // Get only the new messages that appear after the last known count
     const newMessages = responseData.slice(this.lastMessageCount);
-    console.log(`🔄 Found ${newMessages.length} new messages`);
+    this.logger.info(`🔄 Found ${newMessages.length} new messages`);
     
     // Get current messages to check for duplicates
     const currentMessages = this.stateManager.getState().messages;
@@ -875,7 +986,7 @@ export class ChatWidget {
     for (const msg of newMessages) {
       // Skip human messages since we already display them when sending
       if (msg.type !== 'ai') {
-        console.log('⏭️ Skipping human message');
+        this.logger.debug('⏭️ Skipping human message');
         continue;
       }
       
@@ -883,12 +994,12 @@ export class ChatWidget {
       
       // Skip if this message content already exists in the UI
       if (existingContents.includes(content)) {
-        console.log('⏭️ Skipping duplicate message: ' + content.substring(0, 30) + '...');
+        this.logger.debug('⏭️ Skipping duplicate message: ' + content.substring(0, 30) + '...');
         continue;
       }
 
       if (this.isValidMessage(msg) && content) {
-        console.log('➕ Adding new agent message');
+        this.logger.info('➕ Adding new agent message');
         this.addMessage({
           id: msg.id ?? this.generateUUID(),
           sender: 'agent',
@@ -901,7 +1012,7 @@ export class ChatWidget {
 
     // Update lastMessageCount to reflect the total messages processed
     this.lastMessageCount = responseData.length;
-    console.log(`✅ Updated lastMessageCount to ${this.lastMessageCount}`);
+    this.logger.debug(`✅ Updated lastMessageCount to ${this.lastMessageCount}`);
   }
 
   /**
@@ -1102,7 +1213,7 @@ export class ChatWidget {
     const hasConversations = conversations.length > 1;
     const header = this.uiManager.getElement('.am-chat-header');
     
-    console.log(`🔍 [DEBUG] Updating header buttons - ${conversations.length} conversations, hasConversations: ${hasConversations}`);
+    this.logger.verbose(`🔍 [DEBUG] Updating header buttons - ${conversations.length} conversations, hasConversations: ${hasConversations}`);
     
     if (header) {
       // Handle conversation list button (hamburger menu)
@@ -1110,14 +1221,14 @@ export class ChatWidget {
       
       if (hasConversations && !conversationButton) {
         // Add the button if it doesn't exist but should
-        console.log(`🔍 [DEBUG] Adding missing conversation button`);
+        this.logger.verbose(`🔍 [DEBUG] Adding missing conversation button`);
         this.conversationManager.addConversationButton(header, hasConversations);
         conversationButton = header.querySelector('.am-conversation-toggle') as HTMLElement;
       }
       
       if (conversationButton) {
         conversationButton.style.display = hasConversations && !this.conversationManager.isListViewActive() ? 'block' : 'none';
-        console.log(`🔍 [DEBUG] Conversation button display: ${conversationButton.style.display}`);
+        this.logger.verbose(`🔍 [DEBUG] Conversation button display: ${conversationButton.style.display}`);
       }
 
       // Update all header button states
@@ -1132,7 +1243,12 @@ export class ChatWidget {
     if (!this.persistenceManager) return;
 
     // Save current messages before switching
-    this.persistenceManager.saveMessages();
+    const saveResult = this.persistenceManager.saveMessages();
+    if (saveResult.success) {
+      this.hasUnsavedChanges = false;
+    } else {
+      this.logger.warn('Failed to save messages before switching');
+    }
 
     // Create new conversation
     const newId = this.persistenceManager.create();
@@ -1144,7 +1260,7 @@ export class ChatWidget {
     this.hasUserStartedConversation = false; // Reset conversation state
     this.isFreshConversation = true; // This is a brand new conversation
     this.lastMessageCount = 0; // Reset message count for new conversation
-    console.log('🆕 New conversation created, resetting lastMessageCount to 0');
+    this.logger.info('🆕 New conversation created, resetting lastMessageCount to 0');
     this.initializeChat();
 
     // Update conversation list
@@ -1158,7 +1274,7 @@ export class ChatWidget {
       this.conversationManager.toggleListView();
     }
 
-    console.log(`✅ Created new conversation: ${newId}`);
+    this.logger.debug(`✅ Created new conversation: ${newId}`);
   }
 
   /**
@@ -1169,7 +1285,12 @@ export class ChatWidget {
     if (!this.persistenceManager || conversationId === this.conversationId) return;
 
     // Save current messages before switching
-    this.persistenceManager.saveMessages();
+    const saveResult = this.persistenceManager.saveMessages();
+    if (saveResult.success) {
+      this.hasUnsavedChanges = false;
+    } else {
+      this.logger.warn('Failed to save messages before switching');
+    }
 
     // Switch to the selected conversation
     this.persistenceManager.switchTo(conversationId);
@@ -1183,7 +1304,7 @@ export class ChatWidget {
     if (metadata) {
       this.processAgentCapabilities(metadata);
     } else {
-      console.log('⚠️ No metadata found for conversation, keeping current capabilities');
+      this.logger.warn('⚠️ No metadata found for conversation, keeping current capabilities');
     }
     
     // Update conversation state FIRST, before any UI updates
@@ -1194,7 +1315,7 @@ export class ChatWidget {
     
     // Update lastMessageCount to match the loaded messages
     this.lastMessageCount = messages.length;
-    console.log(`📊 Switched to conversation with ${messages.length} messages, lastMessageCount set to ${this.lastMessageCount}`);
+    this.logger.verbose(`📊 Switched to conversation with ${messages.length} messages, lastMessageCount set to ${this.lastMessageCount}`);
     
     this.stateManager.clearMessages();
     this.clearMessagesUI();
@@ -1213,7 +1334,7 @@ export class ChatWidget {
       this.conversationManager.toggleListView();
     }
 
-    console.log(`✅ Switched to conversation: ${conversationId}`);
+    this.logger.debug(`✅ Switched to conversation: ${conversationId}`);
   }
 
   /**
@@ -1240,7 +1361,7 @@ export class ChatWidget {
     // Update conversation list
     this.updateConversationList();
 
-    console.log(`✅ Deleted conversation: ${conversationId}`);
+    this.logger.debug(`✅ Deleted conversation: ${conversationId}`);
   }
 
   /**
@@ -1304,7 +1425,7 @@ export class ChatWidget {
       }
     }
     
-    console.log('📂 Conversation list view toggled:', this.conversationManager.isListViewActive());
+    this.logger.info('📂 Conversation list view toggled:', this.conversationManager.isListViewActive());
   }
 
   /**
@@ -1339,14 +1460,14 @@ export class ChatWidget {
       // Security validation first
       const fileValidation = ValidationUtils.sanitizeFileData(file);
       if (!fileValidation.valid) {
-        console.warn(`🚫 File validation failed: ${fileValidation.errors.join(', ')}`);
+        this.logger.warn(`🚫 File validation failed: ${fileValidation.errors.join(', ')}`);
         // TODO: Show user-friendly error message in UI
         return;
       }
 
       // Validate mime type if agent capabilities are available
       if (this.supportedMimeTypes.length > 0 && !this.supportedMimeTypes.includes(file.type)) {
-        console.warn(`🚫 File type not supported: ${file.type}. Supported types: ${this.supportedMimeTypes.join(', ')}`);
+        this.logger.warn(`🚫 File type not supported: ${file.type}. Supported types: ${this.supportedMimeTypes.join(', ')}`);
         
         // Show user-friendly error message
         this.stateManager.setError(`File type "${file.type || 'unknown'}" is not supported. Supported types: ${this.supportedMimeTypes.map(type => type.split('/')[1]?.toUpperCase()).join(', ')}`);
@@ -1383,7 +1504,7 @@ export class ChatWidget {
         this.updateAttachmentPreview();
 
       } catch (error) {
-        console.error('File upload failed:', error);
+        this.logger.error('File upload failed:', error);
         // Update with error status
         this.stateManager.updateAttachmentStatus(tempAttachment.file_id, {
           upload_status: 'error',
@@ -1461,11 +1582,15 @@ export class ChatWidget {
   public addMessage(message: Message): void {
     const messagesContainer = this.uiManager.getElement('.am-chat-messages');
     if (!messagesContainer) {
-      console.error('Messages container not found');
+      this.logger.error('Messages container not found');
       return;
     }
 
     this.stateManager.addMessage(message);
+    
+    // Mark that we have unsaved changes and trigger debounced save
+    this.hasUnsavedChanges = true;
+    this.debouncedSave();
 
     const messageElement = document.createElement('div');
     messageElement.className = `am-message ${message.sender}`;
@@ -1605,13 +1730,24 @@ export class ChatWidget {
    * Destroy widget instance
    */
   public destroy(): void {
-    console.log('🧹 ChatWidget destroying...');
+    this.logger.info('🧹 ChatWidget destroying...');
 
+    // Save any unsaved messages before destroying
+    if (this.persistenceManager && this.hasUnsavedChanges) {
+      this.persistenceManager.saveMessages();
+    }
+    
+    // Remove unload handlers
+    if (this.boundUnloadHandler) {
+      window.removeEventListener('beforeunload', this.boundUnloadHandler);
+    }
+    
     // Clean up timers
     if (this.promptTimer) window.clearTimeout(this.promptTimer);
     if (this.resizeTimeout) window.clearTimeout(this.resizeTimeout);
     if (this.resizeDebounceTimeout) window.clearTimeout(this.resizeDebounceTimeout);
     if (this.loadingAnimationInterval) window.clearInterval(this.loadingAnimationInterval);
+    if (this.saveDebounceTimer) window.clearTimeout(this.saveDebounceTimer);
 
     // Clean up managers
     this.styleManager.cleanup();
@@ -1624,7 +1760,7 @@ export class ChatWidget {
     // Remove from instances map
     ChatWidget.instances.delete(this.containerId);
     
-    console.log('✅ ChatWidget destroyed');
+    this.logger.debug('✅ ChatWidget destroyed');
   }
 
   /**
@@ -1696,12 +1832,12 @@ export class ChatWidget {
    * Process agent capabilities from API metadata
    */
   private processAgentCapabilities(metadata: any): void {
-    console.log('🔍 Processing agent capabilities from metadata:', metadata);
+    this.logger.verbose('🔍 Processing agent capabilities from metadata:', metadata);
     
     // Validate metadata structure
     const validatedMetadata = ValidationUtils.validateAgentMetadata(metadata);
     if (!validatedMetadata) {
-      console.warn('⚠️ Invalid agent metadata received, using defaults');
+      this.logger.warn('⚠️ Invalid agent metadata received, using defaults');
       this.agentCapabilities = {};
       this.supportedMimeTypes = [];
       this.supportsAttachments = false;
@@ -1712,7 +1848,7 @@ export class ChatWidget {
     this.supportedMimeTypes = validatedMetadata.supported_mime_types || [];
     this.supportsAttachments = validatedMetadata.supports_attachments || false;
     
-    console.log('📋 Agent capabilities extracted:', {
+    this.logger.verbose('📋 Agent capabilities extracted:', {
       supportedMimeTypes: this.supportedMimeTypes,
       supportsAttachments: this.supportsAttachments
     });
@@ -1726,7 +1862,7 @@ export class ChatWidget {
     if (this.config.enableAttachments && this.supportsAttachments) {
       this.updateFileInputAccept();
     } else if (this.config.enableAttachments && !this.supportsAttachments) {
-      console.warn('⚠️ Attachments enabled in config but agent does not support attachments');
+      this.logger.warn('⚠️ Attachments enabled in config but agent does not support attachments');
       // Optionally disable attachment button here
       this.disableAttachmentButton();
     }
@@ -1740,13 +1876,13 @@ export class ChatWidget {
     
     if (fileInput && this.supportedMimeTypes.length > 0) {
       fileInput.accept = this.supportedMimeTypes.join(',');
-      console.log(`📎 Updated file input accept attribute: ${fileInput.accept}`);
+      this.logger.info(`📎 Updated file input accept attribute: ${fileInput.accept}`);
       
       // Add capture attribute for mobile camera access if image types are supported
       const hasImageTypes = this.supportedMimeTypes.some(type => type.startsWith('image/'));
       if (hasImageTypes) {
         fileInput.setAttribute('capture', 'environment'); // Use rear camera by default
-        console.log(`📱 Added camera capture support for mobile devices`);
+        this.logger.info(`📱 Added camera capture support for mobile devices`);
       }
     }
     
@@ -1769,7 +1905,7 @@ export class ChatWidget {
       const cameraText = hasImageTypes ? ' or take photo' : '';
       
       attachmentButton.title = `Attach files (${supportedTypes} supported)${cameraText}`;
-      console.log(`📎 Updated attachment button tooltip: ${attachmentButton.title}`);
+      this.logger.info(`📎 Updated attachment button tooltip: ${attachmentButton.title}`);
     }
   }
 
@@ -1782,12 +1918,198 @@ export class ChatWidget {
       attachmentButton.disabled = true;
       attachmentButton.title = 'File attachments not supported by this agent';
       attachmentButton.style.opacity = '0.5';
-      console.log('📎 Disabled attachment button - agent does not support attachments');
+      this.logger.info('📎 Disabled attachment button - agent does not support attachments');
     }
   }
 
   private async fetchAgentCapabilities(): Promise<void> {
     // This method is no longer needed as capabilities are extracted from initial response metadata
-    console.log('🔍 fetchAgentCapabilities() called - capabilities now extracted from initial response metadata');
+    this.logger.verbose('🔍 fetchAgentCapabilities() called - capabilities now extracted from initial response metadata');
+  }
+  
+  /**
+   * Handle persistence errors with user notifications
+   */
+  private handlePersistenceError(error: import('./types/persistence-types').PersistenceError): void {
+    this.logger.error('Persistence error:', error);
+    
+    // Don't show notifications for non-recoverable errors in production unless debug is enabled
+    if (!error.recoverable && !this.config.debug) {
+      return;
+    }
+    
+    // Create a user-friendly notification
+    const notification = document.createElement('div');
+    notification.className = 'am-persistence-notification am-persistence-error';
+    notification.innerHTML = `
+      <div class="am-notification-content">
+        <span class="am-notification-icon">⚠️</span>
+        <span class="am-notification-message">${error.message}</span>
+        ${error.type === 'QUOTA_EXCEEDED' ? 
+          '<button class="am-notification-action" onclick="this.parentElement.parentElement.remove()">Clear Old Chats</button>' : 
+          '<button class="am-notification-close" onclick="this.parentElement.parentElement.remove()">×</button>'
+        }
+      </div>
+    `;
+    
+    // Add to chat container
+    const container = this.uiManager.getElement('.am-chat-container');
+    if (container) {
+      container.appendChild(notification);
+      
+      // Handle clear action for quota errors
+      if (error.type === 'QUOTA_EXCEEDED') {
+        const clearButton = notification.querySelector('.am-notification-action');
+        if (clearButton) {
+          clearButton.addEventListener('click', async () => {
+            const result = this.persistenceManager?.clearOldConversations(3);
+            if (result?.success) {
+              notification.innerHTML = '<div class="am-notification-content"><span class="am-notification-icon">✅</span><span class="am-notification-message">Cleared old conversations</span></div>';
+              setTimeout(() => notification.remove(), 3000);
+            }
+          });
+        }
+      }
+      
+      // Auto-remove after 10 seconds (except for quota errors)
+      if (error.type !== 'QUOTA_EXCEEDED') {
+        setTimeout(() => notification.remove(), 10000);
+      }
+    }
+  }
+  
+  /**
+   * Show storage quota warning
+   */
+  private async showQuotaWarning(): Promise<void> {
+    if (!this.persistenceManager) return;
+    
+    const storageInfo = await this.persistenceManager.getStorageInfo();
+    if (storageInfo.percentUsed && storageInfo.percentUsed > 80) {
+      const notification = document.createElement('div');
+      notification.className = 'am-persistence-notification am-persistence-warning';
+      notification.innerHTML = `
+        <div class="am-notification-content">
+          <span class="am-notification-icon">💾</span>
+          <span class="am-notification-message">Storage ${Math.round(storageInfo.percentUsed)}% full</span>
+          <button class="am-notification-close" onclick="this.parentElement.parentElement.remove()">×</button>
+        </div>
+      `;
+      
+      const container = this.uiManager.getElement('.am-chat-container');
+      if (container) {
+        container.appendChild(notification);
+        setTimeout(() => notification.remove(), 5000);
+      }
+    }
+  }
+  
+  /**
+   * Debounced save to prevent excessive saves and race conditions
+   */
+  private debouncedSave(): void {
+    if (!this.persistenceManager || !this.hasUnsavedChanges) return;
+    
+    // Clear existing timer
+    if (this.saveDebounceTimer) {
+      window.clearTimeout(this.saveDebounceTimer);
+    }
+    
+    // Set new timer - save after 1 second of inactivity
+    this.saveDebounceTimer = window.setTimeout(() => {
+      if (this.hasUnsavedChanges && this.persistenceManager) {
+        this.logger.debug('💾 Auto-saving messages (debounced)');
+        const result = this.persistenceManager.saveMessages();
+        if (result.success) {
+          this.hasUnsavedChanges = false;
+        }
+      }
+    }, 1000);
+  }
+  
+  /**
+   * Set up handler to save messages before page unload
+   */
+  private setupUnloadHandler(): void {
+    // Create bound handler so we can remove it later
+    this.boundUnloadHandler = (event: BeforeUnloadEvent) => {
+      // Force save messages before page unload
+      if (this.persistenceManager && this.stateManager.getState().messages.length > 0) {
+        this.logger.debug('🚪 Page unloading - saving messages');
+        const result = this.persistenceManager.saveMessages();
+        
+        // If save failed and there are unsaved changes, warn the user
+        if (!result.success && this.hasUnsavedChanges) {
+          event.preventDefault();
+          event.returnValue = 'You have unsaved messages. Are you sure you want to leave?';
+          return event.returnValue;
+        }
+      }
+    };
+    
+    // Add both beforeunload and pagehide for better coverage
+    window.addEventListener('beforeunload', this.boundUnloadHandler);
+    
+    // Also use pagehide for mobile Safari
+    window.addEventListener('pagehide', () => {
+      if (this.persistenceManager) {
+        this.persistenceManager.saveMessages();
+      }
+    });
+  }
+  
+  /**
+   * Track telemetry events for monitoring and debugging
+   * This is a lightweight implementation that can be extended with actual analytics
+   */
+  private trackTelemetryEvent(eventName: string, data: any): void {
+    try {
+      // Log to debug mode if enabled
+      this.logger.debug(`📊 Telemetry Event: ${eventName}`, data);
+      
+      // If a custom logger is provided in debug config, use it for telemetry
+      if (this.config.debug && typeof this.config.debug === 'object' && this.config.debug.logger) {
+        this.config.debug.logger('telemetry', eventName, data);
+      }
+      
+      // Fire a custom event that external analytics can listen to
+      if (typeof window !== 'undefined' && window.dispatchEvent) {
+        window.dispatchEvent(new CustomEvent('chatwidget:telemetry', {
+          detail: {
+            eventName,
+            data,
+            widgetId: this.containerId,
+            timestamp: Date.now()
+          }
+        }));
+      }
+      
+      // Store critical telemetry events in localStorage for debugging
+      if (eventName === 'metadata_without_messages') {
+        try {
+          const telemetryKey = `chatwidget_telemetry_${this.containerId}`;
+          const existing = localStorage.getItem(telemetryKey);
+          const telemetryData = existing ? JSON.parse(existing) : { events: [] };
+          
+          // Keep only last 10 events
+          telemetryData.events.push({
+            eventName,
+            data,
+            timestamp: Date.now()
+          });
+          if (telemetryData.events.length > 10) {
+            telemetryData.events = telemetryData.events.slice(-10);
+          }
+          
+          localStorage.setItem(telemetryKey, JSON.stringify(telemetryData));
+        } catch (e) {
+          // Fail silently - telemetry should not break the widget
+          this.logger.debug('Failed to store telemetry event:', e);
+        }
+      }
+    } catch (error) {
+      // Telemetry should never throw and break the widget
+      this.logger.debug('Telemetry error:', error);
+    }
   }
 }

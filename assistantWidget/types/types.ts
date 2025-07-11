@@ -84,6 +84,21 @@ export interface ChatConfig {
   collectClientMetadata?: boolean;
   /** Enable IP address collection (requires external API call) */
   collectIPAddress?: boolean;
+  /** Debug configuration for development and troubleshooting */
+  debug?: boolean | DebugConfig;
+}
+
+export interface DebugConfig {
+  /** Enable debug logging */
+  enabled: boolean;
+  /** Log levels to include */
+  logLevel?: 'error' | 'warn' | 'info' | 'debug' | 'verbose';
+  /** Include timestamps in logs */
+  timestamps?: boolean;
+  /** Log to console */
+  console?: boolean;
+  /** Custom logger function */
+  logger?: (level: string, message: string, data?: any) => void;
 }
 
 export interface FileAttachment {

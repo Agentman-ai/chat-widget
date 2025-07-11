@@ -129,3 +129,18 @@ export const plus = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"
 export const plus2 = `<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="size-6">
   <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
 </svg>`;
+
+export const loadingIcon = `<svg class="am-loading-spinner" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+  <circle cx="12" cy="12" r="10" opacity="0.25"/>
+  <path d="M12 2a10 10 0 0 1 10 10" stroke-linecap="round">
+    <animateTransform attributeName="transform" type="rotate" from="0 12 12" to="360 12 12" dur="1s" repeatCount="indefinite"/>
+  </path>
+</svg>`;
+
+// File type icons
+export const imageIcon = fileImage;
+export const documentIcon = fileDocument;
+export const audioIcon = fileAudio;
+export const videoIcon = fileVideo;
+export const textIcon = fileText;
+export const fileIcon = fileDocument; // Default file icon
