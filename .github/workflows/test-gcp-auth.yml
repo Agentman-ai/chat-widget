@@ -1,0 +1,40 @@
+name: Test GCP Authentication
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  id-token: write
+
+jobs:
+  test-auth:
+    name: Test GCP Authentication
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Authenticate to Google Cloud
+        uses: google-github-actions/auth@v2
+        with:
+          workload_identity_provider: ${{ secrets.WIF_PROVIDER }}
+          service_account: ${{ secrets.WIF_SERVICE_ACCOUNT }}
+
+      - name: Setup Google Cloud SDK
+        uses: google-github-actions/setup-gcloud@v2
+        with:
+          project_id: agentman-public-cloud-storage
+
+      - name: Test GCS Access
+        run: |
+          echo "Testing access to GCS bucket..."
+          gsutil ls gs://chatwidget-shopify-storage-for-cdn/ || echo "Bucket not accessible"
+          
+          echo ""
+          echo "Current authentication:"
+          gcloud auth list
+          
+          echo ""
+          echo "Current project:"
+          gcloud config get-value project
