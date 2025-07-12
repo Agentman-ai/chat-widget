@@ -555,12 +555,26 @@ npm run dev
 # Build for production
 npm run build
 
-# Build with source maps
-npm run build:debug
-
 # Build WordPress plugin
-npm run build:wordpress
+node wp-bundle.js
 ```
+
+### Releasing
+
+We use GitHub Actions for automated releases. See the [Release Process Guide](RELEASE_PROCESS.md) for details.
+
+```bash
+# Quick release using GitHub Actions
+# 1. Go to Actions tab in GitHub
+# 2. Run "Release All Components" workflow
+# 3. Select release type and options
+```
+
+For manual releases or more details, see:
+- [Release Process Guide](RELEASE_PROCESS.md)
+- [GitHub Actions Documentation](.github/workflows/README.md)
+- [GCP Deployment Setup](docs/gcp-deployment-setup.md)
+- [Shopify Deployment Guide](shopify/docs/deployment-guide.md)
 
 ### Testing
 
