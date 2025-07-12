@@ -25,7 +25,7 @@ export const variantStyles = {
         border: none !important;
         background: var(--chat-toggle-background-color, var(--chat-header-background-color, #2563eb)) !important;
         cursor: pointer !important;
-        z-index: var(--chat-z-index, 1000)
+        z-index: var(--chat-z-index, 999999)
         border-radius: 32px !important;
         box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15) !important;
         transition: transform 0.2s !important;
