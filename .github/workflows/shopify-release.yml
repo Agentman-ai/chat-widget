@@ -130,6 +130,9 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
@@ -157,12 +160,13 @@ jobs:
           cd shopify
           VERSION="${{ needs.prepare-shopify-release.outputs.new_version }}"
           
-          # Update version for build
-          if [ "${{ inputs.dry_run }}" = "true" ]; then
-            echo "🔧 Dry run - simulating version update"
-            if [ -f "script-service/index.js" ]; then
-              sed -i "s/const SCRIPT_VERSION = '[^']*'/const SCRIPT_VERSION = '$VERSION'/" script-service/index.js
-            fi
+          # Ensure version.json has the correct version for the build
+          echo "📝 Setting version to $VERSION for build..."
+          echo '{"version": "'$VERSION'"}' > version.json
+          
+          # Update script-service/index.js as well
+          if [ -f "script-service/index.js" ]; then
+            sed -i "s/const SCRIPT_VERSION = '[^']*'/const SCRIPT_VERSION = '$VERSION'/" script-service/index.js
           fi
           
           # Run local build script
