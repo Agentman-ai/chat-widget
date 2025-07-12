@@ -1,9 +1,8 @@
 // styles/prompts.ts
 export const promptStyles = `
-  /* Input Prompts Container - DISABLED due to UX issues */
-  /* Keeping styles for potential future use */
+  /* Input Prompts Container */
   .am-chat-input-prompts {
-    display: none !important; /* Force hide due to UX issues */
+    display: flex;
     flex-wrap: wrap;
     gap: 8px;
     padding: 12px 16px 8px 16px;

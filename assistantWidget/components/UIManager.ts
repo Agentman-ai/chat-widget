@@ -676,18 +676,22 @@ export class UIManager {
 
   /**
    * Hide message prompts after user interaction
-   * @deprecated Message prompts in chat area disabled
    */
   public hideMessagePrompts(): void {
-    // Disabled - no prompts in chat area
+    const promptsElement = this.container.querySelector('.am-chat-input-prompts');
+    if (promptsElement) {
+      (promptsElement as HTMLElement).style.display = 'none';
+    }
   }
 
   /**
    * Show message prompts (for reset functionality)
-   * @deprecated Message prompts in chat area disabled
    */
   public showMessagePrompts(): void {
-    // Disabled - no prompts in chat area
+    const promptsElement = this.container.querySelector('.am-chat-input-prompts');
+    if (promptsElement) {
+      (promptsElement as HTMLElement).style.display = 'flex';
+    }
   }
 
   /**
