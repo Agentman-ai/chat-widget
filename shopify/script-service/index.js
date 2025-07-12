@@ -11,7 +11,7 @@
     'use strict';
     
     // Script metadata
-    const SCRIPT_VERSION = '1.0.18';
+    const SCRIPT_VERSION = '1.0.19';
     // Use your own CDN URL for the core widget
     const WIDGET_CDN = 'https://storage.googleapis.com/chatwidget-shopify-storage-for-cdn/core/chat-widget.js';
     
