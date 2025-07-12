@@ -24,7 +24,24 @@
       "Bash(chmod:*)",
       "Bash(./release.sh:*)",
       "Bash(sed:*)",
-      "Bash(rm:*)"
+      "Bash(rm:*)",
+      "Bash(gcloud services enable:*)",
+      "Bash(gcloud iam workload-identity-pools create:*)",
+      "Bash(--location=\"global\" )",
+      "Bash(--display-name=\"GitHub Actions Pool\" )",
+      "Bash(--description=\"Workload Identity Pool for GitHub Actions\")",
+      "Bash(gcloud iam service-accounts create:*)",
+      "Bash(--display-name=\"GitHub Actions Shopify Deploy\" )",
+      "Bash(--description=\"Service account for GitHub Actions to deploy Shopify widget\")",
+      "Bash(gcloud projects add-iam-policy-binding:*)",
+      "Bash(--member=\"serviceAccount:github-actions-shopify@agentman-public-cloud-storage.iam.gserviceaccount.com\" )",
+      "Bash(--role=\"roles/storage.objectAdmin\")",
+      "Bash(gcloud iam workload-identity-pools providers list:*)",
+      "Bash(--workload-identity-pool=\"github-actions-pool\" )",
+      "Bash(--location=\"global\" )",
+      "Bash(--format=\"table(name,displayName)\")",
+      "Bash(git add:*)",
+      "Bash(git commit:*)"
     ],
     "deny": []
   }

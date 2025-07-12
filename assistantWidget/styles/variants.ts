@@ -5,7 +5,7 @@ export const variantStyles = {
         position: fixed;
         bottom: var(--chat-bottom, 12px);
         right: var(--chat-right, 12px);
-        z-index: var(--chat-z-index, 1000);
+        z-index: var(--chat-z-index, 999999);
       }
   
       .am-chat-widget--corner .am-chat-container {
@@ -14,6 +14,7 @@ export const variantStyles = {
         right: var(--chat-container-right, 20px);
         width: var(--chat-container-width, 480px);
         height: var(--chat-container-height, 600px);
+        z-index: var(--chat-z-index, 999999);
       }
 
       .am-chat-widget--corner .am-chat-toggle {

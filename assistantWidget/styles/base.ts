@@ -9,7 +9,7 @@ export const baseStyles = `
 
   .am-chat-widget {
     font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
-    z-index: 1000;
+    z-index: 999999;
     height: 100%;
     display: flex;
     flex-direction: column;
@@ -25,6 +25,7 @@ export const baseStyles = `
     border-radius: 8px;
     box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
     flex: 1;
+    z-index: 999999;
   }
 
   .am-chat-header {
