@@ -247,37 +247,33 @@ jobs:
         run: |
           cd shopify
           VERSION="${{ needs.prepare-shopify-release.outputs.new_version }}"
+          BUCKET="gs://chatwidget-shopify-storage-for-cdn"
           
-          if [ -f "deploy-gcp.sh" ]; then
-            chmod +x deploy-gcp.sh
-            ./deploy-gcp.sh deploy
-          else
-            # Manual deployment
-            BUCKET="gs://chatwidget-shopify-storage-for-cdn"
-            
-            # Deploy widget files
-            gsutil -m cp -r dist/cdn/* $BUCKET/
-            
-            # Update version.json
-            echo '{"version": "'$VERSION'", "updated": "'$(date -u +%Y-%m-%dT%H:%M:%SZ)'"}' > version.json
-            gsutil cp version.json $BUCKET/shopify/version.json
-            
-            # Set cache headers
-            gsutil -m setmeta -h "Cache-Control:public, max-age=300" "$BUCKET/shopify/v1/widget.js"
-            gsutil -m setmeta -h "Cache-Control:public, max-age=3600" "$BUCKET/core/chat-widget.js"
-          fi
+          echo "🚀 Deploying Shopify widget v$VERSION to GCS..."
+          
+          # Deploy widget files
+          echo "📦 Uploading widget files..."
+          gsutil -m cp -r dist/cdn/* $BUCKET/
+          
+          # Update version.json
+          echo "📝 Updating version.json..."
+          echo '{"version": "'$VERSION'", "updated": "'$(date -u +%Y-%m-%dT%H:%M:%SZ)'"}' > version.json
+          gsutil cp version.json $BUCKET/shopify/version.json
+          
+          # Set cache headers
+          echo "⚡ Setting cache headers..."
+          gsutil -m setmeta -h "Cache-Control:public, max-age=300" "$BUCKET/shopify/v1/widget.js"
+          gsutil -m setmeta -h "Cache-Control:public, max-age=3600" "$BUCKET/core/chat-widget.js"
+          
+          echo "✅ Deployment completed successfully!"
           
           echo "✅ Deployed to Google Cloud Storage"
 
       - name: Invalidate CDN cache
         run: |
-          cd shopify
-          
-          if [ -f "deploy-gcp.sh" ]; then
-            ./deploy-gcp.sh invalidate
-          else
-            echo "⚠️ CDN invalidation script not found, skipping..."
-          fi
+          echo "🔄 Cache invalidation..."
+          echo "Note: GCS serves files with cache headers. New content will be available after cache expiry (5 minutes for widget.js)"
+          echo "Users can force refresh with Ctrl+Shift+R or Cmd+Shift+R"
 
       - name: Verify deployment
         run: |
