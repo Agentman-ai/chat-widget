@@ -435,3 +435,5 @@ jobs:
         uses: geekyeggo/delete-artifact@v2
         with:
           name: shopify-widget-dist
+          failOnError: false
+        continue-on-error: true
