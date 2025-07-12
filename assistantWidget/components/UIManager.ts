@@ -678,7 +678,8 @@ export class UIManager {
    * Hide message prompts after user interaction
    */
   public hideMessagePrompts(): void {
-    const promptsElement = this.container.querySelector('.am-chat-input-prompts');
+    if (!this.element) return;
+    const promptsElement = this.element.querySelector('.am-chat-input-prompts');
     if (promptsElement) {
       (promptsElement as HTMLElement).style.display = 'none';
     }
@@ -688,7 +689,8 @@ export class UIManager {
    * Show message prompts (for reset functionality)
    */
   public showMessagePrompts(): void {
-    const promptsElement = this.container.querySelector('.am-chat-input-prompts');
+    if (!this.element) return;
+    const promptsElement = this.element.querySelector('.am-chat-input-prompts');
     if (promptsElement) {
       (promptsElement as HTMLElement).style.display = 'flex';
     }
