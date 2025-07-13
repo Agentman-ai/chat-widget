@@ -109,7 +109,9 @@ export class ChatWidget {
       messages: [],
       error: undefined,
       pendingAttachments: [],
-      isUploadingFiles: false
+      isUploadingFiles: false,
+      currentView: 'conversation', // Original widget uses conversation view
+      hasStartedConversation: false
     };
 
     // Initialize managers

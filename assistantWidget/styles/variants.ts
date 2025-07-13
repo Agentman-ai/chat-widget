@@ -151,17 +151,27 @@ export const variantStyles = {
         display: flex;
         flex-direction: column;
         border: 1px solid rgba(0, 0, 0, 0.1);
+        overflow: hidden;
       }
 
       .am-chat-widget--inline .am-chat-messages {
         flex: 1 1 auto;
         height: 0;
         min-height: 0;
+        overflow-y: auto;
+        overflow-x: hidden;
       }
 
       .am-chat-widget--inline .am-chat-input-container {
         flex: 0 0 auto;
         border-top: 1px solid rgba(0, 0, 0, 0.1);
+      }
+
+      .am-chat-widget--inline .am-conversation-view {
+        display: flex;
+        flex-direction: column;
+        height: 100%;
+        overflow: hidden;
       }
     `
   };

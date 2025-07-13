@@ -1,117 +1,231 @@
-# ChatWidget Refactoring Plan
+# ChatWidgetRefactored.ts - Code Quality Assessment & Refactoring Plan
 
-## Current State
-ChatWidget.ts has grown to over 2100 lines and handles too many responsibilities. This violates the Single Responsibility Principle and makes the code harder to maintain.
+## Current State Analysis
 
-## Proposed Architecture
+### Code Quality Issues
 
-### 1. **MessageHandler** (New Component)
-Extract all message-related functionality:
-- `handleSendMessage()`
-- `sendMessage()`
-- `handleResponse()`
-- `handleInitialResponse()`
-- `addErrorMessage()`
-- `isValidMessage()`
-- `showLoadingIndicator()`
-- `hideLoadingIndicator()`
-- Message validation and processing
+**File Size**: 1076 lines (Target: ~300 lines)
+**Violation of Single Responsibility Principle**: The ChatWidget class is handling multiple concerns:
+- Widget lifecycle management
+- UI orchestration  
+- API communication
+- Message rendering
+- State management
+- Event handling
+- Error handling
+- File management
 
-### 2. **AttachmentHandler** (New Component)
-Extract all file attachment functionality:
-- `handleAttachmentClick()`
-- `handleFileSelect()`
-- `handleAttachmentRemove()`
-- `updateAttachmentPreview()`
-- `renderMessageAttachments()`
-- `getFileType()`
-- `getAttachmentIcon()`
-- `formatFileSize()`
-- File type detection and validation
-- Integration with FileUploadManager
+### Specific Problems Identified
 
-### 3. **ConversationHandler** (New Component)
-Extract conversation management logic:
-- `handleNewConversation()`
-- `handleSwitchConversation()`
-- `handleDeleteConversation()`
-- `handleToggleListView()`
-- `updateConversationList()`
-- `updateConversationHeaderButtons()`
-- `clearMessagesUI()`
-- Integration with ConversationManager
+1. **Large, Complex Methods**
+   - `sendMessageDirect()`: 96 lines - handles API calls, UI updates, error handling
+   - `handleResponse()`: 51 lines - message processing and UI updates
+   - `addMessageToView()`: 42 lines - DOM manipulation and state updates
 
-### 4. **APIClient** (New Component)
-Extract all API communication:
-- `initializeChat()`
-- `sendMessage()` API calls
-- `fetchAgentCapabilities()`
-- Response processing
-- Error handling for API calls
-- Request/response formatting
+2. **Code Duplication**
+   - Message validation logic repeated in multiple methods
+   - Error handling patterns duplicated across API calls
+   - Loading indicator management scattered throughout
 
-### 5. **InitializationManager** (New Component)
-Extract initialization logic:
-- `initializeUI()`
-- `initializeMarkdownProcessing()`
-- `initializeClientMetadata()`
-- `collectIPAddressAsync()`
-- `mergeIPMetadata()`
-- `restoreOrInitializeConversation()`
-- `restoreMessages()`
-- `finalizeInitialization()`
+3. **Tight Coupling**
+   - Direct DOM manipulation mixed with business logic
+   - API communication tightly coupled with UI updates
+   - State management scattered across multiple methods
 
-### 6. **ThemeManager** (New Component)
-Extract theme-related functionality:
-- `initializeTheme()`
-- `initializeAssets()`
-- Theme configuration
-- Asset management
-- Dynamic theme updates
-
-### 7. **TelemetryManager** (New Component)
-Extract telemetry and analytics:
-- `trackTelemetryEvent()`
-- Event formatting
-- Storage of telemetry data
-- Integration with external analytics
-
-### 8. **PersistenceCoordinator** (Enhancement)
-Enhance to handle:
-- `setupUnloadHandler()`
-- `debouncedSave()`
-- `handlePersistenceError()`
-- `showQuotaWarning()`
-- Coordination between persistence and UI
+4. **Missing Abstractions**
+   - No dedicated API service layer
+   - No event bus for component communication
+   - No centralized error handling strategy
 
 ## Refactoring Strategy
 
-### Phase 1: Create Handler Classes
-1. Create MessageHandler class
-2. Create AttachmentHandler class
-3. Create ConversationHandler class
-4. Create APIClient class
+### Phase 1: Extract Core Services (Week 1)
 
-### Phase 2: Move Functionality
-1. Move methods to appropriate handlers
-2. Update ChatWidget to delegate to handlers
-3. Ensure all tests still pass
+#### 1.1 Create ApiService
+**Target**: Extract all API communication logic
+```typescript
+// assistantWidget/services/ApiService.ts
+export class ApiService {
+  async sendMessage(params: SendMessageParams): Promise<ApiResponse>
+  async uploadFile(file: File): Promise<FileUploadResponse>
+  private handleApiError(error: Error): never
+}
+```
 
-### Phase 3: Clean Up
-1. Remove moved methods from ChatWidget
-2. Update imports and dependencies
-3. Update documentation
+**Benefits**:
+- Centralized API logic
+- Reusable across components
+- Easier testing and mocking
+- Consistent error handling
 
-## Benefits
-- **Smaller, focused classes** (~200-400 lines each)
-- **Better testability** - each handler can be tested independently
-- **Easier maintenance** - changes are isolated to specific handlers
-- **Better separation of concerns**
-- **Easier to add new features** without growing ChatWidget
+#### 1.2 Create MessageService  
+**Target**: Handle message processing and validation
+```typescript
+// assistantWidget/services/MessageService.ts
+export class MessageService {
+  validateMessage(msg: any): boolean
+  processResponse(data: any[]): Message[]
+  filterNewMessages(messages: Message[], lastCount: number): Message[]
+  generateMessageId(): string
+}
+```
 
-## Implementation Priority
-1. **MessageHandler** - Core functionality, high impact
-2. **APIClient** - Clean separation of API concerns
-3. **AttachmentHandler** - Self-contained functionality
-4. **ConversationHandler** - UI-specific logic
-5. **Others** - Lower priority, can be done incrementally
+#### 1.3 Create AgentService
+**Target**: Manage agent capabilities and metadata
+```typescript
+// assistantWidget/services/AgentService.ts
+export class AgentService {
+  processCapabilities(metadata: any): AgentCapabilities
+  checkFileSupport(fileType: string): boolean
+  getConfiguration(): AgentConfig
+}
+```
+
+### Phase 2: Implement Event-Driven Architecture (Week 2)
+
+#### 2.1 Create EventBus
+**Target**: Decouple component communication
+```typescript
+// assistantWidget/utils/EventBus.ts
+export class EventBus {
+  emit(event: string, data?: any): void
+  on(event: string, handler: Function): void
+  off(event: string, handler: Function): void
+}
+```
+
+#### 2.2 Define Event Schema
+```typescript
+// Events emitted by ChatWidget:
+// - 'message:sent' - User sent a message
+// - 'message:received' - Agent response received
+// - 'view:changed' - View transition occurred
+// - 'error:occurred' - Error needs handling
+// - 'loading:start' - Loading state started
+// - 'loading:end' - Loading state ended
+```
+
+### Phase 3: Extract Utilities and Improve Abstractions (Week 3)
+
+#### 3.1 Create LoadingManager
+**Target**: Centralize loading state management
+```typescript
+// assistantWidget/managers/LoadingManager.ts
+export class LoadingManager {
+  show(container: HTMLElement): void
+  hide(): void
+  private createLoadingElement(): HTMLElement
+}
+```
+
+#### 3.2 Create ErrorHandler
+**Target**: Centralized error handling and user feedback
+```typescript
+// assistantWidget/handlers/ErrorHandler.ts
+export class ErrorHandler {
+  handleApiError(error: Error): void
+  handleValidationError(message: string): void
+  showUserFriendlyError(content: string): void
+}
+```
+
+#### 3.3 Extract MessageRenderer Utilities
+**Target**: Clean up message rendering logic
+```typescript
+// assistantWidget/utils/MessageUtils.ts
+export class MessageUtils {
+  renderAttachments(attachments: FileAttachment[]): string
+  getAttachmentIcon(fileType: string): string
+  formatFileSize(bytes: number): string
+  escapeHtml(text: string): string
+}
+```
+
+## Target Architecture
+
+### New ChatWidget Structure (~300 lines)
+```typescript
+export class ChatWidget {
+  // Core dependencies (injected)
+  private apiService: ApiService;
+  private messageService: MessageService;
+  private agentService: AgentService;
+  private eventBus: EventBus;
+  private loadingManager: LoadingManager;
+  private errorHandler: ErrorHandler;
+  
+  // Widget lifecycle (~50 lines)
+  constructor() { /* Dependency injection */ }
+  private initializeServices(): void
+  public destroy(): void
+  
+  // Event coordination (~100 lines)
+  private setupEventListeners(): void
+  private handleUserInput(message: string): void
+  private handleApiResponse(data: any): void
+  private handleViewTransition(view: string): void
+  
+  // Public API (~50 lines)
+  public getCurrentView(): string
+  public updateTheme(theme: Partial<ChatTheme>): void
+  public startNewConversation(): void
+  
+  // UI coordination (~100 lines)
+  private updateUI(): void
+  private handleStateChange(state: ChatState): void
+}
+```
+
+### Service Layer Benefits
+1. **Testability**: Each service can be unit tested independently
+2. **Reusability**: Services can be used by other components
+3. **Maintainability**: Single responsibility for each service
+4. **Extensibility**: Easy to add new features without modifying core widget
+
+### Event-Driven Benefits
+1. **Loose Coupling**: Components communicate through events
+2. **Extensibility**: New listeners can be added without modifying emitters
+3. **Debugging**: Centralized event logging and monitoring
+4. **Performance**: Async event handling prevents blocking
+
+## Implementation Timeline
+
+### Week 1: Service Extraction
+- [ ] Create ApiService and move all fetch logic
+- [ ] Create MessageService and move validation/processing
+- [ ] Create AgentService and move capability handling
+- [ ] Update ChatWidget to use services
+- [ ] Reduce ChatWidget to ~600 lines
+
+### Week 2: Event System
+- [ ] Implement EventBus utility
+- [ ] Convert direct method calls to events
+- [ ] Update ViewManager to emit/listen to events
+- [ ] Reduce ChatWidget to ~450 lines
+
+### Week 3: Final Cleanup
+- [ ] Extract LoadingManager and ErrorHandler
+- [ ] Create MessageUtils for rendering helpers
+- [ ] Final ChatWidget cleanup and documentation
+- [ ] Target achieved: ~300 lines
+
+## Success Metrics
+
+### Code Quality
+- [ ] ChatWidget reduced from 1076 to ~300 lines
+- [ ] Maximum method length: 25 lines
+- [ ] Single Responsibility Principle compliance
+- [ ] Test coverage > 80% for new services
+
+### Maintainability
+- [ ] Clear separation of concerns
+- [ ] Consistent error handling patterns
+- [ ] Documented event schema
+- [ ] TypeScript strict mode compliance
+
+### Performance
+- [ ] No performance regression
+- [ ] Faster initial load (lazy service loading)
+- [ ] Better memory management (proper cleanup)
+
+This refactoring plan transforms the monolithic ChatWidgetRefactored.ts into a clean, maintainable, event-driven architecture while preserving all existing functionality.

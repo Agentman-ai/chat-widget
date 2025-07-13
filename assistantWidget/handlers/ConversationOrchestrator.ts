@@ -1,0 +1,477 @@
+// ConversationOrchestrator.ts - High-level conversation flow management
+import type { ChatConfig, ChatState, Message } from '../types/types';
+import type { StateManager } from '../StateManager';
+import type { ViewManager } from '../components/ViewManager';
+import type { PersistenceManager } from '../PersistenceManager';
+import type { EventBus } from '../utils/EventBus';
+import type { MessageHandler } from './MessageHandler';
+import type { FileHandler } from './FileHandler';
+import type { ErrorHandler } from './ErrorHandler';
+import { Logger } from '../utils/logger';
+import { createEvent } from '../types/events';
+
+/**
+ * ConversationOrchestrator - High-level conversation flow management
+ * 
+ * This orchestrator manages:
+ * - Complete conversation lifecycles
+ * - Multi-turn conversation flows
+ * - Conversation state transitions
+ * - Integration between message, file, and view handling
+ * - Business logic for conversation management
+ */
+export class ConversationOrchestrator {
+  private logger: Logger;
+  private currentConversationId: string | null = null;
+  private conversationStartTime: number | null = null;
+  private messageCount: number = 0;
+
+  constructor(
+    private config: ChatConfig,
+    private stateManager: StateManager,
+    private viewManager: ViewManager,
+    private messageHandler: MessageHandler,
+    private fileHandler: FileHandler | null,
+    private errorHandler: ErrorHandler,
+    private eventBus: EventBus,
+    private persistenceManager: PersistenceManager | null,
+    debug: boolean = false
+  ) {
+    this.logger = new Logger(debug, '[ConversationOrchestrator]');
+    this.setupEventListeners();
+  }
+
+  /**
+   * Start a new conversation
+   */
+  public async startNewConversation(
+    conversationId?: string,
+    initialMessage?: string
+  ): Promise<void> {
+    this.logger.debug('Starting new conversation', { conversationId, hasInitialMessage: !!initialMessage });
+
+    // Generate conversation ID if not provided
+    this.currentConversationId = conversationId || this.generateConversationId();
+    this.conversationStartTime = Date.now();
+    this.messageCount = 0;
+
+    // Update state
+    const state = this.stateManager.getState();
+    state.hasStartedConversation = !!initialMessage;
+    state.currentView = initialMessage ? 'conversation' : 'welcome';
+    this.stateManager.updateState(state);
+
+    // Transition to appropriate view
+    if (initialMessage) {
+      await this.viewManager.transitionToConversation();
+      
+      // Send initial message
+      await this.sendMessage(initialMessage);
+    } else {
+      await this.viewManager.transitionToWelcome();
+    }
+
+    // Emit conversation started event
+    this.eventBus.emit('conversation:started', createEvent('conversation:started', {
+      conversationId: this.currentConversationId,
+      hasInitialMessage: !!initialMessage,
+      source: 'ConversationOrchestrator'
+    }));
+  }
+
+  /**
+   * Send a message in the current conversation
+   */
+  public async sendMessage(
+    message: string,
+    attachments?: string[]
+  ): Promise<void> {
+    if (!this.currentConversationId) {
+      throw new Error('No active conversation');
+    }
+
+    this.logger.debug('Sending message', { 
+      conversationId: this.currentConversationId, 
+      messageLength: message.length,
+      hasAttachments: !!attachments?.length
+    });
+
+    try {
+      // Ensure we're in conversation view
+      if (this.viewManager.getCurrentView() === 'welcome') {
+        await this.viewManager.transitionToConversation();
+        
+        // Mark conversation as started
+        const state = this.stateManager.getState();
+        state.hasStartedConversation = true;
+        state.currentView = 'conversation';
+        this.stateManager.updateState(state);
+      }
+
+      // Check for file uploads in progress
+      if (this.fileHandler?.isUploading()) {
+        this.logger.warn('Files are still uploading, waiting...');
+        // Could implement a wait or show user feedback
+      }
+
+      // Send message via MessageHandler
+      await this.messageHandler.sendMessage(
+        message,
+        this.currentConversationId,
+        {
+          agentToken: this.config.agentToken,
+          clientMetadata: this.gatherClientMetadata()
+        }
+      );
+
+      // Increment message count
+      this.messageCount++;
+
+      // Auto-save conversation
+      this.autoSaveConversation();
+
+      // Emit message sent in conversation event
+      this.eventBus.emit('conversation:message_sent', createEvent('conversation:message_sent', {
+        conversationId: this.currentConversationId,
+        messageCount: this.messageCount,
+        hasAttachments: !!attachments?.length,
+        source: 'ConversationOrchestrator'
+      }));
+
+    } catch (error) {
+      this.logger.error('Failed to send message', error);
+      
+      // Handle error through ErrorHandler
+      const errorMessage = this.errorHandler.handleApplicationError(
+        'sending message',
+        error instanceof Error ? error : new Error(String(error))
+      );
+      
+      // Add error message to view
+      this.messageHandler.addMessageToView(errorMessage);
+      
+      // Emit conversation error event
+      this.eventBus.emit('conversation:error', createEvent('conversation:error', {
+        conversationId: this.currentConversationId,
+        error: error instanceof Error ? error : new Error(String(error)),
+        operation: 'send_message',
+        source: 'ConversationOrchestrator'
+      }));
+      
+      throw error;
+    }
+  }
+
+  /**
+   * Handle prompt click from welcome screen
+   */
+  public async handlePromptClick(prompt: string): Promise<void> {
+    this.logger.debug('Handling prompt click', { prompt: prompt.substring(0, 50) + '...' });
+
+    // Start new conversation if needed
+    if (!this.currentConversationId) {
+      await this.startNewConversation();
+    }
+
+    // Send the prompt as a message
+    await this.sendMessage(prompt);
+  }
+
+  /**
+   * Load an existing conversation
+   */
+  public async loadConversation(conversationId: string): Promise<void> {
+    this.logger.debug('Loading conversation', { conversationId });
+
+    if (!this.persistenceManager) {
+      throw new Error('Persistence not enabled');
+    }
+
+    try {
+      // Save current conversation if it has changes
+      if (this.currentConversationId && this.messageCount > 0) {
+        this.persistenceManager.saveMessages();
+      }
+
+      // Switch to target conversation
+      this.persistenceManager.switchTo(conversationId);
+      
+      // Load messages
+      const messages = this.persistenceManager.loadMessages();
+      
+      // Update state
+      this.currentConversationId = conversationId;
+      this.messageCount = messages.length;
+      this.conversationStartTime = messages.length > 0 && typeof messages[0].timestamp === 'number' ? messages[0].timestamp : Date.now();
+
+      // Update UI
+      if (messages.length > 0) {
+        // Transition to conversation view and load messages
+        await this.viewManager.transitionToConversation();
+        this.messageHandler.loadMessages(messages);
+        
+        // Update state
+        const state = this.stateManager.getState();
+        state.hasStartedConversation = true;
+        state.currentView = 'conversation';
+        state.messages = messages;
+        this.stateManager.updateState(state);
+      } else {
+        // Empty conversation - go to welcome screen
+        await this.viewManager.transitionToWelcome();
+        
+        const state = this.stateManager.getState();
+        state.hasStartedConversation = false;
+        state.currentView = 'welcome';
+        state.messages = [];
+        this.stateManager.updateState(state);
+      }
+
+      // Emit conversation loaded event
+      this.eventBus.emit('conversation:loaded', createEvent('conversation:loaded', {
+        conversationId,
+        messages,
+        source: 'ConversationOrchestrator'
+      }));
+
+    } catch (error) {
+      this.logger.error('Failed to load conversation', error);
+      
+      const errorMessage = this.errorHandler.handleStorageError(
+        'load',
+        error instanceof Error ? error : new Error(String(error)),
+        conversationId
+      );
+      
+      this.messageHandler.addMessageToView(errorMessage);
+      throw error;
+    }
+  }
+
+  /**
+   * Delete a conversation
+   */
+  public async deleteConversation(conversationId: string): Promise<void> {
+    this.logger.debug('Deleting conversation', { conversationId });
+
+    if (!this.persistenceManager) {
+      throw new Error('Persistence not enabled');
+    }
+
+    try {
+      // Delete the conversation
+      this.persistenceManager.delete(conversationId);
+      
+      // If we deleted the current conversation, start a new one
+      if (conversationId === this.currentConversationId) {
+        await this.startNewConversation();
+      }
+
+      // Emit conversation deleted event
+      this.eventBus.emit('conversation:deleted', createEvent('conversation:deleted', {
+        conversationId,
+        source: 'ConversationOrchestrator'
+      }));
+
+    } catch (error) {
+      this.logger.error('Failed to delete conversation', error);
+      
+      const errorMessage = this.errorHandler.handleStorageError(
+        'delete',
+        error instanceof Error ? error : new Error(String(error)),
+        conversationId
+      );
+      
+      this.messageHandler.addMessageToView(errorMessage);
+      throw error;
+    }
+  }
+
+  /**
+   * Clear current conversation and return to welcome screen
+   */
+  public async clearConversation(): Promise<void> {
+    this.logger.debug('Clearing current conversation');
+
+    // Clear attachments
+    this.fileHandler?.clearAllAttachments();
+
+    // Clear messages
+    this.messageHandler.clearMessages();
+
+    // Reset state
+    const state = this.stateManager.getState();
+    state.messages = [];
+    state.hasStartedConversation = false;
+    state.currentView = 'welcome';
+    this.stateManager.updateState(state);
+
+    // Transition to welcome screen
+    await this.viewManager.transitionToWelcome();
+
+    // Reset conversation tracking
+    const oldConversationId = this.currentConversationId;
+    this.currentConversationId = null;
+    this.conversationStartTime = null;
+    this.messageCount = 0;
+
+    // Emit conversation cleared event
+    if (oldConversationId) {
+      this.eventBus.emit('conversation:cleared', createEvent('conversation:cleared', {
+        conversationId: oldConversationId,
+        source: 'ConversationOrchestrator'
+      }));
+    }
+  }
+
+  /**
+   * Get current conversation info
+   */
+  public getConversationInfo(): {
+    id: string | null;
+    messageCount: number;
+    startTime: number | null;
+    duration: number | null;
+  } {
+    const duration = this.conversationStartTime 
+      ? Date.now() - this.conversationStartTime 
+      : null;
+
+    return {
+      id: this.currentConversationId,
+      messageCount: this.messageCount,
+      startTime: this.conversationStartTime,
+      duration
+    };
+  }
+
+  /**
+   * Check if there's an active conversation
+   */
+  public hasActiveConversation(): boolean {
+    return !!this.currentConversationId && this.messageCount > 0;
+  }
+
+  /**
+   * Setup event listeners
+   */
+  private setupEventListeners(): void {
+    // Listen for message sent events to update count
+    this.eventBus.on('message:sent', () => {
+      // MessageHandler already handles message adding, we just track count
+      this.autoSaveConversation();
+    });
+
+    // Listen for conversation switching requests
+    this.eventBus.on('conversation:switch_requested', (event) => {
+      this.loadConversation(event.conversationId);
+    });
+
+    // Listen for conversation deletion requests
+    this.eventBus.on('conversation:delete_requested', (event) => {
+      this.deleteConversation(event.conversationId);
+    });
+
+    // Listen for new conversation requests
+    this.eventBus.on('conversation:new_requested', () => {
+      this.startNewConversation();
+    });
+  }
+
+  /**
+   * Auto-save conversation if persistence is enabled
+   */
+  private autoSaveConversation(): void {
+    if (this.persistenceManager && this.currentConversationId) {
+      const result = this.persistenceManager.saveMessages();
+      if (result.success) {
+        this.logger.debug('Conversation auto-saved');
+      } else {
+        this.logger.warn('Failed to auto-save conversation:', result.error);
+      }
+    }
+  }
+
+  /**
+   * Gather client metadata for API calls
+   */
+  private gatherClientMetadata(): any {
+    return {
+      conversationId: this.currentConversationId,
+      messageCount: this.messageCount,
+      sessionDuration: this.conversationStartTime 
+        ? Date.now() - this.conversationStartTime 
+        : 0,
+      currentView: this.viewManager.getCurrentView(),
+      userAgent: navigator.userAgent,
+      timestamp: Date.now()
+    };
+  }
+
+  /**
+   * Generate a unique conversation ID
+   */
+  private generateConversationId(): string {
+    return `conv_${Date.now()}_${Math.random().toString(36).substring(2, 11)}`;
+  }
+
+  /**
+   * Clean up resources
+   */
+  public destroy(): void {
+    this.logger.debug('Destroying ConversationOrchestrator');
+    
+    // Auto-save current conversation
+    this.autoSaveConversation();
+    
+    // Reset state
+    this.currentConversationId = null;
+    this.conversationStartTime = null;
+    this.messageCount = 0;
+  }
+}
+
+// Extend event registry with conversation orchestrator events
+declare module '../types/events' {
+  interface EventTypeRegistry {
+    'conversation:started': {
+      conversationId: string;
+      hasInitialMessage: boolean;
+      source: string;
+      timestamp: number;
+    };
+    'conversation:message_sent': {
+      conversationId: string;
+      messageCount: number;
+      hasAttachments: boolean;
+      source: string;
+      timestamp: number;
+    };
+    'conversation:error': {
+      conversationId: string;
+      error: Error;
+      operation: string;
+      source: string;
+      timestamp: number;
+    };
+    'conversation:deleted': {
+      conversationId: string;
+      source: string;
+      timestamp: number;
+    };
+    'conversation:switch_requested': {
+      conversationId: string;
+      source: string;
+      timestamp: number;
+    };
+    'conversation:delete_requested': {
+      conversationId: string;
+      source: string;
+      timestamp: number;
+    };
+    'conversation:new_requested': {
+      source: string;
+      timestamp: number;
+    };
+  }
+}

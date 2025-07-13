@@ -26,6 +26,7 @@ export const baseStyles = `
     box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
     flex: 1;
     z-index: 999999;
+    position: relative;
   }
 
   .am-chat-header {
@@ -186,14 +187,60 @@ export const baseStyles = `
     fill: #374151 !important;
   }
 
+  /* Header button labels */
+  .am-button-label {
+    margin-left: 4px;
+    font-size: 14px;
+    font-weight: normal;
+  }
+
+  .am-header-button-with-text {
+    gap: 4px;
+  }
+
 
   .am-chat-messages {
     flex: 1 1 auto;
     overflow-y: auto;
+    overflow-x: hidden;
     padding: 1rem;
     display: flex;
     flex-direction: column;
     gap: 1rem;
+    min-height: 0;
+    height: 0;
+  }
+
+  /* Style scrollbar to be always visible when content is scrollable */
+  .am-chat-messages::-webkit-scrollbar {
+    width: 6px;
+  }
+
+  .am-chat-messages::-webkit-scrollbar-track {
+    background: rgba(0, 0, 0, 0.05);
+    border-radius: 3px;
+  }
+
+  .am-chat-messages::-webkit-scrollbar-thumb {
+    background: rgba(0, 0, 0, 0.2);
+    border-radius: 3px;
+  }
+
+  .am-chat-messages::-webkit-scrollbar-thumb:hover {
+    background: rgba(0, 0, 0, 0.3);
+  }
+
+  /* Firefox scrollbar styling */
+  .am-chat-messages {
+    scrollbar-width: thin;
+    scrollbar-color: rgba(0, 0, 0, 0.2) rgba(0, 0, 0, 0.05);
+  }
+
+  .am-conversation-view {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    overflow: hidden;
   }
 
   /* Stage-2 conversation drawer */

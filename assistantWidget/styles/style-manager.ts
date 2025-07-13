@@ -10,6 +10,7 @@ import { promptStyles } from './prompts';
 import { attachmentStyles } from './attachments';
 import { conversationStyles } from './conversations';
 import { notificationStyles } from './notifications';
+import { welcomeStyles } from './welcome';
 
 export class StyleManager {
   private styleElement: HTMLStyleElement | null = null;
@@ -27,6 +28,7 @@ export class StyleManager {
       attachmentStyles,
       conversationStyles,
       notificationStyles,
+      welcomeStyles,
       variantStyles[this.variant],
       animationStyles,
       responsiveStyles
@@ -49,5 +51,18 @@ export class StyleManager {
   public cleanup(): void {
     this.styleElement?.remove();
     this.styleElement = null;
+  }
+
+  public updateTheme(theme: Record<string, string>): void {
+    // Update CSS custom properties in the style element
+    if (this.styleElement) {
+      // This would require updating the CSS with new theme values
+      // For now, we'll just re-inject styles
+      this.styleElement.textContent = this.styles;
+    }
+  }
+
+  public removeStyles(): void {
+    this.cleanup();
   }
 }

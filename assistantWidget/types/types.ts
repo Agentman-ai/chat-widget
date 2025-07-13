@@ -134,6 +134,11 @@ export interface ChatState {
   error?: string;
   pendingAttachments: FileAttachment[];
   isUploadingFiles: boolean;
+  
+  // New view management properties
+  currentView: 'welcome' | 'conversation';
+  hasStartedConversation: boolean;
+  isTransitioning?: boolean;
 }
 
 export interface APIResponse {

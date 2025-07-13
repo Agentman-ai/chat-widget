@@ -14,7 +14,9 @@ export class StateManager {
       messages: [],
       error: undefined,
       pendingAttachments: [],
-      isUploadingFiles: false
+      isUploadingFiles: false,
+      currentView: 'welcome',
+      hasStartedConversation: false
     };
     this.listeners = new Set();
   }
@@ -157,5 +159,25 @@ export class StateManager {
 
   public setUploadingFiles(uploading: boolean): void {
     this.setState({ isUploadingFiles: uploading });
+  }
+
+  // New methods for welcome screen functionality
+  public getInitialState(): ChatState {
+    return {
+      isOpen: false,
+      isExpanded: false,
+      isInitialized: false,
+      isSending: false,
+      messages: [],
+      error: undefined,
+      pendingAttachments: [],
+      isUploadingFiles: false,
+      currentView: 'welcome',
+      hasStartedConversation: false
+    };
+  }
+
+  public updateState(newState: Partial<ChatState>): void {
+    this.setState(newState);
   }
 }
