@@ -292,10 +292,18 @@ export class InputComponent {
   private handleInputChange(e: Event): void {
     const input = e.target as HTMLTextAreaElement;
     
-    // Auto-resize textarea
-    input.style.height = 'auto';
-    const newHeight = Math.max(36, Math.min(input.scrollHeight, 180));
-    input.style.height = `${newHeight}px`;
+    // Only auto-resize if there's actual content or if content has changed
+    const hasContent = input.value.trim().length > 0;
+    
+    if (hasContent) {
+      // Auto-resize textarea when there's content
+      input.style.height = 'auto';
+      const newHeight = Math.max(48, Math.min(input.scrollHeight, 180));
+      input.style.height = `${newHeight}px`;
+    } else {
+      // Reset to initial height when empty
+      input.style.height = '48px';
+    }
     
     // Update send button state
     this.updateSendButtonState();
