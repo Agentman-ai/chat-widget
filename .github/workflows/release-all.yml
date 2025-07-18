@@ -80,7 +80,7 @@ jobs:
           echo "## Component Status" >> $GITHUB_STEP_SUMMARY
           
           # NPM & WordPress status
-          if [ "${{ contains(fromJSON('[\"all\", \"npm-only\", \"wordpress-only\", \"npm-and-wordpress\"]'), inputs.components) }}" = "true" ]; then
+          if [ "${{ contains(fromJSON('["all", "npm-only", "wordpress-only", "npm-and-wordpress"]'), inputs.components) }}" = "true" ]; then
             if [ "${{ needs.trigger-npm-wordpress.result }}" = "success" ]; then
               echo "- ✅ NPM & WordPress: Released successfully" >> $GITHUB_STEP_SUMMARY
             elif [ "${{ needs.trigger-npm-wordpress.result }}" = "skipped" ]; then
@@ -91,7 +91,7 @@ jobs:
           fi
           
           # Shopify status
-          if [ "${{ contains(fromJSON('[\"all\", \"shopify-only\"]'), inputs.components) }}" = "true" ]; then
+          if [ "${{ contains(fromJSON('["all", "shopify-only"]'), inputs.components) }}" = "true" ]; then
             if [ "${{ needs.trigger-shopify.result }}" = "success" ]; then
               echo "- ✅ Shopify: Released successfully" >> $GITHUB_STEP_SUMMARY
             elif [ "${{ needs.trigger-shopify.result }}" = "skipped" ]; then
