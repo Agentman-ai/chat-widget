@@ -17,6 +17,18 @@ on:
         required: false
         default: false
         type: boolean
+  workflow_call:
+    inputs:
+      release_type:
+        description: 'Release type'
+        required: true
+        default: 'patch'
+        type: string
+      dry_run:
+        description: 'Dry run (skip publishing)'
+        required: false
+        default: false
+        type: boolean
 
 permissions:
   contents: write
