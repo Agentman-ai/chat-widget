@@ -304,6 +304,60 @@
                     </div>
 
                     <div class="form-card">
+                        <h3>Welcome Screen</h3>
+                        <div class="form-group">
+                            <label>
+                                <input type="checkbox" id="showWelcomeScreen" checked>
+                                Show Welcome Screen
+                            </label>
+                            <div class="form-help">
+                                <p>Display a clean, centered interface when users first open the chat</p>
+                            </div>
+                        </div>
+
+                        <div class="form-group">
+                            <label>
+                                <input type="checkbox" id="showWelcomeMinimize" checked>
+                                Show Minimize Button
+                            </label>
+                            <div class="form-help">
+                                <p>Add a close/minimize button to the welcome screen</p>
+                            </div>
+                        </div>
+
+                        <div class="form-group">
+                            <label>
+                                <input type="checkbox" id="floatingPromptsEnabled" checked>
+                                Enable Floating Prompts
+                            </label>
+                            <div class="form-help">
+                                <p>Show prompt bubbles when the widget is closed (corner variant only)</p>
+                            </div>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="floatingPromptsDelay">Floating Prompts Delay</label>
+                            <div class="input-group">
+                                <input type="number" id="floatingPromptsDelay" value="5000" min="0" max="60000" step="1000">
+                                <span>milliseconds</span>
+                            </div>
+                            <div class="form-help">
+                                <p>Time to wait before showing floating prompts (5000ms = 5 seconds)</p>
+                            </div>
+                        </div>
+
+                        <div class="form-group">
+                            <label>
+                                <input type="checkbox" id="enableAttachments" checked>
+                                Enable File Attachments
+                            </label>
+                            <div class="form-help">
+                                <p>Allow customers to attach files (images, documents, etc.)</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="form-card">
                         <h3>Shopify Integration</h3>
                         <div class="form-group">
                             <label>

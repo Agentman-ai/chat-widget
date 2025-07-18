@@ -3,7 +3,7 @@ Contributors: Agentman.ai
 Tags: chatbot, agent, sales, support, assistant
 Requires at least: 5.6
 Tested up to: 6.5
-Stable tag: 0.25.0
+Stable tag: 0.26.0
 Requires PHP: 7.2
 License: MIT
 License URI: https://opensource.org/licenses/MIT
@@ -15,10 +15,12 @@ Agentman AI Assistant provides a modern, customizable chat interface for your Wo
 
 **Features:**
 
+* **NEW: Welcome Screen** - Clean, centered interface when users first open the chat
+* **NEW: Floating Prompts** - Contextual prompt bubbles that appear when widget is closed
 * Fully customizable appearance to match your brand
 * Independent toggle button styling to prevent theme conflicts
 * Built-in conversation persistence across page reloads and tabs
-* File attachment support (images, documents, etc.)
+* File attachment support (images, documents, etc.) - now enabled by default
 * Multiple conversation management with history
 * Responsive design for all devices (mobile, tablet, desktop)
 * Easy configuration through WordPress admin
@@ -112,6 +114,17 @@ We recommend that website owners using this plugin update their privacy policies
 4. Mobile view of the chat widget
 
 == Changelog ==
+
+= 0.26.0 =
+* Added welcome screen with centered input interface when users first open the chat
+* Added floating prompts that appear after a configurable delay when widget is closed
+* Added minimize/close button to welcome screen for better user control
+* File attachments now enabled by default for better user experience
+* Added WordPress admin settings for welcome screen configuration
+* Added settings for floating prompts delay (default: 5 seconds)
+* Improved conversation loading and message visibility
+* Enhanced state management with ViewManager architecture
+* Fixed conversation persistence and header visibility issues
 
 = 0.25.0 =
 * Fixed widget title configuration - now properly uses configured title instead of hardcoded text

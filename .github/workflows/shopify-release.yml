@@ -22,6 +22,13 @@ on:
         required: false
         default: false
         type: boolean
+      deploy_version:
+        description: 'Deploy to version (v2 only - v1 is frozen)'
+        required: true
+        default: 'v2'
+        type: choice
+        options:
+          - v2
 
 permissions:
   contents: write
@@ -184,7 +191,19 @@ jobs:
             exit 1
           fi
           
-          echo "✅ Shopify widget v$VERSION built successfully"
+          # Create v2 directory structure (v1 is frozen and should not be modified)
+          mkdir -p dist/cdn/shopify/v2
+          cp dist/cdn/shopify/v1/widget.js dist/cdn/shopify/v2/widget.js
+          cp dist/cdn/shopify/v1/widget.min.js dist/cdn/shopify/v2/widget.min.js
+          
+          # Add safety check to prevent v1 overwrite
+          DEPLOY_VERSION="${{ inputs.deploy_version }}"
+          if [ "$DEPLOY_VERSION" != "v2" ]; then
+            echo "❌ Error: Only v2 deployments are allowed. v1 is frozen."
+            exit 1
+          fi
+          
+          echo "✅ Shopify widget v$VERSION built successfully for v2"
 
       - name: Test widget locally
         run: |
@@ -196,8 +215,9 @@ jobs:
           sleep 2
           
           # Test widget availability
-          if curl -f -s http://localhost:8000/cdn/shopify/v1/widget.js > /dev/null; then
-            echo "✅ Widget accessible via local server"
+          DEPLOY_VERSION="${{ inputs.deploy_version }}"
+          if curl -f -s http://localhost:8000/cdn/shopify/${DEPLOY_VERSION}/widget.js > /dev/null; then
+            echo "✅ Widget accessible via local server (${DEPLOY_VERSION})"
           else
             echo "❌ Widget not accessible"
             kill $SERVER_PID
@@ -206,8 +226,8 @@ jobs:
           
           # Check version in widget
           VERSION="${{ needs.prepare-shopify-release.outputs.new_version }}"
-          if curl -s http://localhost:8000/cdn/shopify/v1/widget.js | grep -q "Version: $VERSION"; then
-            echo "✅ Version $VERSION found in widget"
+          if curl -s http://localhost:8000/cdn/shopify/${DEPLOY_VERSION}/widget.js | grep -q "Version: $VERSION"; then
+            echo "✅ Version $VERSION found in widget (${DEPLOY_VERSION})"
           else
             echo "⚠️ Version mismatch in widget"
           fi
@@ -252,12 +272,21 @@ jobs:
           cd shopify
           VERSION="${{ needs.prepare-shopify-release.outputs.new_version }}"
           BUCKET="gs://chatwidget-shopify-storage-for-cdn"
+          DEPLOY_VERSION="${{ inputs.deploy_version }}"
           
-          echo "🚀 Deploying Shopify widget v$VERSION to GCS..."
+          # Safety check - only allow v2 deployments
+          if [ "$DEPLOY_VERSION" != "v2" ]; then
+            echo "❌ Error: Only v2 deployments are allowed. v1 is frozen to preserve the old version."
+            exit 1
+          fi
           
-          # Deploy widget files
-          echo "📦 Uploading widget files..."
-          gsutil -m cp -r dist/cdn/* $BUCKET/
+          echo "🚀 Deploying Shopify widget v$VERSION to GCS (v2 only)..."
+          
+          # Deploy widget files - only v2 directory
+          echo "📦 Uploading widget files to v2..."
+          gsutil -m cp -r dist/cdn/shopify/v2/* $BUCKET/shopify/v2/
+          gsutil -m cp -r dist/cdn/core/* $BUCKET/core/
+          gsutil -m cp -r dist/cdn/shopify/config-tool/* $BUCKET/shopify/config-tool/
           
           # Update version.json
           echo "📝 Updating version.json..."
@@ -266,7 +295,8 @@ jobs:
           
           # Set cache headers
           echo "⚡ Setting cache headers..."
-          gsutil -m setmeta -h "Cache-Control:public, max-age=300" "$BUCKET/shopify/v1/widget.js"
+          DEPLOY_VERSION="${{ inputs.deploy_version }}"
+          gsutil -m setmeta -h "Cache-Control:public, max-age=300" "$BUCKET/shopify/${DEPLOY_VERSION}/widget.js"
           gsutil -m setmeta -h "Cache-Control:public, max-age=3600" "$BUCKET/core/chat-widget.js"
           
           echo "✅ Deployment completed successfully!"
@@ -282,13 +312,14 @@ jobs:
       - name: Verify deployment
         run: |
           VERSION="${{ needs.prepare-shopify-release.outputs.new_version }}"
-          CDN_URL="https://storage.googleapis.com/chatwidget-shopify-storage-for-cdn/shopify/v1/widget.js"
+          DEPLOY_VERSION="${{ inputs.deploy_version }}"
+          CDN_URL="https://storage.googleapis.com/chatwidget-shopify-storage-for-cdn/shopify/${DEPLOY_VERSION}/widget.js"
           
-          echo "🔍 Verifying deployment..."
+          echo "🔍 Verifying deployment to ${DEPLOY_VERSION}..."
           
           # Check widget availability
           if curl -f -s "$CDN_URL" > /dev/null; then
-            echo "✅ Widget accessible at CDN"
+            echo "✅ Widget accessible at CDN (${DEPLOY_VERSION})"
           else
             echo "❌ Widget not accessible at CDN"
             exit 1
@@ -296,7 +327,7 @@ jobs:
           
           # Check version
           if curl -s "$CDN_URL" | grep -q "Version: $VERSION"; then
-            echo "✅ Version $VERSION deployed successfully"
+            echo "✅ Version $VERSION deployed successfully to ${DEPLOY_VERSION}"
           else
             echo "❌ Version mismatch in deployed widget"
             exit 1
@@ -347,12 +378,14 @@ jobs:
           VERSION="${{ needs.prepare-shopify-release.outputs.new_version }}"
           OLD_VERSION="${{ needs.prepare-shopify-release.outputs.old_version }}"
           
+          DEPLOY_VERSION="${{ inputs.deploy_version }}"
           cat > release_notes.md << EOF
           # Shopify Widget v$VERSION
           
           ## What's Changed
           - Updated from v$OLD_VERSION to v$VERSION
           - Release type: ${{ inputs.release_type }}
+          - Deployed to: **$DEPLOY_VERSION**
           
           ## Installation
           
@@ -360,19 +393,21 @@ jobs:
           
           \`\`\`html
           <script async 
-              src="https://storage.googleapis.com/chatwidget-shopify-storage-for-cdn/shopify/v1/widget.js"
+              src="https://storage.googleapis.com/chatwidget-shopify-storage-for-cdn/shopify/$DEPLOY_VERSION/widget.js"
               data-agent-token="YOUR_AGENT_TOKEN">
           </script>
           \`\`\`
           
           ## CDN URLs
-          - Widget: https://storage.googleapis.com/chatwidget-shopify-storage-for-cdn/shopify/v1/widget.js
+          - Widget ($DEPLOY_VERSION): https://storage.googleapis.com/chatwidget-shopify-storage-for-cdn/shopify/$DEPLOY_VERSION/widget.js
+          - Widget (v1): https://storage.googleapis.com/chatwidget-shopify-storage-for-cdn/shopify/v1/widget.js
           - Core: https://storage.googleapis.com/chatwidget-shopify-storage-for-cdn/core/chat-widget.js
           - Config Tool: https://storage.googleapis.com/chatwidget-shopify-storage-for-cdn/shopify/config-tool/index.html
           
           ## Deployment Status
           - Deployed to GCP: ${{ inputs.deploy_to_gcp && inputs.dry_run == false && '✅ Yes' || '❌ No' }}
           - Dry Run: ${{ inputs.dry_run && '✅ Yes' || '❌ No' }}
+          - Version Path: **$DEPLOY_VERSION**
           EOF
           
           # Store release notes
@@ -416,7 +451,8 @@ jobs:
             echo "- ✅ Git Tag: shopify-v$VERSION" >> $GITHUB_STEP_SUMMARY
             
             if [ "${{ inputs.deploy_to_gcp }}" = "true" ]; then
-              echo "- ✅ CDN Widget: [View](https://storage.googleapis.com/chatwidget-shopify-storage-for-cdn/shopify/v1/widget.js)" >> $GITHUB_STEP_SUMMARY
+              DEPLOY_VERSION="${{ inputs.deploy_version }}"
+              echo "- ✅ CDN Widget ($DEPLOY_VERSION): [View](https://storage.googleapis.com/chatwidget-shopify-storage-for-cdn/shopify/$DEPLOY_VERSION/widget.js)" >> $GITHUB_STEP_SUMMARY
               echo "- ✅ Version JSON: [View](https://storage.googleapis.com/chatwidget-shopify-storage-for-cdn/shopify/version.json)" >> $GITHUB_STEP_SUMMARY
               echo "- ✅ Config Tool: [View](https://storage.googleapis.com/chatwidget-shopify-storage-for-cdn/shopify/config-tool/index.html)" >> $GITHUB_STEP_SUMMARY
             fi
@@ -424,7 +460,7 @@ jobs:
             echo "" >> $GITHUB_STEP_SUMMARY
             echo "## Installation Script" >> $GITHUB_STEP_SUMMARY
             echo '```html' >> $GITHUB_STEP_SUMMARY
-            echo '<script async src="https://storage.googleapis.com/chatwidget-shopify-storage-for-cdn/shopify/v1/widget.js" data-agent-token="YOUR_TOKEN"></script>' >> $GITHUB_STEP_SUMMARY
+            echo "<script async src=\"https://storage.googleapis.com/chatwidget-shopify-storage-for-cdn/shopify/${{ inputs.deploy_version }}/widget.js\" data-agent-token=\"YOUR_TOKEN\"></script>" >> $GITHUB_STEP_SUMMARY
             echo '```' >> $GITHUB_STEP_SUMMARY
           else
             echo "## Dry Run Complete" >> $GITHUB_STEP_SUMMARY

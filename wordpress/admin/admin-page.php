@@ -286,6 +286,60 @@
                             <p class="description"><?php _e('Quick prompt buttons displayed above the toggle button. These will be shown to users before they start a conversation. Leave empty to disable a prompt.', 'agentman-chat-widget'); ?></p>
                         </td>
                     </tr>
+                    
+                    <!-- Welcome Screen Settings -->
+                    <tr>
+                        <th scope="row" colspan="2">
+                            <h3><?php _e('Welcome Screen Settings', 'agentman-chat-widget'); ?></h3>
+                            <p class="description"><?php _e('Configure the new welcome screen that appears when users first open the chat widget.', 'agentman-chat-widget'); ?></p>
+                        </th>
+                    </tr>
+                    <tr>
+                        <th scope="row">
+                            <label for="agentman_chat_widget_options[show_welcome_screen]"><?php _e('Show Welcome Screen', 'agentman-chat-widget'); ?></label>
+                        </th>
+                        <td>
+                            <input type="checkbox" id="agentman_chat_widget_options[show_welcome_screen]" name="agentman_chat_widget_options[show_welcome_screen]" value="1" <?php checked(1, isset($this->options['show_welcome_screen']) ? $this->options['show_welcome_screen'] : true); ?> />
+                            <p class="description"><?php _e('Display the welcome screen with centered input when users first open the chat.', 'agentman-chat-widget'); ?></p>
+                        </td>
+                    </tr>
+                    <tr>
+                        <th scope="row">
+                            <label for="agentman_chat_widget_options[show_welcome_minimize]"><?php _e('Show Minimize Button', 'agentman-chat-widget'); ?></label>
+                        </th>
+                        <td>
+                            <input type="checkbox" id="agentman_chat_widget_options[show_welcome_minimize]" name="agentman_chat_widget_options[show_welcome_minimize]" value="1" <?php checked(1, isset($this->options['show_welcome_minimize']) ? $this->options['show_welcome_minimize'] : true); ?> />
+                            <p class="description"><?php _e('Show a minimize/close button on the welcome screen.', 'agentman-chat-widget'); ?></p>
+                        </td>
+                    </tr>
+                    <tr>
+                        <th scope="row">
+                            <label for="agentman_chat_widget_options[floating_prompts_enabled]"><?php _e('Floating Prompts', 'agentman-chat-widget'); ?></label>
+                        </th>
+                        <td>
+                            <input type="checkbox" id="agentman_chat_widget_options[floating_prompts_enabled]" name="agentman_chat_widget_options[floating_prompts_enabled]" value="1" <?php checked(1, isset($this->options['floating_prompts_enabled']) ? $this->options['floating_prompts_enabled'] : true); ?> />
+                            <p class="description"><?php _e('Show floating prompt bubbles when the widget is closed (corner variant only).', 'agentman-chat-widget'); ?></p>
+                        </td>
+                    </tr>
+                    <tr>
+                        <th scope="row">
+                            <label for="agentman_chat_widget_options[floating_prompts_delay]"><?php _e('Floating Prompts Delay', 'agentman-chat-widget'); ?></label>
+                        </th>
+                        <td>
+                            <input type="number" id="agentman_chat_widget_options[floating_prompts_delay]" name="agentman_chat_widget_options[floating_prompts_delay]" value="<?php echo esc_attr(isset($this->options['floating_prompts_delay']) ? $this->options['floating_prompts_delay'] : 5000); ?>" min="0" max="60000" step="1000" style="width: 100px;" />
+                            <span><?php _e('milliseconds', 'agentman-chat-widget'); ?></span>
+                            <p class="description"><?php _e('Time to wait before showing floating prompts after the widget is closed (default: 5000ms = 5 seconds).', 'agentman-chat-widget'); ?></p>
+                        </td>
+                    </tr>
+                    <tr>
+                        <th scope="row">
+                            <label for="agentman_chat_widget_options[enable_attachments]"><?php _e('Enable Attachments', 'agentman-chat-widget'); ?></label>
+                        </th>
+                        <td>
+                            <input type="checkbox" id="agentman_chat_widget_options[enable_attachments]" name="agentman_chat_widget_options[enable_attachments]" value="1" <?php checked(1, isset($this->options['enable_attachments']) ? $this->options['enable_attachments'] : true); ?> />
+                            <p class="description"><?php _e('Allow users to attach files in the chat. File types supported depend on your agent configuration.', 'agentman-chat-widget'); ?></p>
+                        </td>
+                    </tr>
                 </table>
             </div>
             

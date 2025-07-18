@@ -28,3 +28,6 @@ yarn-error.log*
 
 wp-dist/
 agentman-chat-widget*.zip
+
+# CDN distribution
+cdn-dist/

@@ -55,6 +55,12 @@
         initiallyOpen: extractDataAttribute('initially-open', false, v => v === 'true'),
         enableAttachments: extractDataAttribute('enable-attachments', true, v => v === 'true'),
         
+        // Welcome screen settings (v1.0.19+)
+        showWelcomeScreen: extractDataAttribute('show-welcome-screen', true, v => v === 'true'),
+        showWelcomeMinimize: extractDataAttribute('show-welcome-minimize', true, v => v === 'true'),
+        floatingPromptsEnabled: extractDataAttribute('floating-prompts-enabled', true, v => v === 'true'),
+        floatingPromptsDelay: extractDataAttribute('floating-prompts-delay', 5000, v => parseInt(v, 10)),
+        
         // Theme colors
         'theme.backgroundColor': extractDataAttribute('bg-color', '#ffffff'),
         'theme.textColor': extractDataAttribute('text-color', '#111827'),
@@ -131,6 +137,12 @@
         toggleText: 'Ask Agentman',
         initiallyOpen: false,
         enableAttachments: true,
+        
+        // Welcome screen settings (v1.0.19+)
+        showWelcomeScreen: true,
+        showWelcomeMinimize: true,
+        floatingPromptsEnabled: true,
+        floatingPromptsDelay: 5000,
         
         // Theme system (matching simplified WordPress theme)
         theme: {

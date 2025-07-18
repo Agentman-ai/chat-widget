@@ -344,6 +344,24 @@ export class ChatWidget {
           this.floatingPromptsTimeout = null;
         }
         this.hideFloatingPrompts();
+        
+        // Check if we have an existing conversation with messages
+        if (this.persistenceManager) {
+          const currentId = this.persistenceManager.getCurrentId();
+          if (currentId) {
+            const messages = this.persistenceManager.loadMessages();
+            if (messages && messages.length > 0) {
+              // We have messages, go directly to conversation view
+              this.logger.debug('Opening widget with existing conversation, skipping welcome screen');
+              // Ensure we're in conversation view
+              if (this.viewManager.getCurrentView() === 'welcome') {
+                this.viewManager.transitionToConversation();
+                // Restore the messages
+                this.restoreCurrentConversation();
+              }
+            }
+          }
+        }
       } else {
         // Show floating prompts after 5 seconds delay
         this.floatingPromptsTimeout = setTimeout(() => {
@@ -1202,6 +1220,34 @@ export class ChatWidget {
       supportsAttachments: this.supportsAttachments,
       metadata: this.agentCapabilities
     };
+  }
+
+  /**
+   * Restore the current conversation from persistence
+   */
+  private restoreCurrentConversation(): void {
+    if (!this.persistenceManager) return;
+    
+    const messages = this.persistenceManager.loadMessages();
+    if (messages.length === 0) return;
+    
+    // Ensure we have necessary handlers
+    this.ensureMessageHandler();
+    
+    // Load messages into the UI
+    if (this.messageHandler) {
+      this.messageHandler.loadMessages(messages);
+    }
+    
+    // Update state
+    this.state.hasStartedConversation = true;
+    this.state.messages = messages;
+    this.stateManager.updateState(this.state);
+    
+    // Update conversation management UI
+    this.updateConversationHeaderButtons();
+    
+    this.logger.debug(`Restored ${messages.length} messages from current conversation`);
   }
 
   /**

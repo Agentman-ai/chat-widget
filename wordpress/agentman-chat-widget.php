@@ -3,7 +3,7 @@
  * Plugin Name: Agentman AI Agents
  * Plugin URI: https://github.com/Agentman-ai/chat-widget/tree/main/wordpress
  * Description: Integrates the Agentman AI Agents into your WordPress site with admin customization options.
- * Version: 0.25.0
+ * Version: 0.26.0
  * Author: Agentman
  * Author URI: https://agentman.ai
  * License: MIT
@@ -19,7 +19,7 @@ if (!defined('ABSPATH')) {
 }
 
 // Define plugin constants
-define('AGENTMAN_CHAT_WIDGET_VERSION', '0.25.0');
+define('AGENTMAN_CHAT_WIDGET_VERSION', '0.26.0');
 define('AGENTMAN_CHAT_WIDGET_PATH', plugin_dir_path(__FILE__));
 define('AGENTMAN_CHAT_WIDGET_URL', plugin_dir_url(__FILE__));
 define('AGENTMAN_CHAT_WIDGET_BASENAME', plugin_basename(__FILE__));
@@ -154,7 +154,14 @@ class Agentman_Chat_Widget {
             'header_logo' => '',
             'persistence_enabled' => true,
             'persistence_days' => 7,
-            'hide_branding' => true
+            'hide_branding' => true,
+            // Welcome screen settings (v0.26.0+)
+            'show_welcome_screen' => true,
+            'show_welcome_minimize' => true,
+            'floating_prompts_enabled' => true,
+            'floating_prompts_delay' => 5000,
+            // Attachments now default to true (v0.26.0+)
+            'enable_attachments' => true
         );
     }
 
@@ -242,6 +249,13 @@ class Agentman_Chat_Widget {
         
         // Persistence options
         $sanitized['persistence_days'] = absint(isset($input['persistence_days']) ? $input['persistence_days'] : 7);
+        
+        // Welcome screen options (v0.26.0+)
+        $sanitized['show_welcome_screen'] = isset($input['show_welcome_screen']) ? (bool) $input['show_welcome_screen'] : true;
+        $sanitized['show_welcome_minimize'] = isset($input['show_welcome_minimize']) ? (bool) $input['show_welcome_minimize'] : true;
+        $sanitized['floating_prompts_enabled'] = isset($input['floating_prompts_enabled']) ? (bool) $input['floating_prompts_enabled'] : true;
+        $sanitized['floating_prompts_delay'] = absint(isset($input['floating_prompts_delay']) ? $input['floating_prompts_delay'] : 5000);
+        $sanitized['enable_attachments'] = isset($input['enable_attachments']) ? (bool) $input['enable_attachments'] : true;
         
         return $sanitized;
     }
@@ -380,7 +394,13 @@ class Agentman_Chat_Widget {
                 'welcome_message' => isset($this->options['welcome_message']) ? esc_js($this->options['welcome_message']) : '',
                 // Use the processed prompts array
                 'prompts' => $prompts
-            )
+            ),
+            // Welcome screen configuration (v0.26.0+)
+            'showWelcomeScreen' => isset($this->options['show_welcome_screen']) ? (bool)$this->options['show_welcome_screen'] : true,
+            'showWelcomeMinimize' => isset($this->options['show_welcome_minimize']) ? (bool)$this->options['show_welcome_minimize'] : true,
+            'floatingPromptsEnabled' => isset($this->options['floating_prompts_enabled']) ? (bool)$this->options['floating_prompts_enabled'] : true,
+            'floatingPromptsDelay' => isset($this->options['floating_prompts_delay']) ? (int)$this->options['floating_prompts_delay'] : 5000,
+            'enableAttachments' => isset($this->options['enable_attachments']) ? (bool)$this->options['enable_attachments'] : true
         );
     }
 

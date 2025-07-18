@@ -384,6 +384,12 @@ class ShopifyConfigTool {
                 days: parseInt(document.getElementById('persistenceDays').value) || 7
             },
             initiallyOpen: document.getElementById('initiallyOpen').checked,
+            // Welcome screen settings
+            showWelcomeScreen: document.getElementById('showWelcomeScreen').checked,
+            showWelcomeMinimize: document.getElementById('showWelcomeMinimize').checked,
+            floatingPromptsEnabled: document.getElementById('floatingPromptsEnabled').checked,
+            floatingPromptsDelay: parseInt(document.getElementById('floatingPromptsDelay').value) || 5000,
+            enableAttachments: document.getElementById('enableAttachments').checked,
             shopifyIntegration: {
                 customerData: document.getElementById('customerData').checked,
                 cartSync: document.getElementById('cartSync').checked,
@@ -407,6 +413,12 @@ class ShopifyConfigTool {
             toggleText: this.config.content.toggleText,
             initialMessage: this.config.content.initialMessage,
             initiallyOpen: this.config.advanced.initiallyOpen,
+            // Welcome screen settings
+            showWelcomeScreen: this.config.advanced.showWelcomeScreen,
+            showWelcomeMinimize: this.config.advanced.showWelcomeMinimize,
+            floatingPromptsEnabled: this.config.advanced.floatingPromptsEnabled,
+            floatingPromptsDelay: this.config.advanced.floatingPromptsDelay,
+            enableAttachments: this.config.advanced.enableAttachments,
             theme: this.config.theme,
             messagePrompts: this.config.content.messagePrompts,
             persistence: this.config.advanced.persistence,
