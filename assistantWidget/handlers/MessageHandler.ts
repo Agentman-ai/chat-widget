@@ -66,7 +66,11 @@ export class MessageHandler {
     try {
       // Create and add user message
       const userMessage = this.messageService.createUserMessage(message);
+      
       this.addMessageToView(userMessage);
+      
+      // Don't increment lastMessageCount here - we'll update it after API response
+      this.logger.debug(`Current lastMessageCount: ${this.lastMessageCount} (not incrementing for user message)`);
 
       // Start loading operation
       this.currentLoadingOperation = this.loadingManager.startLoading('message_send', {
@@ -146,9 +150,9 @@ export class MessageHandler {
       this.addMessageToView(message);
     }
     
-    // Update message count
+    // Update message count to the total API response count
     this.lastMessageCount = result.totalCount;
-    this.logger.debug(`Updated lastMessageCount to ${this.lastMessageCount}`);
+    this.logger.debug(`Updated lastMessageCount to ${this.lastMessageCount} (total messages in API response)`);
   }
 
   /**
@@ -156,6 +160,7 @@ export class MessageHandler {
    */
   public async handleApiResponse(responseData: any[], conversationId: string): Promise<void> {
     const currentMessages = this.stateManager.getState().messages;
+    
     const result = this.messageService.processResponse(responseData, this.lastMessageCount, currentMessages);
     
     // Add new messages to UI
@@ -170,9 +175,9 @@ export class MessageHandler {
       }));
     }
     
-    // Update message count
+    // Update message count to the total API response count
     this.lastMessageCount = result.totalCount;
-    this.logger.debug(`Updated lastMessageCount to ${this.lastMessageCount}`);
+    this.logger.debug(`Updated lastMessageCount to ${this.lastMessageCount} (total messages in API response)`);
   }
 
   /**
@@ -252,11 +257,12 @@ export class MessageHandler {
    * Load messages into view (e.g., when switching conversations)
    */
   public loadMessages(messages: Message[]): void {
+    
     // Clear existing messages
     this.clearMessages();
     
     // Add each message to view
-    messages.forEach(message => {
+    messages.forEach((message, index) => {
       this.viewManager?.addMessage(message);
     });
     

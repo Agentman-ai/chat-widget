@@ -241,6 +241,7 @@ export const baseStyles = `
     flex-direction: column;
     height: 100%;
     overflow: hidden;
+    position: relative;
   }
 
   /* Stage-2 conversation drawer */
@@ -409,7 +410,6 @@ export const baseStyles = `
 
   .am-chat-input-wrapper {
     background: white;
-    border-top: 1px solid rgba(0, 0, 0, 0.05);
     width: 100%;
     display: flex;
     flex-direction: column;

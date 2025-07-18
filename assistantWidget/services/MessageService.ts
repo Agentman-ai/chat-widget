@@ -108,10 +108,12 @@ export class MessageService {
       }
     }
 
-    return {
+    const result = {
       newMessages,
       totalCount: responseData.length
     };
+    
+    return result;
   }
 
   /**
@@ -156,10 +158,12 @@ export class MessageService {
       }
     }
 
-    return {
+    const result = {
       newMessages,
       totalCount: responseData.length
     };
+    
+    return result;
   }
 
   /**

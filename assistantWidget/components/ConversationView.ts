@@ -3,6 +3,7 @@ import type { ChatConfig, ChatState, ChatTheme, ChatAssets, Message } from '../t
 import * as icons from '../assets/icons';
 import { UIUtils } from '../utils/UIUtils';
 import { MessageRenderer } from '../message-renderer/message-renderer';
+import { InputComponent } from './InputComponent';
 
 /**
  * ConversationView Component - Traditional chat interface
@@ -37,6 +38,9 @@ export class ConversationView {
   
   // Loading element
   private loadingMessageElement: HTMLElement | null = null;
+  
+  // Input component
+  private inputComponent: InputComponent | null = null;
 
   constructor(
     config: ChatConfig,
@@ -88,6 +92,7 @@ export class ConversationView {
 
     this.attachEventListeners();
     this.applyTheme();
+    this.createInputComponent();
 
     return this.element;
   }
@@ -148,37 +153,28 @@ export class ConversationView {
    * Get the input element
    */
   public getInputElement(): HTMLTextAreaElement | null {
-    return this.getElement('.am-chat-input') as HTMLTextAreaElement;
+    return this.element?.querySelector('.am-input-textarea') as HTMLTextAreaElement;
   }
 
   /**
    * Get the input value
    */
   public getInputValue(): string {
-    const input = this.getInputElement();
-    return input?.value.trim() || '';
+    return this.inputComponent?.getInputValue() || '';
   }
 
   /**
    * Clear the input
    */
   public clearInput(): void {
-    const input = this.getInputElement();
-    if (input) {
-      input.value = '';
-      input.style.height = 'auto';
-      // Input updated
-    }
+    this.inputComponent?.clearInput();
   }
 
   /**
    * Focus the input
    */
   public focusInput(): void {
-    const input = this.getInputElement();
-    if (input) {
-      input.focus();
-    }
+    this.inputComponent?.focusInput();
   }
 
   /**
@@ -205,69 +201,21 @@ export class ConversationView {
    * Update attachment preview
    */
   public updateAttachmentPreview(attachments: Record<string, unknown>[]): void {
-    if (!this.config.enableAttachments || !this.element) return;
-
-    const previewContainer = this.getElement('.chat-attachments-preview') as HTMLElement;
-    const inputWrapper = this.getElement('.am-chat-input-wrapper') as HTMLElement;
-    if (!previewContainer) return;
-
-    if (attachments.length === 0) {
-      previewContainer.style.display = 'none';
-      previewContainer.innerHTML = '';
-      if (inputWrapper) {
-        inputWrapper.classList.remove('has-attachments');
-      }
-      return;
-    }
-
-    previewContainer.style.display = 'flex';
-    if (inputWrapper) {
-      inputWrapper.classList.add('has-attachments');
-    }
-    
-    previewContainer.innerHTML = attachments.map(attachment => {
-      const statusClass = (attachment.upload_status as string) === 'error' ? 'error' : '';
-      const progressHtml = (attachment.upload_status as string) === 'uploading' ? 
-        `<div class="chat-attachment-progress"><div class="chat-attachment-progress-bar" style="width: ${(attachment.upload_progress as number) || 0}%"></div></div>` : '';
-      
-      const isImage = (attachment.file_type as string) === 'image' && attachment.url;
-      const filename = (attachment.filename as string) || 'unknown';
-      const thumbnailHtml = isImage ? 
-        `<img src="${attachment.url as string}" alt="${UIUtils.escapeHtml(filename)}" class="chat-attachment-thumbnail" />` :
-        `<div class="chat-attachment-icon">${this.getFileTypeIcon(filename)}</div>`;
-      
-      return `
-        <div class="chat-attachment-item ${statusClass}">
-          ${thumbnailHtml}
-          <div class="chat-attachment-info">
-            <div class="chat-attachment-name">${UIUtils.escapeHtml(filename)}</div>
-          </div>
-          <button class="chat-attachment-remove" data-id="${attachment.file_id as string}" title="Remove attachment">×</button>
-          ${progressHtml}
-        </div>
-      `;
-    }).join('');
-
-    // Attach remove button listeners
-    const removeButtons = previewContainer.querySelectorAll('.chat-attachment-remove');
-    removeButtons.forEach(button => {
-      button.addEventListener('click', (e) => {
-        const fileId = (e.target as HTMLElement).getAttribute('data-id');
-        if (fileId && this.boundAttachmentRemoveHandler) {
-          this.boundAttachmentRemoveHandler(fileId);
-        }
-      });
-    });
+    this.inputComponent?.updateAttachmentPreview(attachments as any[]);
   }
 
   /**
    * Clear file input
    */
   public clearFileInput(): void {
-    const fileInput = this.getElement('.chat-file-input') as HTMLInputElement;
-    if (fileInput) {
-      fileInput.value = '';
-    }
+    this.inputComponent?.clearFileInput();
+  }
+
+  /**
+   * Get the input component instance
+   */
+  public getInputComponent(): InputComponent | null {
+    return this.inputComponent;
   }
 
   /**
@@ -278,12 +226,64 @@ export class ConversationView {
   }
 
   /**
+   * Get the header element for dynamic button management
+   */
+  public getHeaderElement(): HTMLElement | null {
+    return this.getElement('.am-chat-header');
+  }
+
+  /**
+   * Update header buttons dynamically based on conversation state
+   */
+  public updateHeaderButtons(conversationManager: any, hasConversations: boolean): void {
+    const headerElement = this.getHeaderElement();
+    if (!headerElement) return;
+
+    // Clear existing dynamic buttons (keep static ones)
+    this.clearDynamicButtons(headerElement);
+
+    // Add conversation history button if we have multiple conversations
+    if (hasConversations) {
+      conversationManager.addConversationButton(headerElement, hasConversations);
+    }
+
+    // Always add new conversation button
+    conversationManager.addNewConversationButton(headerElement);
+    
+    // Add divider between conversation buttons and static buttons
+    conversationManager.addHeaderDivider(headerElement);
+    
+    // Note: Back button is only added when in conversation list view, not in chat view
+  }
+
+  /**
+   * Clear dynamic buttons from header while preserving static ones
+   */
+  private clearDynamicButtons(headerElement: HTMLElement): void {
+    const headerActions = headerElement.querySelector('.am-chat-header-actions');
+    if (!headerActions) return;
+
+    // Remove conversation management buttons (including any back buttons)
+    const dynamicButtons = headerActions.querySelectorAll(
+      '.am-conversation-toggle, .am-conversation-new-header, .am-header-divider'
+    );
+    
+    // Also remove back buttons from header content area
+    const headerContent = headerElement.querySelector('.am-chat-header-content');
+    if (headerContent) {
+      const backButtons = headerContent.querySelectorAll('.am-conversation-back');
+      backButtons.forEach(btn => btn.remove());
+    }
+    
+    dynamicButtons.forEach(button => button.remove());
+  }
+
+  /**
    * Add a message to the conversation view
    */
   public addMessage(message: Message): void {
     const messagesContainer = this.getMessagesContainer();
     if (!messagesContainer) {
-      console.error('Messages container not found');
       return;
     }
 
@@ -419,6 +419,7 @@ export class ConversationView {
   public destroy(): void {
     this.removeEventListeners();
     this.cachedElements.clear();
+    this.inputComponent?.destroy();
     if (this.element) {
       this.element.remove();
       this.element = null;
@@ -438,9 +439,12 @@ export class ConversationView {
   }
 
   /**
-   * Generate header HTML - matches original ChatWidget exactly
+   * Generate header HTML - basic structure with dynamic button management
    */
   private generateHeader(): string {
+    // Only show expand/minimize buttons for corner variant
+    const showWindowControls = this.config.variant === 'corner';
+    
     return `
       <div class="am-chat-header" style="background-color: white; 
                                          color: #333;
@@ -457,60 +461,41 @@ export class ConversationView {
             <span>${this.config.title || 'AI Assistant'}</span>
           </div>
           <div class="am-chat-header-actions">
-            <!-- New conversation button -->
-            <button class="am-conversation-new-header am-chat-header-button am-header-button-with-text" 
-                    title="New conversation"
-                    style="background: none;
-                           border: none;
-                           padding: 6px;
-                           cursor: pointer;
-                           display: flex;
-                           align-items: center;
-                           justify-content: center;
-                           transition: background-color 0.2s;
-                           border-radius: 4px;
-                           color: #6b7280;">
-              ${icons.plus2}
-              <span class="am-button-label" style="margin-left: 4px; font-size: 14px;">New</span>
-            </button>
+            <!-- Dynamic buttons will be inserted here -->
             
-            <!-- Divider -->
-            <div class="am-header-divider" style="width: 1px;
-                                                   height: 20px;
-                                                   background: rgba(0, 0, 0, 0.1);
-                                                   margin: 0 4px;"></div>
-            
-            <!-- Expand button -->
-            <button class="am-chat-expand am-chat-header-button desktop-only" 
-                    title="Expand chat"
-                    style="background: none;
-                           border: none;
-                           padding: 6px;
-                           cursor: pointer;
-                           display: flex;
-                           align-items: center;
-                           justify-content: center;
-                           transition: background-color 0.2s;
-                           border-radius: 4px;
-                           color: #6b7280;">
-              ${icons.expand2}
-            </button>
-            
-            <!-- Minimize button -->
-            <button class="am-chat-minimize am-chat-header-button" 
-                    title="Minimize chat"
-                    style="background: none;
-                           border: none;
-                           padding: 6px;
-                           cursor: pointer;
-                           display: flex;
-                           align-items: center;
-                           justify-content: center;
-                           transition: background-color 0.2s;
-                           border-radius: 4px;
-                           color: #6b7280;">
-              ${icons.minimize}
-            </button>
+            ${showWindowControls ? `
+              <!-- Expand button (static) -->
+              <button class="am-chat-expand am-chat-header-button desktop-only" 
+                      title="Expand chat"
+                      style="background: none;
+                             border: none;
+                             padding: 6px;
+                             cursor: pointer;
+                             display: flex;
+                             align-items: center;
+                             justify-content: center;
+                             transition: background-color 0.2s;
+                             border-radius: 4px;
+                             color: #6b7280;">
+                ${icons.expand2}
+              </button>
+              
+              <!-- Minimize button (static) -->
+              <button class="am-chat-minimize am-chat-header-button" 
+                      title="Minimize chat"
+                      style="background: none;
+                             border: none;
+                             padding: 6px;
+                             cursor: pointer;
+                             display: flex;
+                             align-items: center;
+                             justify-content: center;
+                             transition: background-color 0.2s;
+                             border-radius: 4px;
+                             color: #6b7280;">
+                ${icons.minimize}
+              </button>
+            ` : ''}
           </div>
         </div>
       </div>
@@ -532,50 +517,19 @@ export class ConversationView {
                   display: flex;
                   flex-direction: column;
                   gap: 1rem;
-                  min-height: 0;">
+                  min-height: 0;
+                  position: relative;">
       </div>
     `;
   }
 
   /**
-   * Generate input area HTML - matches original ChatWidget exactly
+   * Generate input area HTML - using shared InputComponent
    */
   private generateInputArea(): string {
     return `
-      <div class="am-chat-input-container" style="display: flex;
-                                                   align-items: center;
-                                                   padding: 8px 16px;
-                                                   gap: 8px;
-                                                   flex: 0 0 auto;
-                                                   border-top: 1px solid rgba(0, 0, 0, 0.1);
-                                                   background: white;">
-        <textarea class="am-chat-input" 
-                  placeholder="${this.config.placeholder || 'Type your message...'}"
-                  style="flex: 1;
-                         min-height: 44px;
-                         max-height: 120px;
-                         padding: 10px 12px 6px 12px;
-                         border: 1px solid rgba(0, 0, 0, 0.1);
-                         border-radius: 8px;
-                         font-size: 14px;
-                         line-height: 20px;
-                         resize: none;
-                         font-family: inherit;"></textarea>
-        <button class="am-chat-send" 
-                style="background-color: ${this.theme.buttonColor}; 
-                       color: ${this.theme.buttonTextColor};
-                       margin-left: 8px;
-                       width: 32px;
-                       height: 32px;
-                       padding: 6px;
-                       border: none;
-                       border-radius: 4px;
-                       cursor: pointer;
-                       display: flex;
-                       align-items: center;
-                       justify-content: center;">
-          ${icons.send}
-        </button>
+      <div class="am-chat-input-wrapper">
+        <div class="am-chat-input-placeholder"></div>
       </div>
     `;
   }
@@ -593,12 +547,8 @@ export class ConversationView {
    * Generate attachment button and file input
    */
   private generateAttachmentButton(): string {
-    return `
-      <button class="chat-attachment-button" type="button" title="Attach files">
-        ${icons.attachment}
-      </button>
-      <input type="file" class="chat-file-input" multiple>
-    `;
+    // Attachment button is now integrated into the input area
+    return '';
   }
 
   /**
@@ -638,17 +588,8 @@ export class ConversationView {
       minimize.addEventListener('click', this.boundToggleHandler);
     }
 
-    // New conversation button (takes back to welcome screen)
-    const newConvButton = this.element.querySelector('.am-conversation-new-header');
-    if (newConvButton) {
-      newConvButton.addEventListener('click', () => {
-        // This should trigger a transition back to welcome screen
-        // We'll need to emit an event that ChatWidget can handle
-        window.dispatchEvent(new CustomEvent('chatwidget:newconversation', {
-          detail: { source: 'conversation-view' }
-        }));
-      });
-    }
+    // Note: New conversation button is now dynamically managed by ConversationManager
+    // No hardcoded event listener needed here
 
     // Expand button
     const expand = this.element.querySelector('.am-chat-expand');
@@ -656,17 +597,6 @@ export class ConversationView {
       expand.addEventListener('click', this.boundExpandHandler);
     }
 
-    // Send button
-    const send = this.element.querySelector('.am-chat-send');
-    if (send) {
-      send.addEventListener('click', this.boundSendHandler);
-    }
-
-    // Input field
-    const input = this.element.querySelector('.am-chat-input') as HTMLTextAreaElement;
-    if (input) {
-      input.addEventListener('keydown', this.boundInputKeyHandler);
-    }
   }
 
   /**
@@ -677,20 +607,6 @@ export class ConversationView {
     // Individual cleanup not needed due to DOM removal
   }
 
-  /**
-   * Handle input field changes
-   */
-  private handleInputChange(e: Event): void {
-    const input = e.target as HTMLTextAreaElement;
-    
-    // Auto-resize textarea
-    input.style.height = 'auto';
-    const newHeight = Math.max(32, Math.min(input.scrollHeight, 120));
-    input.style.height = `${newHeight}px`;
-
-    // Update send button state
-    this.updateSendButtonState();
-  }
 
   /**
    * Handle prompt button clicks
@@ -704,33 +620,7 @@ export class ConversationView {
     }
   }
 
-  /**
-   * Attach attachment-related event listeners
-   */
-  private attachAttachmentListeners(): void {
-    const attachButton = this.element?.querySelector('.chat-attachment-button');
-    if (attachButton && this.boundAttachmentClickHandler) {
-      attachButton.addEventListener('click', this.boundAttachmentClickHandler);
-    }
 
-    const fileInput = this.element?.querySelector('.chat-file-input') as HTMLInputElement;
-    if (fileInput && this.boundFileSelectHandler) {
-      fileInput.addEventListener('change', (e) => {
-        const files = (e.target as HTMLInputElement).files;
-        if (files && this.boundFileSelectHandler) {
-          this.boundFileSelectHandler(files);
-        }
-      });
-    }
-  }
-
-  /**
-   * Update send button enabled/disabled state
-   */
-  private updateSendButtonState(): void {
-    // Original ChatWidget doesn't disable send button
-    // Keep this method for compatibility but don't disable button
-  }
 
   /**
    * Update header styling
@@ -752,6 +642,35 @@ export class ConversationView {
     if (theme.buttonTextColor) {
       sendButton.style.color = theme.buttonTextColor;
     }
+    
+    // Update input component theme
+    this.inputComponent?.updateTheme(theme);
+  }
+
+  /**
+   * Create and mount the input component
+   */
+  private createInputComponent(): void {
+    if (!this.element) return;
+    
+    const placeholder = this.element.querySelector('.am-chat-input-placeholder');
+    if (!placeholder) return;
+    
+    // Create input component with conversation-specific handlers
+    this.inputComponent = new InputComponent(
+      this.config,
+      this.theme,
+      {
+        onInputKey: this.boundInputKeyHandler,
+        onSend: this.boundSendHandler,
+        onAttachmentClick: this.boundAttachmentClickHandler,
+        onFileSelect: this.boundFileSelectHandler,
+        onAttachmentRemove: this.boundAttachmentRemoveHandler
+      }
+    );
+    
+    const inputElement = this.inputComponent.create();
+    placeholder.appendChild(inputElement);
   }
 
   /**
@@ -786,5 +705,6 @@ export class ConversationView {
       return '📎';
     }
   }
+
 
 }

@@ -1,6 +1,7 @@
 // WelcomeScreen.ts - Welcome screen component with centered input and prompts
 import type { ChatConfig, ChatTheme, ChatAssets } from '../types/types';
 import * as icons from '../assets/icons';
+import { InputComponent } from './InputComponent';
 
 /**
  * WelcomeScreen Component - Claude-style minimalist welcome interface
@@ -21,6 +22,11 @@ export class WelcomeScreen {
   private boundInputKeyHandler: (e: KeyboardEvent) => void;
   private boundSendHandler: () => void;
   private boundPromptClickHandler: (prompt: string) => void;
+  private boundConversationsClickHandler?: () => void;
+  private boundToggleHandler?: () => void;
+  
+  // Input component
+  private inputComponent: InputComponent | null = null;
 
   constructor(
     config: ChatConfig,
@@ -30,6 +36,8 @@ export class WelcomeScreen {
       onInputKey: (e: KeyboardEvent) => void;
       onSend: () => void;
       onPromptClick: (prompt: string) => void;
+      onConversationsClick?: () => void;
+      onToggle?: () => void;
     }
   ) {
     this.config = config;
@@ -40,6 +48,8 @@ export class WelcomeScreen {
     this.boundInputKeyHandler = eventHandlers.onInputKey;
     this.boundSendHandler = eventHandlers.onSend;
     this.boundPromptClickHandler = eventHandlers.onPromptClick;
+    this.boundConversationsClickHandler = eventHandlers.onConversationsClick;
+    this.boundToggleHandler = eventHandlers.onToggle;
   }
 
   /**
@@ -52,6 +62,7 @@ export class WelcomeScreen {
 
     this.attachEventListeners();
     this.applyTheme();
+    this.createInputComponent();
 
     return this.element;
   }
@@ -68,45 +79,36 @@ export class WelcomeScreen {
       }
     });
 
-    // Update send button specifically
-    const sendButton = this.element.querySelector('.am-welcome-send') as HTMLButtonElement;
-    if (sendButton) {
-      if (theme.buttonColor) {
-        sendButton.style.backgroundColor = theme.buttonColor;
-      }
-      if (theme.buttonTextColor) {
-        sendButton.style.color = theme.buttonTextColor;
-      }
-    }
+    // Update input component theme
+    this.inputComponent?.updateTheme(theme);
   }
 
   /**
    * Get the input value
    */
   public getInputValue(): string {
-    const input = this.element?.querySelector('.am-welcome-input') as HTMLTextAreaElement;
-    return input?.value.trim() || '';
+    return this.inputComponent?.getInputValue() || '';
   }
 
   /**
    * Clear the input
    */
   public clearInput(): void {
-    const input = this.element?.querySelector('.am-welcome-input') as HTMLTextAreaElement;
-    if (input) {
-      input.value = '';
-      this.updateSendButtonState();
-    }
+    this.inputComponent?.clearInput();
   }
 
   /**
    * Focus the input
    */
   public focusInput(): void {
-    const input = this.element?.querySelector('.am-welcome-input') as HTMLTextAreaElement;
-    if (input) {
-      input.focus();
-    }
+    this.inputComponent?.focusInput();
+  }
+
+  /**
+   * Get the input component instance
+   */
+  public getInputComponent(): InputComponent | null {
+    return this.inputComponent;
   }
 
   /**
@@ -121,6 +123,7 @@ export class WelcomeScreen {
    */
   public destroy(): void {
     this.removeEventListeners();
+    this.inputComponent?.destroy();
     if (this.element) {
       this.element.remove();
       this.element = null;
@@ -133,11 +136,26 @@ export class WelcomeScreen {
   private generateTemplate(): string {
     return `
       <div class="am-welcome-container">
+        ${this.generateMinimizeButton()}
         ${this.generateHeader()}
         ${this.generateInputSection()}
         ${this.generatePrompts()}
-        ${this.generateBranding()}
+        ${this.generateBottomSection()}
       </div>
+    `;
+  }
+
+  /**
+   * Generate minimize button
+   */
+  private generateMinimizeButton(): string {
+    // Only show minimize button if toggle handler is provided
+    if (!this.boundToggleHandler) return '';
+    
+    return `
+      <button class="am-welcome-minimize" title="Close">
+        ${icons.close2}
+      </button>
     `;
   }
 
@@ -145,7 +163,7 @@ export class WelcomeScreen {
    * Generate welcome header with logo and title
    */
   private generateHeader(): string {
-    const logo = this.assets.logo || icons.agentmanLogo;
+    const logo = icons.agentmanLogo || this.assets.logo;
     const title = this.config.title || 'AI Assistant';
     
     return `
@@ -163,25 +181,11 @@ export class WelcomeScreen {
    */
   private generateInputSection(): string {
     const welcomeMessage = this.config.messagePrompts?.welcome_message || 'How can I help you today?';
-    const placeholder = this.config.placeholder || 'Ask me anything...';
 
     return `
       <div class="am-welcome-input-section">
         <div class="am-welcome-message">${this.escapeHtml(welcomeMessage)}</div>
-        <div class="am-welcome-input-container">
-          <textarea 
-            class="am-welcome-input" 
-            placeholder="${this.escapeHtml(placeholder)}"
-            rows="1"
-          ></textarea>
-          <button 
-            class="am-welcome-send" 
-            style="background-color: ${this.theme.buttonColor || '#2563eb'}; color: ${this.theme.buttonTextColor || '#ffffff'};"
-            disabled
-          >
-            ${icons.send}
-          </button>
-        </div>
+        <div class="am-welcome-input-placeholder"></div>
       </div>
     `;
   }
@@ -219,14 +223,55 @@ export class WelcomeScreen {
   }
 
   /**
-   * Generate branding section
+   * Generate bottom section with conversations link and branding
    */
-  private generateBranding(): string {
+  private generateBottomSection(): string {
+    const showConversations = this.config.persistence?.enabled && this.boundConversationsClickHandler;
+    
     return `
-      <div class="am-welcome-branding">
-        Powered by <a href="https://agentman.ai" target="_blank" rel="noopener noreferrer">Agentman.ai</a>
+      <div class="am-welcome-bottom">
+        ${showConversations ? `
+          <button class="am-welcome-conversations-link" title="View previous conversations">
+            ${icons.chatHistory}
+            <span>Previous conversations</span>
+          </button>
+        ` : ''}
+        <div class="am-welcome-branding">
+          Powered by <a href="https://agentman.ai" target="_blank" rel="noopener noreferrer">Agentman.ai</a>
+        </div>
       </div>
     `;
+  }
+  
+  /**
+   * Generate branding section
+   * @deprecated Use generateBottomSection instead
+   */
+  private generateBranding(): string {
+    return this.generateBottomSection();
+  }
+
+  /**
+   * Create and mount the input component
+   */
+  private createInputComponent(): void {
+    if (!this.element) return;
+    
+    const placeholder = this.element.querySelector('.am-welcome-input-placeholder');
+    if (!placeholder) return;
+    
+    // Create input component with same handlers
+    this.inputComponent = new InputComponent(
+      this.config,
+      this.theme,
+      {
+        onInputKey: this.boundInputKeyHandler,
+        onSend: this.boundSendHandler
+      }
+    );
+    
+    const inputElement = this.inputComponent.create();
+    placeholder.appendChild(inputElement);
   }
 
   /**
@@ -235,17 +280,10 @@ export class WelcomeScreen {
   private attachEventListeners(): void {
     if (!this.element) return;
 
-    // Send button
-    const sendButton = this.element.querySelector('.am-welcome-send');
-    if (sendButton) {
-      sendButton.addEventListener('click', this.boundSendHandler);
-    }
-
-    // Input field
-    const input = this.element.querySelector('.am-welcome-input') as HTMLTextAreaElement;
-    if (input) {
-      input.addEventListener('keydown', this.boundInputKeyHandler as EventListener);
-      input.addEventListener('input', this.handleInputChange.bind(this));
+    // Minimize button
+    const minimizeButton = this.element.querySelector('.am-welcome-minimize');
+    if (minimizeButton && this.boundToggleHandler) {
+      minimizeButton.addEventListener('click', this.boundToggleHandler);
     }
 
     // Prompt buttons
@@ -253,6 +291,12 @@ export class WelcomeScreen {
     promptButtons.forEach(button => {
       button.addEventListener('click', this.handlePromptClick.bind(this));
     });
+    
+    // Conversations button
+    const conversationsButton = this.element.querySelector('.am-welcome-conversations-link');
+    if (conversationsButton && this.boundConversationsClickHandler) {
+      conversationsButton.addEventListener('click', this.boundConversationsClickHandler);
+    }
   }
 
   /**
@@ -261,37 +305,24 @@ export class WelcomeScreen {
   private removeEventListeners(): void {
     if (!this.element) return;
 
-    const sendButton = this.element.querySelector('.am-welcome-send');
-    if (sendButton) {
-      sendButton.removeEventListener('click', this.boundSendHandler);
-    }
-
-    const input = this.element.querySelector('.am-welcome-input');
-    if (input) {
-      input.removeEventListener('keydown', this.boundInputKeyHandler as EventListener);
-      input.removeEventListener('input', this.handleInputChange.bind(this));
+    // Remove minimize button listener
+    const minimizeButton = this.element.querySelector('.am-welcome-minimize');
+    if (minimizeButton && this.boundToggleHandler) {
+      minimizeButton.removeEventListener('click', this.boundToggleHandler);
     }
 
     const promptButtons = this.element.querySelectorAll('.am-welcome-prompt-btn');
     promptButtons.forEach(button => {
       button.removeEventListener('click', this.handlePromptClick.bind(this));
     });
-  }
-
-  /**
-   * Handle input field changes
-   */
-  private handleInputChange(e: Event): void {
-    const input = e.target as HTMLTextAreaElement;
     
-    // Auto-resize textarea
-    input.style.height = 'auto';
-    const newHeight = Math.max(48, Math.min(input.scrollHeight, 120));
-    input.style.height = `${newHeight}px`;
-
-    // Update send button state
-    this.updateSendButtonState();
+    // Remove conversations button listener
+    const conversationsButton = this.element.querySelector('.am-welcome-conversations-link');
+    if (conversationsButton && this.boundConversationsClickHandler) {
+      conversationsButton.removeEventListener('click', this.boundConversationsClickHandler);
+    }
   }
+
 
   /**
    * Handle prompt button clicks
@@ -302,29 +333,13 @@ export class WelcomeScreen {
     
     if (prompt) {
       // Clear input to prevent double processing
-      const input = this.element?.querySelector('.am-welcome-input') as HTMLTextAreaElement;
-      if (input) {
-        input.value = '';
-        this.updateSendButtonState();
-      }
+      this.inputComponent?.clearInput();
       
       // Trigger prompt click handler directly
       this.boundPromptClickHandler(prompt);
     }
   }
 
-  /**
-   * Update send button enabled/disabled state
-   */
-  private updateSendButtonState(): void {
-    const input = this.element?.querySelector('.am-welcome-input') as HTMLTextAreaElement;
-    const sendButton = this.element?.querySelector('.am-welcome-send') as HTMLButtonElement;
-    
-    if (input && sendButton) {
-      const hasText = input.value.trim().length > 0;
-      sendButton.disabled = !hasText;
-    }
-  }
 
   /**
    * Apply theme to the component

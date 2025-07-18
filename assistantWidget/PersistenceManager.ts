@@ -163,8 +163,31 @@ export class PersistenceManager {
   create(initialTitle = "New chat") {
     const id = uuid();
     const meta: ConversationMeta = { id, title: initialTitle, lastUpdated: Date.now() };
+    
     const ix = this.readIndex();
+    
     ix.conversations.unshift(meta);
+    
+    // Automatically limit conversations to prevent storage issues
+    const maxConversations = 10; // Keep a reasonable limit to prevent storage issues
+    if (ix.conversations.length > maxConversations) {
+      this.logger.debug(`Conversation limit exceeded (${ix.conversations.length}), cleaning up old conversations`);
+      
+      // Keep only the most recent conversations
+      const toRemove = ix.conversations.slice(maxConversations);
+      ix.conversations = ix.conversations.slice(0, maxConversations);
+      
+      // Clean up old conversation data
+      toRemove.forEach(conv => {
+        try {
+          localStorage.removeItem(this.convKey(conv.id));
+          this.logger.debug(`Removed old conversation: ${conv.id}`);
+        } catch (e) {
+          this.logger.warn(`Failed to remove old conversation ${conv.id}:`, e);
+        }
+      });
+    }
+    
     ix.currentId = id;
     this.writeIndex(ix);
 
@@ -173,13 +196,34 @@ export class PersistenceManager {
       messages: [],
       timestamp: Date.now(),
     };
-    localStorage.setItem(this.convKey(id), JSON.stringify(payload));
+    
+    try {
+      localStorage.setItem(this.convKey(id), JSON.stringify(payload));
+    } catch (error) {
+      // Handle quota exceeded error
+      if (error instanceof Error && error.name === 'QuotaExceededError') {
+        this.logger.warn('Storage quota exceeded, attempting cleanup');
+        this.clearOldConversations(5);
+        
+        // Retry after cleanup
+        try {
+          localStorage.setItem(this.convKey(id), JSON.stringify(payload));
+        } catch (retryError) {
+          this.logger.error('Failed to create conversation even after cleanup:', retryError);
+          throw retryError;
+        }
+      } else {
+        throw error;
+      }
+    }
+    
     return id;
   }
 
   switchTo(id: string) {
     this.logger.debug(`🔄 switchTo(${id}) called`);
     const ix = this.readIndex();
+    
     if (!ix.conversations.find(c => c.id === id)) {
       this.logger.debug(`❌ switchTo() failed - unknown conversation id: ${id}`);
       throw new Error("unknown conversation id");
@@ -201,10 +245,14 @@ export class PersistenceManager {
 
   loadMessages(): Message[] {
     const id = this.getCurrentId();
-    if (!id) return [];
+    if (!id) {
+      return [];
+    }
     
     try {
-      const raw = localStorage.getItem(this.convKey(id));
+      const key = this.convKey(id);
+      const raw = localStorage.getItem(key);
+      
       if (!raw) return [];
       
       const payload = this.parseAndValidatePayload(raw);
@@ -300,12 +348,14 @@ export class PersistenceManager {
 
   saveMessages(): PersistenceResult {
     this.logger.debug('📝 saveMessages() called');
+    
     if (!this.enabled) {
       this.logger.debug('⏭️ saveMessages() aborted - persistence not enabled');
       return { success: true }; // Not an error, just disabled
     }
     
     const id = this.getCurrentId();
+    
     if (!id) {
       this.logger.debug('⏭️ saveMessages() aborted - no current conversation ID');
       return { success: false, error: {

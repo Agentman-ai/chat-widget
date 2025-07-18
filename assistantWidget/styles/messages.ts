@@ -297,4 +297,6 @@ export const messageStyles = `
       padding-left: 20px;
     }
   }
+
+  /* Input component styles moved to input.ts */
 `;

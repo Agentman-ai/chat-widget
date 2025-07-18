@@ -25,12 +25,13 @@ export class FileHandler {
   
   // Configuration
   private readonly MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
-  private readonly ALLOWED_TYPES = [
+  private readonly DEFAULT_ALLOWED_TYPES = [
     'image/jpeg', 'image/png', 'image/gif', 'image/webp',
     'application/pdf', 'text/plain', 'text/csv',
     'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
     'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
   ];
+  private supportedMimeTypes: string[] = [];
 
   constructor(
     private viewManager: ViewManager,
@@ -42,6 +43,8 @@ export class FileHandler {
   ) {
     this.logger = new Logger(debug, '[FileHandler]');
     this.loadingManager = new LoadingManager(this.viewManager, this.eventBus, debug);
+    // Default to built-in allowed types until agent capabilities are set
+    this.supportedMimeTypes = this.DEFAULT_ALLOWED_TYPES;
   }
 
   /**
@@ -88,7 +91,7 @@ export class FileHandler {
         this.getFileErrorType(error),
         {
           maxSize: this.MAX_FILE_SIZE,
-          allowedTypes: this.ALLOWED_TYPES
+          allowedTypes: this.supportedMimeTypes
         }
       );
       
@@ -106,8 +109,8 @@ export class FileHandler {
       throw new Error('FILE_TOO_LARGE');
     }
 
-    // Check file type
-    if (!this.ALLOWED_TYPES.includes(file.type)) {
+    // Check file type against supported mime types
+    if (!this.supportedMimeTypes.includes(file.type)) {
       throw new Error('INVALID_FILE_TYPE');
     }
 
@@ -326,6 +329,20 @@ export class FileHandler {
     // Update UI
     this.updateAttachmentPreview();
     this.viewManager.clearFileInput();
+  }
+
+  /**
+   * Update supported MIME types from agent capabilities
+   */
+  public updateSupportedMimeTypes(mimeTypes: string[]): void {
+    if (mimeTypes && mimeTypes.length > 0) {
+      this.supportedMimeTypes = mimeTypes;
+      this.logger.info('Updated supported MIME types:', this.supportedMimeTypes);
+    } else {
+      // Fallback to defaults if no types provided
+      this.supportedMimeTypes = this.DEFAULT_ALLOWED_TYPES;
+      this.logger.warn('No MIME types provided, using defaults');
+    }
   }
 
   /**

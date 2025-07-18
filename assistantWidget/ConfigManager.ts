@@ -64,6 +64,7 @@ export class ConfigManager {
       ...config,
       title: config.title || 'Chat Assistant',
       position: config.position || 'bottom-right',
+      enableAttachments: config.enableAttachments !== undefined ? config.enableAttachments : true,
       theme: {
         ...ConfigManager.defaultTheme,
         ...config.theme

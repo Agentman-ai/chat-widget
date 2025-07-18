@@ -19,7 +19,45 @@ export const welcomeStyles = `
     text-align: center;
     display: flex;
     flex-direction: column;
-    gap: 32px;
+    gap: 20px;
+    position: relative;
+  }
+
+  /* ===== MINIMIZE BUTTON ===== */
+  
+  .am-welcome-minimize {
+    position: absolute;
+    top: 16px;
+    right: 16px;
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    background: white;
+    border: 1px solid #e5e7eb;
+    color: #6b7280;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s ease;
+    font-size: 20px;
+    font-weight: 400;
+    line-height: 1;
+    padding: 0;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  }
+
+  .am-welcome-minimize:hover {
+    background-color: #f3f4f6;
+    border-color: #d1d5db;
+    color: #374151;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
+  }
+
+  .am-welcome-minimize svg {
+    width: 20px;
+    height: 20px;
+    stroke: currentColor;
   }
 
   /* ===== WELCOME HEADER ===== */
@@ -32,8 +70,8 @@ export const welcomeStyles = `
   }
 
   .am-welcome-logo {
-    width: 64px;
-    height: 64px;
+    width: 58px;
+    height: 58px;
     border-radius: 50%;
     background-color: var(--chat-button-color, #2563eb);
     display: flex;
@@ -44,8 +82,8 @@ export const welcomeStyles = `
   }
 
   .am-welcome-logo svg {
-    width: 32px;
-    height: 32px;
+    width: 50px;
+    height: 50px;
   }
 
   .am-welcome-title {
@@ -71,75 +109,9 @@ export const welcomeStyles = `
     line-height: 1.4;
   }
 
-  .am-welcome-input-container {
-    position: relative;
-    background: #f9fafb;
-    border: 2px solid #e5e7eb;
-    border-radius: 16px;
-    padding: 16px;
-    transition: all 0.2s ease;
-    display: flex;
-    align-items: flex-end;
-    gap: 12px;
-  }
-
-  .am-welcome-input-container:focus-within {
-    border-color: var(--chat-button-color, #2563eb);
-    background: #ffffff;
-    box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
-  }
-
-  .am-welcome-input {
-    flex: 1;
-    border: none;
-    outline: none;
-    background: transparent;
-    font-size: 16px;
-    color: var(--chat-text-color, #111827);
-    resize: none;
-    line-height: 1.5;
-    min-height: 48px;
-    font-family: inherit;
-  }
-
-  .am-welcome-input::placeholder {
-    color: #9ca3af;
-  }
-
-  .am-welcome-send {
-    width: 48px;
-    height: 48px;
-    border-radius: 12px;
-    border: none;
-    background-color: var(--chat-button-color, #2563eb);
-    color: var(--chat-button-text-color, #ffffff);
-    cursor: pointer;
-    transition: all 0.2s ease;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    flex-shrink: 0;
-  }
-
-  .am-welcome-send:disabled {
-    background-color: #e5e7eb;
-    color: #9ca3af;
-    cursor: not-allowed;
-  }
-
-  .am-welcome-send:not(:disabled):hover {
-    background-color: var(--chat-button-hover-color, #1d4ed8);
-    transform: translateY(-1px);
-    box-shadow: 0 4px 12px rgba(37, 99, 235, 0.3);
-  }
-
-  .am-welcome-send:not(:disabled):active {
-    transform: translateY(0);
-  }
-
-  .am-welcome-send svg {
-    width: 20px;
-    height: 20px;
+  /* Input component styles moved to input.ts */
+  .am-welcome-input-placeholder {
+    width: 100%;
   }
 
   /* ===== PROMPTS SECTION ===== */
@@ -153,10 +125,10 @@ export const welcomeStyles = `
   }
 
   .am-welcome-prompt-btn {
-    background: #f3f4f6;
+    background: transparent;
     color: #374151;
-    border: 1px solid #d1d5db;
-    border-radius: 24px;
+    border: 0.5px solid #d1d5db;
+    border-radius: 8px;
     padding: 12px 20px;
     font-size: 14px;
     font-weight: 500;
@@ -179,6 +151,42 @@ export const welcomeStyles = `
     transform: translateY(0);
   }
 
+  /* ===== BOTTOM SECTION ===== */
+  
+  .am-welcome-bottom {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    align-items: center;
+    margin-top: auto;
+  }
+  
+  .am-welcome-conversations-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    background: transparent;
+    border: 1px solid #e5e7eb;
+    border-radius: 8px;
+    padding: 8px 16px;
+    font-size: 14px;
+    color: #6b7280;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    font-family: inherit;
+  }
+  
+  .am-welcome-conversations-link:hover {
+    background-color: #f9fafb;
+    border-color: #d1d5db;
+    color: #374151;
+  }
+  
+  .am-welcome-conversations-link svg {
+    width: 18px;
+    height: 18px;
+  }
+  
   /* ===== BRANDING ===== */
   
   .am-welcome-branding {
@@ -214,27 +222,17 @@ export const welcomeStyles = `
     }
 
     .am-welcome-logo {
-      width: 56px;
-      height: 56px;
+      width: 48px;
+      height: 48px;
     }
 
     .am-welcome-logo svg {
-      width: 28px;
-      height: 28px;
+      width: 40px;
+      height: 40px;
     }
 
-    .am-welcome-input-container {
-      padding: 12px;
-    }
+    /* Input component responsive styles moved to input.ts */
 
-    .am-welcome-input {
-      font-size: 16px; /* Prevent zoom on iOS */
-    }
-
-    .am-welcome-send {
-      width: 44px;
-      height: 44px;
-    }
 
     .am-welcome-prompt-btn {
       font-size: 13px;

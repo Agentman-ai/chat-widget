@@ -50,13 +50,26 @@ export class ConversationOrchestrator {
   ): Promise<void> {
     this.logger.debug('Starting new conversation', { conversationId, hasInitialMessage: !!initialMessage });
 
-    // Generate conversation ID if not provided
-    this.currentConversationId = conversationId || this.generateConversationId();
+    // Clear any existing messages first
+    this.messageHandler.clearMessages();
+    
+    // Create new conversation in persistence manager if enabled
+    if (this.persistenceManager && !conversationId) {
+      
+      // Create a new conversation and get its ID
+      this.currentConversationId = this.persistenceManager.create('New chat');
+      this.logger.debug('Created new conversation in persistence:', this.currentConversationId);
+    } else {
+      // Use provided ID or generate one (for non-persisted conversations)
+      this.currentConversationId = conversationId || this.generateConversationId();
+    }
+    
     this.conversationStartTime = Date.now();
     this.messageCount = 0;
 
     // Update state
     const state = this.stateManager.getState();
+    state.messages = [];
     state.hasStartedConversation = !!initialMessage;
     state.currentView = initialMessage ? 'conversation' : 'welcome';
     this.stateManager.updateState(state);
@@ -86,8 +99,10 @@ export class ConversationOrchestrator {
     message: string,
     attachments?: string[]
   ): Promise<void> {
+    // Start a new conversation if none exists
     if (!this.currentConversationId) {
-      throw new Error('No active conversation');
+      await this.startNewConversation(undefined, message);
+      return; // startNewConversation will handle sending the message
     }
 
     this.logger.debug('Sending message', { 
@@ -173,7 +188,7 @@ export class ConversationOrchestrator {
       await this.startNewConversation();
     }
 
-    // Send the prompt as a message
+    // Send the prompt as a message (sendMessage will handle view transition)
     await this.sendMessage(prompt);
   }
 
@@ -208,6 +223,7 @@ export class ConversationOrchestrator {
       if (messages.length > 0) {
         // Transition to conversation view and load messages
         await this.viewManager.transitionToConversation();
+        
         this.messageHandler.loadMessages(messages);
         
         // Update state
@@ -216,6 +232,60 @@ export class ConversationOrchestrator {
         state.currentView = 'conversation';
         state.messages = messages;
         this.stateManager.updateState(state);
+        
+        
+        // Small delay to ensure DOM is ready
+        setTimeout(() => {
+          // Check if conversation view is actually visible
+          const conversationView = this.viewManager.getElement('.am-conversation-view');
+          if (conversationView) {
+            conversationView.style.display = 'flex';
+            conversationView.style.opacity = '1';
+            conversationView.style.visibility = 'visible';
+          }
+          
+          // Ensure messages container is visible
+          const messagesContainer = this.viewManager.getElement('.am-chat-messages');
+          if (messagesContainer) {
+            // Force visibility by removing any animation classes or inline styles
+            messagesContainer.style.display = 'flex'; // Explicitly set to flex instead of empty string
+            messagesContainer.style.opacity = '1';
+            messagesContainer.style.transform = 'none';
+            messagesContainer.style.visibility = 'visible';
+            messagesContainer.classList.remove('sliding-out');
+            
+            // Also check parent containers
+            const inputContainer = this.viewManager.getElement('.am-chat-input-container');
+            if (inputContainer) {
+              inputContainer.style.display = 'flex';
+              inputContainer.style.opacity = '1';
+              inputContainer.style.transform = 'none';
+              inputContainer.style.visibility = 'visible';
+              inputContainer.classList.remove('sliding-out');
+            }
+            
+            // Also ensure the input wrapper is visible
+            const inputWrapper = this.viewManager.getElement('.am-chat-input-wrapper');
+            if (inputWrapper) {
+              inputWrapper.style.display = 'flex';
+              inputWrapper.style.opacity = '1';
+              inputWrapper.style.transform = 'none';
+              inputWrapper.style.visibility = 'visible';
+              inputWrapper.classList.remove('sliding-out');
+            }
+            
+            // Scroll to bottom
+            messagesContainer.scrollTop = messagesContainer.scrollHeight;
+            
+            // Ensure main header is visible
+            const mainHeader = this.viewManager.getHeaderElement();
+            if (mainHeader) {
+              mainHeader.style.display = 'flex';
+              mainHeader.style.visibility = 'visible';
+              mainHeader.style.opacity = '1';
+            }
+          }
+        }, 100);
       } else {
         // Empty conversation - go to welcome screen
         await this.viewManager.transitionToWelcome();
@@ -383,12 +453,14 @@ export class ConversationOrchestrator {
    */
   private autoSaveConversation(): void {
     if (this.persistenceManager && this.currentConversationId) {
+      
       const result = this.persistenceManager.saveMessages();
       if (result.success) {
         this.logger.debug('Conversation auto-saved');
       } else {
         this.logger.warn('Failed to auto-save conversation:', result.error);
       }
+    } else {
     }
   }
 

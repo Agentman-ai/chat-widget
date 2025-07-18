@@ -11,6 +11,7 @@ import { attachmentStyles } from './attachments';
 import { conversationStyles } from './conversations';
 import { notificationStyles } from './notifications';
 import { welcomeStyles } from './welcome';
+import { inputStyles } from './input';
 
 export class StyleManager {
   private styleElement: HTMLStyleElement | null = null;
@@ -29,6 +30,7 @@ export class StyleManager {
       conversationStyles,
       notificationStyles,
       welcomeStyles,
+      inputStyles,
       variantStyles[this.variant],
       animationStyles,
       responsiveStyles

@@ -29,6 +29,10 @@ export class ViewManager {
   
   // Toggle button for corner variant
   private toggleButton: HTMLElement | null = null;
+  
+  // Store attachment configuration for newly created views
+  private lastConfiguredMimeTypes?: string[];
+  private lastConfiguredSupportsAttachments?: boolean;
 
   // Event handlers passed from ChatWidget
   private eventHandlers: {
@@ -41,6 +45,7 @@ export class ViewManager {
     onFileSelect?: (files: FileList) => void;
     onAttachmentRemove?: (fileId: string) => void;
     onViewTransition?: (from: string, to: string) => void;
+    onConversationsClick?: () => void;
   };
 
   constructor(
@@ -58,6 +63,7 @@ export class ViewManager {
       onFileSelect?: (files: FileList) => void;
       onAttachmentRemove?: (fileId: string) => void;
       onViewTransition?: (from: string, to: string) => void;
+      onConversationsClick?: () => void;
     }
   ) {
     this.config = config;
@@ -119,15 +125,26 @@ export class ViewManager {
         );
       }
 
+      // Update state BEFORE animation to allow message operations
+      this.currentView = 'conversation';
+      
+      const conversationElement = this.conversationView.create();
+      
       // Perform transition with animation
       await this.performViewTransition(
         this.welcomeScreen?.getRootElement() || null,
-        this.conversationView.create(),
+        conversationElement,
         'slideUp'
       );
-
-      // Update state
-      this.currentView = 'conversation';
+      
+      // Configure attachments for the newly created conversation view
+      // This needs to be done after create() since that's when the input component is initialized
+      if (this.lastConfiguredMimeTypes !== undefined && this.lastConfiguredSupportsAttachments !== undefined) {
+        const conversationInput = this.conversationView.getInputComponent();
+        if (conversationInput) {
+          conversationInput.configureAttachments(this.lastConfiguredMimeTypes, this.lastConfiguredSupportsAttachments);
+        }
+      }
 
       // Clean up welcome screen
       if (this.welcomeScreen) {
@@ -165,7 +182,9 @@ export class ViewManager {
           {
             onInputKey: this.eventHandlers.onInputKey,
             onSend: this.eventHandlers.onSend,
-            onPromptClick: this.eventHandlers.onPromptClick
+            onPromptClick: this.eventHandlers.onPromptClick,
+            onConversationsClick: this.eventHandlers.onConversationsClick,
+            onToggle: this.eventHandlers.onToggle
           }
         );
       }
@@ -335,7 +354,9 @@ export class ViewManager {
       {
         onInputKey: this.eventHandlers.onInputKey,
         onSend: this.eventHandlers.onSend,
-        onPromptClick: this.eventHandlers.onPromptClick
+        onPromptClick: this.eventHandlers.onPromptClick,
+        onConversationsClick: this.eventHandlers.onConversationsClick,
+        onToggle: this.eventHandlers.onToggle
       }
     );
 
@@ -396,6 +417,8 @@ export class ViewManager {
         // Reset transition styles
         newElement.style.transition = '';
         newElement.style.transform = '';
+        newElement.style.opacity = '1'; // Ensure it's fully visible
+        newElement.style.display = 'flex'; // Ensure it's displayed
         
         resolve();
       }, duration);
@@ -458,6 +481,38 @@ export class ViewManager {
   }
 
   /**
+   * Update expand button state
+   */
+  public updateExpandButton(isExpanded: boolean): void {
+    const expandButton = this.getElement('.am-chat-expand');
+    if (expandButton) {
+      expandButton.innerHTML = isExpanded ? icons.collapse2 : icons.expand2;
+      expandButton.setAttribute('title', isExpanded ? 'Exit fullscreen' : 'Expand chat');
+    }
+  }
+
+  /**
+   * Configure attachments for all input components
+   */
+  public configureAttachments(supportedMimeTypes: string[], supportsAttachments: boolean): void {
+    // Store configuration for future views
+    this.lastConfiguredMimeTypes = supportedMimeTypes;
+    this.lastConfiguredSupportsAttachments = supportsAttachments;
+    
+    // Configure welcome screen input
+    const welcomeInput = this.welcomeScreen?.getInputComponent();
+    if (welcomeInput) {
+      welcomeInput.configureAttachments(supportedMimeTypes, supportsAttachments);
+    }
+    
+    // Configure conversation view input (if it exists)
+    const conversationInput = this.conversationView?.getInputComponent();
+    if (conversationInput) {
+      conversationInput.configureAttachments(supportedMimeTypes, supportsAttachments);
+    }
+  }
+
+  /**
    * Add message to current view (if conversation view)
    */
   public addMessage(message: any): void {
@@ -491,6 +546,32 @@ export class ViewManager {
     if (this.conversationView) {
       this.conversationView.clearMessages();
     }
+  }
+
+  /**
+   * Update conversation header buttons based on conversation state
+   */
+  public updateConversationHeader(conversationManager: any, hasConversations: boolean): void {
+    if (this.currentView === 'conversation' && this.conversationView) {
+      this.conversationView.updateHeaderButtons(conversationManager, hasConversations);
+    }
+  }
+
+  /**
+   * Get header element from current view
+   */
+  public getHeaderElement(): HTMLElement | null {
+    if (this.currentView === 'conversation' && this.conversationView) {
+      return this.conversationView.getHeaderElement();
+    }
+    return null;
+  }
+
+  /**
+   * Get the main container element
+   */
+  public getContainer(): HTMLElement {
+    return this.container;
   }
 }
 

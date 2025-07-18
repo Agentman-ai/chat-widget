@@ -20,6 +20,7 @@ export class ConversationManager {
   private theme: ChatTheme;
   private element: HTMLElement | null = null;
   private isListViewOpen: boolean = false;
+  private sourceView: 'welcome' | 'conversation' | null = null;
 
   // Event handlers
   private boundNewConversationHandler?: () => void;
@@ -113,14 +114,50 @@ export class ConversationManager {
   }
 
   /**
+   * Check if the list view is currently open
+   */
+  public isOpen(): boolean {
+    return this.isListViewOpen;
+  }
+
+  /**
+   * Close the list view if it's open (without triggering toggle callback)
+   */
+  public closeListView(): void {
+    if (this.isListViewOpen) {
+      this.isListViewOpen = false;
+      
+      if (this.element) {
+        this.element.classList.remove('sliding-in');
+        this.element.classList.add('sliding-out');
+        
+        setTimeout(() => {
+          if (this.element) {
+            this.element.style.display = 'none';
+            this.element.classList.remove('sliding-out');
+          }
+        }, 300);
+      }
+    }
+  }
+
+  /**
    * Show/hide conversation list view with animations
    */
-  public toggleListView(): void {
-    if (!this.element) return;
+  public toggleListView(source?: 'welcome' | 'conversation'): void {
+    if (!this.element) {
+      this.logger.error('Cannot toggle list view - element is null');
+      return;
+    }
 
     this.isListViewOpen = !this.isListViewOpen;
     
     if (this.isListViewOpen) {
+      // Store where we came from when opening
+      if (source) {
+        this.sourceView = source;
+      }
+      
       // Opening animation
       this.element.style.display = 'flex';
       this.element.classList.remove('closing');
@@ -145,6 +182,13 @@ export class ConversationManager {
   }
 
   /**
+   * Get the source view that opened the conversation list
+   */
+  public getSourceView(): 'welcome' | 'conversation' | null {
+    return this.sourceView;
+  }
+
+  /**
    * Check if list view is open
    */
   public isListViewActive(): boolean {
@@ -159,6 +203,16 @@ export class ConversationManager {
       return; // Don't show if no past conversations
     }
 
+    // Don't add the button if we're already in list view
+    if (this.isListViewOpen) {
+      return;
+    }
+
+    // Check if button already exists
+    const existingButton = headerElement.querySelector('.am-conversation-toggle');
+    if (existingButton) {
+      return;
+    }
     const conversationButton = document.createElement('button');
     conversationButton.className = 'am-conversation-toggle am-chat-header-button am-header-button-with-text';
     conversationButton.title = 'Conversation History';
@@ -169,7 +223,7 @@ export class ConversationManager {
     `;
     
     conversationButton.addEventListener('click', () => {
-      this.toggleListView();
+      this.toggleListView('conversation');
     });
 
     // Insert in the header actions container as the first button
@@ -187,6 +241,12 @@ export class ConversationManager {
    * Add new conversation button to header actions (always visible)
    */
   public addNewConversationButton(headerElement: HTMLElement): void {
+    // Check if button already exists
+    const existingButton = headerElement.querySelector('.am-conversation-new-header');
+    if (existingButton) {
+      return;
+    }
+    
     const newButton = document.createElement('button');
     newButton.className = 'am-conversation-new-header am-chat-header-button am-header-button-with-text';
     newButton.title = 'New conversation';
@@ -228,48 +288,21 @@ export class ConversationManager {
     }
   }
 
+
   /**
-   * Add back button to header (when in list view)
+   * Add back button to header (legacy compatibility - stub method)
    */
   public addBackButton(headerElement: HTMLElement): void {
-    const backButton = document.createElement('button');
-    backButton.className = 'am-conversation-back am-chat-header-button';
-    backButton.title = 'Back to chat';
-    backButton.innerHTML = icons.arrowLeft;
-    backButton.style.display = this.isListViewOpen ? 'block' : 'none';
-    
-    backButton.addEventListener('click', () => {
-      this.toggleListView();
-    });
-
-    // Insert at the beginning
-    const headerContent = headerElement.querySelector('.am-chat-header-content');
-    if (headerContent) {
-      headerContent.insertBefore(backButton, headerContent.firstChild);
-    }
+    // This method is no longer needed with separate headers
+    // Kept for legacy ChatWidget.ts compatibility
   }
 
   /**
-   * Update header button visibility
+   * Update header button visibility (legacy compatibility - stub method)
    */
   public updateHeaderButtons(headerElement: HTMLElement): void {
-    const conversationButton = headerElement.querySelector('.am-conversation-toggle') as HTMLElement;
-    const backButton = headerElement.querySelector('.am-conversation-back') as HTMLElement;
-    const newButton = headerElement.querySelector('.am-conversation-new-header') as HTMLElement;
-    
-    // Chat view: [☰] Logo Title [+] [×]
-    // History view: [←] Conversations [×]
-    
-    if (conversationButton) {
-      conversationButton.style.display = this.isListViewOpen ? 'none' : 'block';
-    }
-    
-    if (backButton) {
-      backButton.style.display = this.isListViewOpen ? 'block' : 'none';
-    }
-
-    // New chat button is always visible in both views
-    // No need to change its visibility
+    // This method is no longer needed with separate headers
+    // Kept for legacy ChatWidget.ts compatibility
   }
 
   /**
@@ -284,10 +317,31 @@ export class ConversationManager {
   }
 
   /**
-   * Generate the conversation list template (no header since new button is in main header)
+   * Generate the conversation list template with its own header
    */
   private generateConversationListTemplate(): string {
     return `
+      <div class="am-conversation-list-header">
+        <div class="am-conversation-list-header-content">
+          <div class="am-conversation-list-header-left">
+            <button class="am-conversation-back am-chat-header-button" title="Back to chat">
+              ${icons.arrowLeft}
+            </button>
+            <div class="am-chat-logo-title">
+              <span>Conversations</span>
+            </div>
+          </div>
+          <div class="am-conversations-header-actions">
+            <button class="am-conversation-new-list am-chat-header-button am-header-button-with-text" title="New conversation">
+              ${icons.plus2}
+              <span class="am-button-label">New</span>
+            </button>
+            <button class="am-chat-minimize-list am-chat-header-button" title="Minimize chat">
+              ${icons.minimize}
+            </button>
+          </div>
+        </div>
+      </div>
       <div class="am-conversation-list-container">
         <div class="am-conversation-list">
           <!-- Conversation list will be populated here -->
@@ -297,9 +351,41 @@ export class ConversationManager {
   }
 
   /**
-   * Attach event listeners (no panel event listeners needed - button is in header)
+   * Attach event listeners for the header buttons and conversation items
    */
   private attachEventListeners(): void {
+    if (!this.element) return;
+    
+    // Back button
+    const backButton = this.element.querySelector('.am-conversation-back');
+    if (backButton) {
+      backButton.addEventListener('click', () => {
+        this.toggleListView();
+      });
+    }
+    
+    // New conversation button
+    const newButton = this.element.querySelector('.am-conversation-new-list');
+    if (newButton) {
+      newButton.addEventListener('click', () => {
+        if (this.boundNewConversationHandler) {
+          this.boundNewConversationHandler();
+        }
+      });
+    }
+    
+    // Minimize button
+    const minimizeButton = this.element.querySelector('.am-chat-minimize-list');
+    if (minimizeButton) {
+      minimizeButton.addEventListener('click', () => {
+        // Trigger the same minimize action as the main header
+        const mainMinimizeButton = document.querySelector('.am-chat-minimize') as HTMLElement;
+        if (mainMinimizeButton) {
+          mainMinimizeButton.click();
+        }
+      });
+    }
+    
     // Event listeners for conversation items will be attached in attachConversationListeners
   }
 
@@ -320,6 +406,7 @@ export class ConversationManager {
         
         const conversationId = item.getAttribute('data-conversation-id');
         if (conversationId && this.boundSwitchConversationHandler) {
+          // Switch to the conversation (handleSwitchConversation will close the list)
           this.boundSwitchConversationHandler(conversationId);
         }
       });

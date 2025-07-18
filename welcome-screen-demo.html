@@ -175,7 +175,7 @@
                         
                         <div class="form-group">
                             <label for="agentToken">Agent Token</label>
-                            <input type="text" id="agentToken" value=".eJyrVipJzUvMK4nPTFGyMtFRSiwoyMlMTizJzM-DC6WnQuXNDWoBmpAQSw.aHAoWA.FdqMS1-c5orsGBixs9hsK5KEQWU">
+                            <input type="text" id="agentToken" value=".eJyrVipJzUvMK4nPTFGyMtFRSiwoyMlMTizJzM-DC6WnQuUtjGoBmpcQTg.aHbOjw._03zq9_YcsF0SFyAJDT2ZxP9LdA">
                         </div>
                         
                         <div class="form-group">
@@ -245,11 +245,6 @@
                             <input type="text" id="prompt3" value="Return policy">
                         </div>
                         
-                        <div class="form-group">
-                            <label>
-                                <input type="checkbox" id="enableAttachments"> Enable File Attachments
-                            </label>
-                        </div>
                     </div>
                     
                     <!-- Theme Configuration -->
@@ -482,9 +477,6 @@
                 // Toggle text
                 toggleText: document.getElementById('toggleText').value,
                 
-                // Attachment settings
-                enableAttachments: document.getElementById('enableAttachments').checked,
-                
                 // Persistence settings
                 persistence: {
                     enabled: true,
@@ -540,9 +532,6 @@
             
             // Toggle text
             document.getElementById('toggleText').value = 'Ask AI';
-            
-            // Attachment settings
-            document.getElementById('enableAttachments').checked = false;
             
             // Update color previews
             updateColorPreviews();
