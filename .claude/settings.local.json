@@ -41,7 +41,10 @@
       "Bash(--location=\"global\" )",
       "Bash(--format=\"table(name,displayName)\")",
       "Bash(git add:*)",
-      "Bash(git commit:*)"
+      "Bash(git commit:*)",
+      "Bash(npm run lint)",
+      "Bash(python3:*)",
+      "mcp__ide__getDiagnostics"
     ],
     "deny": []
   }

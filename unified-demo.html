@@ -382,21 +382,9 @@
 
                         <h2 class="section-title">Attachment Settings</h2>
                         
-                        <div class="form-group">
-                            <label>
-                                <input type="checkbox" id="enableAttachments"> Enable file attachments
-                            </label>
-                            <p class="description">When enabled, users can attach files to their messages. Files are validated based on agent capabilities.</p>
-                        </div>
                         
                         <h2 class="section-title">Attachment Settings</h2>
                         
-                        <div class="form-group">
-                            <label>
-                                <input type="checkbox" id="enableAttachments"> Enable file attachments
-                            </label>
-                            <p class="description">When enabled, users can attach files to their messages. Files are validated based on agent capabilities.</p>
-                        </div>
                     </div>
                 </div>
                 
@@ -778,12 +766,6 @@
                 
                 // Branding settings
                 
-                // Attachment settings
-                enableAttachments: document.getElementById('enableAttachments').checked,
-                
-                // Attachment settings
-                enableAttachments: document.getElementById('enableAttachments').checked,
-                
                 // Persistence settings
                 persistence: {
                     enabled: document.getElementById('persistenceEnabled').checked,
@@ -871,12 +853,6 @@
             document.getElementById('persistenceKey').value = '';
             
             // Branding settings
-            
-            // Attachment settings
-            document.getElementById('enableAttachments').checked = false;
-            
-            // Attachment settings
-            document.getElementById('enableAttachments').checked = false;
             
             // Update color previews
             updateColorPreviews();

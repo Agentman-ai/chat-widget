@@ -58,6 +58,7 @@ jobs:
       release_type: ${{ inputs.release_type }}
       deploy_to_gcp: ${{ inputs.deploy_shopify_to_gcp }}
       dry_run: ${{ inputs.dry_run }}
+      deploy_version: 'v2'
     secrets: inherit
 
   final-summary:

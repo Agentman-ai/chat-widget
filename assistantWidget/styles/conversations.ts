@@ -8,12 +8,105 @@ export const conversationStyles = `
     background: var(--chat-background-color, #ffffff);
     overflow: hidden;
     position: absolute;
-    top: 60px; /* Below header */
+    top: 0; /* Start from top since it has its own header */
     left: 0;
     right: 0;
-    bottom: 60px; /* Above branding */
+    bottom: 0; /* Full height */
     transform: translateX(100%);
     transition: transform 0.3s ease-in-out;
+    z-index: 10; /* Ensure it's above chat content when open */
+  }
+
+  /* Conversation List Header */
+  .am-conversation-list-header {
+    background-color: white;
+    color: #333;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 12px 16px;
+    border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+    height: 54px;
+    flex: 0 0 auto;
+    box-sizing: border-box;
+  }
+
+  .am-conversation-list-header-content {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    width: 100%;
+  }
+
+  .am-conversation-list-header-left {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .am-conversations-header-actions {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+  }
+
+  /* Back button in conversation list header */
+  .am-conversation-list-header .am-conversation-back {
+    background: none;
+    border: none;
+    padding: 6px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background-color 0.2s;
+    border-radius: 4px;
+    color: #6b7280;
+  }
+
+  .am-conversation-list-header .am-conversation-back:hover {
+    background: rgba(0, 0, 0, 0.05);
+  }
+
+  /* New button in conversation list header */
+  .am-conversation-list-header .am-conversation-new-list {
+    background: transparent;
+    border: none;
+    color: #6b7280;
+    cursor: pointer;
+    padding: 6px 8px;
+    border-radius: 4px;
+    font-size: 16px;
+    transition: background-color 0.2s;
+    display: flex !important;
+    align-items: center;
+    gap: 4px;
+  }
+
+  .am-conversation-list-header .am-conversation-new-list .am-button-label {
+    color: #6b7280;
+  }
+
+  .am-conversation-list-header .am-conversation-new-list:hover {
+    background: rgba(0, 0, 0, 0.05);
+  }
+
+  /* Minimize button in conversation list header */
+  .am-conversation-list-header .am-chat-minimize-list {
+    background: none;
+    border: none;
+    padding: 6px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background-color 0.2s;
+    border-radius: 4px;
+    color: #6b7280;
+  }
+
+  .am-conversation-list-header .am-chat-minimize-list:hover {
+    background: rgba(0, 0, 0, 0.05);
   }
 
   /* Animation states */
@@ -82,7 +175,7 @@ export const conversationStyles = `
   .am-button-label {
     font-size: 12px;
     font-weight: 400;
-    color: var(--chat-header-text-color, #ffffff);
+    color: inherit;
     white-space: nowrap;
   }
 

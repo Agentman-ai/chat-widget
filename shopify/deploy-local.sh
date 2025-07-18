@@ -32,24 +32,33 @@ echo -e "${BLUE}Build Date: $BUILD_DATE${NC}\n"
 echo -e "${YELLOW}Creating build directory...${NC}"
 rm -rf "$BUILD_DIR"
 mkdir -p "$BUILD_DIR/cdn/shopify/v1"
+mkdir -p "$BUILD_DIR/cdn/shopify/v2"
 mkdir -p "$BUILD_DIR/cdn/shopify/config-tool"
 mkdir -p "$BUILD_DIR/cdn/shopify/docs"
 
-# Build widget script
-echo -e "${YELLOW}Building widget script...${NC}"
-cat > "$BUILD_DIR/cdn/shopify/v1/widget.js" << EOF
+# Build widget script for v2 (v1 is frozen)
+echo -e "${YELLOW}Building widget script for v2...${NC}"
+cat > "$BUILD_DIR/cdn/shopify/v2/widget.js" << EOF
 /**
  * Agentman Shopify Widget
  * Version: $VERSION
  * Build Date: $BUILD_DATE
- * CDN: https://cdn.agentman.ai/shopify/v1/widget.js
+ * CDN: https://cdn.agentman.ai/shopify/v2/widget.js
  */
 
 EOF
-cat "$SCRIPT_DIR/script-service/index.js" >> "$BUILD_DIR/cdn/shopify/v1/widget.js"
+cat "$SCRIPT_DIR/script-service/index.js" >> "$BUILD_DIR/cdn/shopify/v2/widget.js"
 
 # Create minified version (simple copy for now)
-cp "$BUILD_DIR/cdn/shopify/v1/widget.js" "$BUILD_DIR/cdn/shopify/v1/widget.min.js"
+cp "$BUILD_DIR/cdn/shopify/v2/widget.js" "$BUILD_DIR/cdn/shopify/v2/widget.min.js"
+
+# Create v1 placeholder files with warning
+echo -e "${YELLOW}Creating v1 placeholder (frozen version)...${NC}"
+cat > "$BUILD_DIR/cdn/shopify/v1/DO_NOT_DEPLOY.txt" << EOF
+WARNING: v1 is frozen!
+The v1 directory contains the old non-refactored version and should not be modified.
+All new deployments should go to v2.
+EOF
 
 # Copy core widget from parent dist
 echo -e "${YELLOW}Copying core widget...${NC}"
@@ -73,6 +82,8 @@ cat > "$BUILD_DIR/cdn/shopify/version.json" << EOF
     "files": {
         "widget": "/v1/widget.js",
         "widgetMin": "/v1/widget.min.js",
+        "widgetV2": "/v2/widget.js",
+        "widgetMinV2": "/v2/widget.min.js",
         "configTool": "/config-tool/index.html",
         "documentation": "/docs/installation.html"
     }
@@ -91,7 +102,9 @@ This build contains all files needed for the Shopify widget CDN deployment.
 ```
 cdn/shopify/
 ├── v1/
-│   ├── widget.js         # Main widget script
+│   └── DO_NOT_DEPLOY.txt # WARNING: v1 is frozen (contains old version)
+├── v2/
+│   ├── widget.js         # Main widget script (NEW refactored version)
 │   └── widget.min.js     # Minified version
 ├── config-tool/          # Configuration tool
 │   ├── index.html
@@ -103,12 +116,14 @@ cdn/shopify/
 └── version.json          # Version manifest
 ```
 
+⚠️ IMPORTANT: Only deploy the v2 directory! v1 is frozen and contains the old non-refactored version.
+
 ### CDN Deployment Options
 
 #### Option 1: AWS S3 + CloudFront
-1. Upload the entire `cdn/shopify/` directory to your S3 bucket
+1. Upload ONLY the `cdn/shopify/v2/` directory to your S3 bucket (DO NOT upload v1)
 2. Set appropriate cache headers:
-   - `/v1/*` - Cache for 1 year (immutable)
+   - `/v2/*` - Cache for 1 hour (allow updates)
    - `/config-tool/*` - Cache for 1 hour
    - `/docs/*` - Cache for 1 hour
    - `/version.json` - Cache for 5 minutes
@@ -127,11 +142,20 @@ cdn/shopify/
 ### Testing URLs
 
 After deployment, your URLs will be:
-- Widget: `https://[your-cdn]/shopify/v1/widget.js`
+- Widget (v2 - latest): `https://[your-cdn]/shopify/v2/widget.js`
+- Widget (v1 - legacy): `https://[your-cdn]/shopify/v1/widget.js`
 - Config Tool: `https://[your-cdn]/shopify/config-tool/index.html`
 - Docs: `https://[your-cdn]/shopify/docs/installation.html`
 
 ### Script Tag for Stores
+
+For v2 (recommended for new integrations):
+```html
+<script src="https://[your-cdn]/shopify/v2/widget.js" 
+        data-agent-token="YOUR_AGENT_TOKEN"></script>
+```
+
+For v1 (legacy):
 ```html
 <script src="https://[your-cdn]/shopify/v1/widget.js" 
         data-agent-token="YOUR_AGENT_TOKEN"></script>
@@ -185,15 +209,18 @@ http.createServer((req, res) => {
 }).listen(PORT);
 
 console.log(`\n🚀 Test server running at http://localhost:${PORT}`);
-console.log(`📝 Widget URL: http://localhost:${PORT}/shopify/v1/widget.js`);
+console.log(`📝 Widget v2 URL: http://localhost:${PORT}/shopify/v2/widget.js`);
+console.log(`📝 Widget v1 URL: http://localhost:${PORT}/shopify/v1/widget.js`);
 console.log(`🎨 Config Tool: http://localhost:${PORT}/shopify/config-tool/index.html`);
 console.log(`\nPress Ctrl+C to stop\n`);
 EOF
 
 echo -e "\n${GREEN}✅ Build completed successfully!${NC}"
 echo -e "${GREEN}📁 Output directory: $BUILD_DIR${NC}"
+echo -e "\n${YELLOW}⚠️  IMPORTANT: Only deploy the v2 directory!${NC}"
+echo -e "${YELLOW}    v1 is frozen and contains the old non-refactored version.${NC}"
 echo -e "\n${BLUE}Next Steps:${NC}"
 echo "1. Test locally: cd $BUILD_DIR && node test-server.js"
-echo "2. Deploy to your CDN of choice (see DEPLOYMENT.md)"
-echo "3. Update script URLs in documentation"
+echo "2. Deploy ONLY v2 to your CDN (see DEPLOYMENT.md)"
+echo "3. Update script URLs in documentation to use v2"
 echo ""

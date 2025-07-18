@@ -35,13 +35,20 @@ Manages the Shopify widget deployment to Google Cloud Storage CDN.
 - `release_type`: patch, minor, or major
 - `deploy_to_gcp`: Whether to deploy to Google Cloud Storage (default: true)
 - `dry_run`: Whether to skip deployment (default: false)
+- `deploy_version`: Always set to 'v2' (v1 is frozen for legacy support)
 
 **What it does**:
 1. Bumps Shopify widget version
 2. Builds the Shopify-specific widget
-3. Deploys to Google Cloud Storage
-4. Invalidates CDN cache
-5. Creates Git tag and GitHub release
+3. Deploys to Google Cloud Storage (v2 directory only)
+4. Creates Git tag and GitHub release
+
+**Important**: 
+- v1 contains the old non-refactored widget and is frozen
+- All new deployments go to v2 automatically
+- CDN URLs:
+  - v1 (legacy): `https://storage.googleapis.com/chatwidget-shopify-storage-for-cdn/shopify/v1/widget.js`
+  - v2 (current): `https://storage.googleapis.com/chatwidget-shopify-storage-for-cdn/shopify/v2/widget.js`
 
 **Required Secrets**:
 - `WIF_PROVIDER`: Workload Identity Federation provider

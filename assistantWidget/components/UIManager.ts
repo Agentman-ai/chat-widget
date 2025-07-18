@@ -593,7 +593,7 @@ export class UIManager {
       container.style.position = 'fixed';
     } else {
       // Desktop layout - floating window
-      container.style.width = this.config.initialWidth || '400px';
+      container.style.width = this.config.initialWidth || '480px';
       container.style.height = this.config.initialHeight || '600px';
       container.style.borderRadius = '12px';
       container.style.bottom = '20px';

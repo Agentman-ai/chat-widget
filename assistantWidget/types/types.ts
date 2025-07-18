@@ -76,7 +76,7 @@ export interface ChatConfig {
   initialMessage?: string;
   placeholder?: string;
   persistence?: PersistenceConfig;
-  /** Enable/disable file attachments (disabled by default) */
+  /** Enable/disable file attachments (enabled by default) */
   enableAttachments?: boolean;
   /** Client metadata to send with API requests */
   clientMetadata?: Partial<ClientMetadata>;
@@ -134,6 +134,11 @@ export interface ChatState {
   error?: string;
   pendingAttachments: FileAttachment[];
   isUploadingFiles: boolean;
+  
+  // New view management properties
+  currentView: 'welcome' | 'conversation';
+  hasStartedConversation: boolean;
+  isTransitioning?: boolean;
 }
 
 export interface APIResponse {

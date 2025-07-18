@@ -1,0 +1,707 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Welcome Screen Demo - ChatWidget Refactored</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 20px;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        #chat-container {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            z-index: 1000;
+        }
+        .config-panel {
+            margin: 20px 0;
+            padding: 20px;
+            background: #f5f5f5;
+            border-radius: 8px;
+        }
+        .form-group {
+            margin-bottom: 15px;
+        }
+        .form-row {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 20px;
+        }
+        .form-column {
+            flex: 1;
+            min-width: 300px;
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: 500;
+        }
+        input, select {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            box-sizing: border-box;
+        }
+        input[type="checkbox"] {
+            width: auto;
+        }
+        input[type="color"] {
+            height: 40px;
+            padding: 2px;
+        }
+        .color-preview {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 1px solid #ccc;
+            border-radius: 3px;
+            vertical-align: middle;
+            margin-left: 5px;
+        }
+        .actions {
+            margin-top: 20px;
+            padding-top: 20px;
+            border-top: 1px solid #ddd;
+            display: flex;
+            justify-content: space-between;
+        }
+        button {
+            padding: 10px 20px;
+            margin-right: 10px;
+            background: #2563eb;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        button:hover {
+            background: #1d4ed8;
+        }
+        button.secondary {
+            background: #6b7280;
+        }
+        button.secondary:hover {
+            background: #4b5563;
+        }
+        .section-title {
+            margin-top: 0;
+            border-bottom: 1px solid #ddd;
+            padding-bottom: 10px;
+        }
+        .status-panel {
+            margin-top: 15px;
+            font-family: monospace;
+            font-size: 12px;
+            padding: 10px;
+            background: #f0f0f0;
+            border-radius: 4px;
+            max-height: 300px;
+            overflow: auto;
+            white-space: pre;
+        }
+        .tabs {
+            display: flex;
+            margin-bottom: 20px;
+            border-bottom: 1px solid #ddd;
+        }
+        .tab {
+            padding: 10px 20px;
+            cursor: pointer;
+            border: 1px solid transparent;
+            border-bottom: none;
+            border-radius: 4px 4px 0 0;
+            margin-right: 5px;
+        }
+        .tab.active {
+            background: #f5f5f5;
+            border-color: #ddd;
+        }
+        .tab-content {
+            display: none;
+        }
+        .tab-content.active {
+            display: block;
+        }
+        .welcome-demo-notice {
+            background: #dbeafe;
+            border: 1px solid #3b82f6;
+            border-radius: 8px;
+            padding: 16px;
+            margin-bottom: 20px;
+        }
+        .welcome-demo-notice h3 {
+            margin: 0 0 8px 0;
+            color: #1e40af;
+        }
+        .welcome-demo-notice p {
+            margin: 0;
+            color: #1e3a8a;
+        }
+    </style>
+</head>
+<body>
+    <div class="welcome-demo-notice">
+        <h3>🎉 Welcome Screen Demo</h3>
+        <p>This demo showcases the new Claude-style welcome screen implementation. The widget now starts with a clean, centered input and transitions smoothly to the full conversation interface after the first user interaction.</p>
+    </div>
+
+    <h1>Welcome Screen Demo - ChatWidget Refactored</h1>
+    
+    <div class="tabs">
+        <div class="tab active" data-tab="config">Configuration</div>
+        <div class="tab" data-tab="welcome">Welcome Screen</div>
+        <div class="tab" data-tab="debug">Debug</div>
+    </div>
+    
+    <!-- Configuration Tab -->
+    <div class="tab-content active" id="config-tab">
+        <div class="config-panel">
+            <form id="configForm" onsubmit="return false;">
+                <div class="form-row">
+                    <!-- Basic Configuration -->
+                    <div class="form-column">
+                        <h2 class="section-title">Basic Settings</h2>
+                        
+                        <div class="form-group">
+                            <label for="apiUrl">API URL</label>
+                            <input type="text" id="apiUrl" value="http://localhost:8000">
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="agentToken">Agent Token</label>
+                            <input type="text" id="agentToken" value=".eJyrVipJzUvMK4nPTFGyMtFRSiwoyMlMTizJzM-DC6WnQuUtjGoBmpcQTg.aHbOjw._03zq9_YcsF0SFyAJDT2ZxP9LdA">
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="title">Widget Title</label>
+                            <input type="text" id="title" value="AI Assistant">
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="placeholder">Placeholder Text</label>
+                            <input type="text" id="placeholder" value="Ask me anything..." />
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="variant">Widget Variant</label>
+                            <select id="variant">
+                                <option value="corner">Corner (Floating Button)</option>
+                                <option value="centered">Centered</option>
+                                <option value="inline">Inline</option>
+                            </select>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="position">Widget Position</label>
+                            <select id="position">
+                                <option value="bottom-right">Bottom Right</option>
+                                <option value="bottom-left">Bottom Left</option>
+                                <option value="top-right">Top Right</option>
+                                <option value="top-left">Top Left</option>
+                            </select>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label>
+                                <input type="checkbox" id="initiallyOpen"> Initially Open
+                            </label>
+                        </div>
+                    </div>
+                    
+                    <!-- Welcome Screen Configuration -->
+                    <div class="form-column">
+                        <h2 class="section-title">Welcome Screen & Prompts</h2>
+                        
+                        <div class="form-group">
+                            <label>
+                                <input type="checkbox" id="promptsShow" checked>
+                                Show Welcome Message & Prompts
+                            </label>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="welcomeMessage">Welcome Message</label>
+                            <input type="text" id="welcomeMessage" value="How can I help you today?">
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="prompt1">Prompt 1</label>
+                            <input type="text" id="prompt1" value="Track my order">
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="prompt2">Prompt 2</label>
+                            <input type="text" id="prompt2" value="Product information">
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="prompt3">Prompt 3</label>
+                            <input type="text" id="prompt3" value="Return policy">
+                        </div>
+                        
+                    </div>
+                    
+                    <!-- Theme Configuration -->
+                    <div class="form-column">
+                        <h2 class="section-title">Theme Settings</h2>
+                        
+                        <div class="form-group">
+                            <label for="backgroundColor">Widget Background</label>
+                            <input type="color" id="backgroundColor" value="#FFFFFF">
+                            <span class="color-preview" style="background-color: #FFFFFF;"></span>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="textColor">Text Color</label>
+                            <input type="color" id="textColor" value="#111827">
+                            <span class="color-preview" style="background-color: #111827;"></span>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="buttonColor">Button Color</label>
+                            <input type="color" id="buttonColor" value="#2563eb">
+                            <span class="color-preview" style="background-color: #2563eb;"></span>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="buttonTextColor">Button Text</label>
+                            <input type="color" id="buttonTextColor" value="#FFFFFF">
+                            <span class="color-preview" style="background-color: #FFFFFF;"></span>
+                        </div>
+                        
+                        <h3 style="margin-top: 20px; padding-top: 10px; border-top: 1px solid #ddd;">Toggle Button</h3>
+                        
+                        <div class="form-group">
+                            <label for="toggleText">Toggle Button Text</label>
+                            <input type="text" id="toggleText" value="Ask AI">
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="toggleBackgroundColor">Toggle Background</label>
+                            <input type="color" id="toggleBackgroundColor" value="#2563eb">
+                            <span class="color-preview" style="background-color: #2563eb;"></span>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="toggleTextColor">Toggle Text</label>
+                            <input type="color" id="toggleTextColor" value="#FFFFFF">
+                            <span class="color-preview" style="background-color: #FFFFFF;"></span>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="toggleIconColor">Toggle Icon</label>
+                            <input type="color" id="toggleIconColor" value="#FFFFFF">
+                            <span class="color-preview" style="background-color: #FFFFFF;"></span>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="actions">
+                    <div>
+                        <button type="button" class="secondary" onclick="resetConfig()">Reset to Defaults</button>
+                        <button type="button" onclick="applyConfig()">Apply Configuration</button>
+                    </div>
+                    <div>
+                        <button type="button" class="secondary" onclick="testWelcomeScreen()">Test Welcome Screen</button>
+                        <button type="button" class="secondary" onclick="testTransition()">Test Transition</button>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+    
+    <!-- Welcome Screen Tab -->
+    <div class="tab-content" id="welcome-tab">
+        <div class="config-panel">
+            <h2 class="section-title">Welcome Screen Features</h2>
+            
+            <div class="form-row">
+                <div class="form-column">
+                    <h3>✨ New Welcome Screen Features</h3>
+                    <ul>
+                        <li><strong>Claude-style Interface:</strong> Clean, centered input similar to Claude.ai</li>
+                        <li><strong>Progressive Disclosure:</strong> Start simple, show complexity when needed</li>
+                        <li><strong>Smooth Transitions:</strong> Animated slide from welcome to conversation</li>
+                        <li><strong>Delayed Initialization:</strong> Agent loads only after first interaction</li>
+                        <li><strong>Focused Experience:</strong> No header clutter in welcome screen</li>
+                    </ul>
+                    
+                    <h3>🎯 User Experience Flow</h3>
+                    <ol>
+                        <li><strong>Initial Load:</strong> Clean welcome screen with centered input</li>
+                        <li><strong>User Interaction:</strong> Type message or click prompt</li>
+                        <li><strong>Smooth Transition:</strong> Animated slide to conversation view</li>
+                        <li><strong>Agent Initialization:</strong> Happens in background during transition</li>
+                        <li><strong>Full Chat:</strong> Traditional interface with all features</li>
+                    </ol>
+                </div>
+                
+                <div class="form-column">
+                    <h3>🏗️ Architecture Changes</h3>
+                    <p><strong>Before:</strong> Single monolithic ChatWidget (2136 lines)</p>
+                    <p><strong>After:</strong> Component-based modular architecture</p>
+                    
+                    <ul>
+                        <li><strong>WelcomeScreen.ts:</strong> Minimalist welcome interface</li>
+                        <li><strong>ConversationView.ts:</strong> Traditional chat interface</li>
+                        <li><strong>ViewManager.ts:</strong> Handles smooth transitions</li>
+                        <li><strong>ChatWidgetRefactored.ts:</strong> Simplified coordinator (600 lines)</li>
+                    </ul>
+                    
+                    <div class="actions">
+                        <button type="button" onclick="showCurrentView()">Show Current View</button>
+                        <button type="button" onclick="resetToWelcome()">Reset to Welcome</button>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="status-panel" id="welcomeStatus">
+                Welcome screen demo ready. Click "Apply Configuration" to test the new interface.
+            </div>
+        </div>
+    </div>
+    
+    <!-- Debug Tab -->
+    <div class="tab-content" id="debug-tab">
+        <div class="config-panel">
+            <h2 class="section-title">Debug Information</h2>
+            
+            <div class="form-row">
+                <div class="form-column">
+                    <button onclick="showWidgetState()">Show Widget State</button>
+                    <button onclick="showCurrentView()">Show Current View</button>
+                    <button onclick="showComponents()">Show Components</button>
+                    <button onclick="testViewTransition()">Test View Transition</button>
+                </div>
+            </div>
+            
+            <div class="status-panel" id="debugInfo">
+                Debug information will appear here...
+            </div>
+        </div>
+    </div>
+    
+    <div id="chat-container"></div>
+    
+    <!-- Include the bundled widget (this will load the original ChatWidget for now) -->
+    <script src="dist/index.js"></script>
+    
+    <script>
+        let chatWidget;
+        
+        // Try to use the refactored ChatWidget if available, fallback to original
+        function getChatWidgetClass() {
+            // Check if the refactored version is available
+            if (window.AgentmanChatWidget && window.AgentmanChatWidget.ChatWidgetRefactored) {
+                console.log('🎉 Using ChatWidgetRefactored with welcome screen');
+                return window.AgentmanChatWidget.ChatWidgetRefactored;
+            }
+            
+            // Fallback to original ChatWidget
+            if (window.AgentmanChatWidget && window.AgentmanChatWidget.ChatWidget) {
+                console.log('⚠️ Falling back to original ChatWidget (no welcome screen)');
+                return window.AgentmanChatWidget.ChatWidget;
+            }
+            
+            // Last resort - try direct access
+            if (window.AgentmanChatWidget) {
+                console.log('⚠️ Using direct ChatWidget access');
+                return window.AgentmanChatWidget;
+            }
+            
+            console.error('❌ No ChatWidget class found!');
+            return null;
+        }
+        
+        // Initialize the widget with welcome screen
+        function initWidget() {
+            const ChatWidgetClass = getChatWidgetClass();
+            
+            if (!ChatWidgetClass) {
+                console.error('Cannot initialize widget - no ChatWidget class available');
+                return;
+            }
+            
+            try {
+                chatWidget = new ChatWidgetClass(getFormConfig());
+                console.log('✅ Widget initialized successfully');
+                
+                // Show current view info
+                if (chatWidget.getCurrentView) {
+                    console.log('📍 Initial view:', chatWidget.getCurrentView());
+                }
+            } catch (error) {
+                console.error('❌ Error initializing widget:', error);
+            }
+        }
+        
+        function getFormConfig() {
+            return {
+                apiUrl: document.getElementById('apiUrl').value,
+                agentToken: document.getElementById('agentToken').value,
+                title: document.getElementById('title').value,
+                placeholder: document.getElementById('placeholder').value,
+                variant: document.getElementById('variant').value,
+                position: document.getElementById('position').value,
+                initiallyOpen: document.getElementById('initiallyOpen').checked,
+                containerId: 'chat-container',
+                
+                // Welcome screen prompts
+                messagePrompts: {
+                    show: document.getElementById('promptsShow').checked,
+                    welcome_message: document.getElementById('welcomeMessage').value,
+                    prompts: [
+                        document.getElementById('prompt1').value,
+                        document.getElementById('prompt2').value,
+                        document.getElementById('prompt3').value
+                    ].filter(p => p && p.trim())
+                },
+                
+                // Theme settings
+                theme: {
+                    backgroundColor: document.getElementById('backgroundColor').value,
+                    textColor: document.getElementById('textColor').value,
+                    buttonColor: document.getElementById('buttonColor').value,
+                    buttonTextColor: document.getElementById('buttonTextColor').value,
+                    toggleBackgroundColor: document.getElementById('toggleBackgroundColor').value,
+                    toggleTextColor: document.getElementById('toggleTextColor').value,
+                    toggleIconColor: document.getElementById('toggleIconColor').value,
+                },
+                
+                // Toggle text
+                toggleText: document.getElementById('toggleText').value,
+                
+                // Persistence settings
+                persistence: {
+                    enabled: true,
+                    days: 7
+                },
+                
+                // Debug settings
+                debug: true
+            };
+        }
+        
+        function applyConfig() {
+            console.log('🔄 Applying new configuration...');
+            
+            // Remove existing widget
+            if (chatWidget) {
+                console.log('🗑️ Destroying existing widget instance');
+                chatWidget.destroy();
+                chatWidget = null;
+            }
+            
+            // Small delay to ensure cleanup is complete
+            setTimeout(() => {
+                initWidget();
+            }, 100);
+        }
+        
+        function resetConfig() {
+            // Reset form to defaults
+            document.getElementById('apiUrl').value = 'http://localhost:8000';
+            document.getElementById('agentToken').value = '.eJyrVipJzUvMK4nPTFGyMtFRSiwoyMlMTizJzM-DC6WnQuXNDWoBmpAQSw.aHAoWA.FdqMS1-c5orsGBixs9hsK5KEQWU';
+            document.getElementById('title').value = 'AI Assistant';
+            document.getElementById('placeholder').value = 'Ask me anything...';
+            document.getElementById('variant').value = 'corner';
+            document.getElementById('position').value = 'bottom-right';
+            document.getElementById('initiallyOpen').checked = false;
+            
+            // Welcome screen settings
+            document.getElementById('promptsShow').checked = true;
+            document.getElementById('welcomeMessage').value = 'How can I help you today?';
+            document.getElementById('prompt1').value = 'Track my order';
+            document.getElementById('prompt2').value = 'Product information';
+            document.getElementById('prompt3').value = 'Return policy';
+            
+            // Theme settings
+            document.getElementById('backgroundColor').value = '#FFFFFF';
+            document.getElementById('textColor').value = '#111827';
+            document.getElementById('buttonColor').value = '#2563eb';
+            document.getElementById('buttonTextColor').value = '#FFFFFF';
+            document.getElementById('toggleBackgroundColor').value = '#2563eb';
+            document.getElementById('toggleTextColor').value = '#FFFFFF';
+            document.getElementById('toggleIconColor').value = '#FFFFFF';
+            
+            // Toggle text
+            document.getElementById('toggleText').value = 'Ask AI';
+            
+            // Update color previews
+            updateColorPreviews();
+            
+            console.log('📝 Form reset to defaults');
+        }
+        
+        function testWelcomeScreen() {
+            if (!chatWidget) {
+                console.log('⚠️ No widget initialized');
+                return;
+            }
+            
+            if (chatWidget.startNewConversation) {
+                chatWidget.startNewConversation();
+                console.log('🎯 Reset to welcome screen');
+            } else {
+                console.log('⚠️ Welcome screen reset not available (using original ChatWidget)');
+            }
+        }
+        
+        function testTransition() {
+            if (!chatWidget) {
+                console.log('⚠️ No widget initialized');
+                return;
+            }
+            
+            if (chatWidget.getCurrentView) {
+                const currentView = chatWidget.getCurrentView();
+                console.log('🔄 Current view:', currentView);
+                
+                if (currentView === 'welcome') {
+                    console.log('💡 Tip: Type a message or click a prompt to see the transition to conversation view');
+                } else {
+                    console.log('💡 Use "Reset to Welcome" to see the welcome screen again');
+                }
+            }
+        }
+        
+        function showWidgetState() {
+            const debugInfo = document.getElementById('debugInfo');
+            
+            if (!chatWidget) {
+                debugInfo.textContent = 'No widget initialized';
+                return;
+            }
+            
+            try {
+                const info = {
+                    initialized: !!chatWidget,
+                    currentView: chatWidget.getCurrentView ? chatWidget.getCurrentView() : 'unknown',
+                    hasWelcomeScreen: !!chatWidget.startNewConversation,
+                    variant: chatWidget.config ? chatWidget.config.variant : 'unknown',
+                    isOpen: chatWidget.state ? chatWidget.state.isOpen : 'unknown'
+                };
+                
+                debugInfo.textContent = JSON.stringify(info, null, 2);
+            } catch (e) {
+                debugInfo.textContent = 'Error: ' + e.message;
+            }
+        }
+        
+        function showCurrentView() {
+            const status = document.getElementById('welcomeStatus') || document.getElementById('debugInfo');
+            
+            if (!chatWidget) {
+                status.textContent = 'No widget initialized';
+                return;
+            }
+            
+            if (chatWidget.getCurrentView) {
+                const view = chatWidget.getCurrentView();
+                status.textContent = `Current view: ${view}\n\nView capabilities:\n- Welcome screen: ${!!chatWidget.startNewConversation}\n- View transitions: ${!!chatWidget.viewManager}`;
+            } else {
+                status.textContent = 'Current view information not available (using original ChatWidget)';
+            }
+        }
+        
+        function resetToWelcome() {
+            if (chatWidget && chatWidget.startNewConversation) {
+                chatWidget.startNewConversation();
+                document.getElementById('welcomeStatus').textContent = 'Reset to welcome screen successfully!';
+            } else {
+                document.getElementById('welcomeStatus').textContent = 'Welcome screen reset not available (using original ChatWidget)';
+            }
+        }
+        
+        function showComponents() {
+            const debugInfo = document.getElementById('debugInfo');
+            
+            if (!chatWidget) {
+                debugInfo.textContent = 'No widget initialized';
+                return;
+            }
+            
+            const components = {
+                viewManager: !!chatWidget.viewManager,
+                welcomeScreen: !!chatWidget.welcomeScreen,
+                conversationView: !!chatWidget.conversationView,
+                stateManager: !!chatWidget.stateManager,
+                configManager: !!chatWidget.configManager
+            };
+            
+            debugInfo.textContent = JSON.stringify(components, null, 2);
+        }
+        
+        function testViewTransition() {
+            if (!chatWidget) {
+                console.log('⚠️ No widget initialized');
+                return;
+            }
+            
+            const debugInfo = document.getElementById('debugInfo');
+            
+            if (chatWidget.viewManager && chatWidget.viewManager.getCurrentView) {
+                const currentView = chatWidget.viewManager.getCurrentView();
+                debugInfo.textContent = `Current view: ${currentView}\n\nTo test transition:\n1. If on welcome screen, type a message\n2. If on conversation view, use "Reset to Welcome"`;
+            } else {
+                debugInfo.textContent = 'View transitions not available (using original ChatWidget)';
+            }
+        }
+        
+        // Update all color preview elements
+        function updateColorPreviews() {
+            document.querySelectorAll('input[type="color"]').forEach(input => {
+                const preview = input.nextElementSibling;
+                if (preview && preview.classList.contains('color-preview')) {
+                    preview.style.backgroundColor = input.value;
+                }
+            });
+        }
+        
+        // Tab switching
+        function setupTabs() {
+            document.querySelectorAll('.tab').forEach(tab => {
+                tab.addEventListener('click', () => {
+                    // Remove active class from all tabs
+                    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+                    document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+                    
+                    // Add active class to clicked tab
+                    tab.classList.add('active');
+                    
+                    // Show corresponding content
+                    const tabId = tab.getAttribute('data-tab');
+                    document.getElementById(`${tabId}-tab`).classList.add('active');
+                });
+            });
+        }
+        
+        // Initialize color preview updates
+        document.querySelectorAll('input[type="color"]').forEach(input => {
+            input.addEventListener('input', function() {
+                const preview = this.nextElementSibling;
+                if (preview && preview.classList.contains('color-preview')) {
+                    preview.style.backgroundColor = this.value;
+                }
+            });
+        });
+        
+        // Initialize on page load
+        document.addEventListener('DOMContentLoaded', function() {
+            setupTabs();
+            updateColorPreviews();
+            initWidget();
+            
+            // Show welcome features
+            const welcomeStatus = document.getElementById('welcomeStatus');
+            welcomeStatus.textContent = '🎉 Welcome Screen Demo Ready!\n\nThis demo uses the new ChatWidgetRefactored with:\n✨ Claude-style welcome screen\n🎯 Progressive disclosure\n🔄 Smooth view transitions\n⚡ Delayed agent initialization';
+        });
+    </script>
+</body>
+</html>
