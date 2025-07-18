@@ -92,7 +92,11 @@ jobs:
             esac
             git checkout -- package.json package-lock.json
           else
+            # Temporarily remove postversion script to prevent auto-push
+            npm pkg delete scripts.postversion
             NEW_VERSION=$(npm version ${{ inputs.release_type }} --no-git-tag-version | sed 's/v//')
+            # Restore postversion script
+            npm pkg set scripts.postversion="git push && git push --tags"
           fi
           
           echo "new_version=$NEW_VERSION" >> $GITHUB_OUTPUT
