@@ -17,6 +17,18 @@ on:
         required: false
         default: false
         type: boolean
+  workflow_call:
+    inputs:
+      release_type:
+        description: 'Release type'
+        required: true
+        default: 'patch'
+        type: string
+      dry_run:
+        description: 'Dry run (skip publishing)'
+        required: false
+        default: false
+        type: boolean
 
 permissions:
   contents: write
@@ -44,6 +56,9 @@ jobs:
           node-version: '20.x'
           registry-url: 'https://registry.npmjs.org'
           cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
 
       - name: Configure Git
         run: |
