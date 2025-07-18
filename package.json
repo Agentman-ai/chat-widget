@@ -1,6 +1,6 @@
 {
   "name": "@agentman/chat-widget",
-  "version": "0.5.0",
+  "version": "1.0.0",
   "description": "Agentman Chat Widget for easy integration with web applications",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
@@ -21,15 +21,15 @@
     "dev": "webpack --mode development --watch",
     "prepare": "npm run build",
     "prepublishOnly": "npm test",
-    "preversion": "echo 'Skipping lint check'",
-    "version": "npm run build",
-    "postversion": "git push && git push --tags",
     "test": "jest --passWithNoTests",
     "lint": "eslint . --ext .ts",
     "docs": "mkdir -p docs && cp README.md docs/index.md",
     "release:patch": "npm version patch",
     "release:minor": "npm version minor",
-    "release:major": "npm version major"
+    "release:major": "npm version major",
+    "postversion": "git push && git push --tags",
+    "version": "npm run build",
+    "preversion": "echo 'Skipping lint check'"
   },
   "keywords": [
     "chat",
