@@ -29,6 +29,28 @@ on:
         type: choice
         options:
           - v2
+  workflow_call:
+    inputs:
+      release_type:
+        description: 'Release type'
+        required: true
+        default: 'patch'
+        type: string
+      deploy_to_gcp:
+        description: 'Deploy to Google Cloud Storage'
+        required: true
+        default: true
+        type: boolean
+      dry_run:
+        description: 'Dry run (skip deployment)'
+        required: false
+        default: false
+        type: boolean
+      deploy_version:
+        description: 'Deploy to version (v2 only - v1 is frozen)'
+        required: true
+        default: 'v2'
+        type: string
 
 permissions:
   contents: write
