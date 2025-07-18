@@ -207,16 +207,11 @@ jobs:
             exit 1
           fi
           
-          # Verify build output
-          if [ ! -f "dist/cdn/shopify/v1/widget.js" ]; then
+          # Verify build output (we now build directly to v2)
+          if [ ! -f "dist/cdn/shopify/v2/widget.js" ]; then
             echo "❌ Shopify widget build failed!"
             exit 1
           fi
-          
-          # Create v2 directory structure (v1 is frozen and should not be modified)
-          mkdir -p dist/cdn/shopify/v2
-          cp dist/cdn/shopify/v1/widget.js dist/cdn/shopify/v2/widget.js
-          cp dist/cdn/shopify/v1/widget.min.js dist/cdn/shopify/v2/widget.min.js
           
           # Add safety check to prevent v1 overwrite
           DEPLOY_VERSION="${{ inputs.deploy_version }}"
