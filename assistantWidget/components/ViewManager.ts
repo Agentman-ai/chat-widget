@@ -445,15 +445,15 @@ export class ViewManager {
 
     this.toggleButton = document.createElement('button');
     this.toggleButton.className = 'am-chat-toggle';
-    this.toggleButton.style.backgroundColor = `${this.theme.toggleBackgroundColor} !important`;
+    // Don't set inline style - let CSS variable handle it
+    // this.toggleButton.style.backgroundColor = `${this.theme.toggleBackgroundColor} !important`;
     
     this.toggleButton.innerHTML = `
       <div class="am-chat-toggle-content">
-        <div class="am-chat-logo" style="color: ${this.theme.toggleIconColor} !important;">
+        <div class="am-chat-logo">
           ${this.assets.logo || icons.agentmanLogo}
         </div>
-        <span class="am-chat-toggle-text" 
-              style="color: ${this.theme.toggleTextColor} !important;">
+        <span class="am-chat-toggle-text">
           ${this.config.toggleText || 'Ask AI'}
         </span>
       </div>

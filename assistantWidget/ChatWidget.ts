@@ -1,4 +1,4 @@
-// ChatWidgetRefactored.ts - Service-based ChatWidget architecture
+// ChatWidget.ts - Service-based ChatWidget architecture
 import type { ChatConfig, ChatState, ChatTheme, ChatAssets, Message } from './types/types';
 import { PersistenceManager } from './PersistenceManager';
 import { ConfigManager } from './ConfigManager';
@@ -9,6 +9,7 @@ import { ConversationManager } from './components/ConversationManager';
 import { Logger } from './utils/logger';
 import { ApiService } from './services/ApiService';
 import { MessageService } from './services/MessageService';
+import { camelToKebab } from './utils/style-utils';
 import { AgentService } from './services/AgentService';
 import { EventBus, type EventSubscription } from './utils/EventBus';
 import { ErrorHandler } from './handlers/ErrorHandler';
@@ -209,6 +210,9 @@ export class ChatWidget {
     this.element = document.createElement('div');
     this.element.className = `am-chat-widget am-chat-widget--${this.config.variant}`;
     this.element.setAttribute('data-container', this.containerId);
+    
+    // Apply theme CSS variables to widget element
+    this.applyThemeToWidget();
 
     // Create main container for views
     const mainContainer = document.createElement('div');
@@ -675,10 +679,25 @@ export class ChatWidget {
   }
 
   /**
+   * Apply theme CSS variables to the widget element
+   */
+  private applyThemeToWidget(): void {
+    if (!this.element) return;
+    
+    Object.entries(this.theme).forEach(([key, value]) => {
+      if (value) {
+        const cssVarName = `--chat-${camelToKebab(key)}`;
+        this.element!.style.setProperty(cssVarName, value);
+      }
+    });
+  }
+
+  /**
    * Update theme colors
    */
   public updateTheme(theme: Partial<ChatTheme>): void {
     this.theme = { ...this.theme, ...theme };
+    this.applyThemeToWidget();
     this.styleManager?.updateTheme(theme);
     this.viewManager?.updateTheme(theme);
   }

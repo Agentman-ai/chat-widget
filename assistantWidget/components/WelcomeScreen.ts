@@ -1,6 +1,7 @@
 // WelcomeScreen.ts - Welcome screen component with centered input and prompts
 import type { ChatConfig, ChatTheme, ChatAssets } from '../types/types';
 import * as icons from '../assets/icons';
+import { camelToKebab } from '../utils/style-utils';
 import { InputComponent } from './InputComponent';
 
 /**
@@ -75,7 +76,8 @@ export class WelcomeScreen {
 
     Object.entries(theme).forEach(([key, value]) => {
       if (value) {
-        this.element!.style.setProperty(`--chat-${key}`, value);
+        const cssVarName = `--chat-${camelToKebab(key)}`;
+        this.element!.style.setProperty(cssVarName, value);
       }
     });
 
@@ -350,7 +352,8 @@ export class WelcomeScreen {
     // Apply CSS custom properties
     Object.entries(this.theme).forEach(([key, value]) => {
       if (value) {
-        this.element!.style.setProperty(`--chat-${key}`, value);
+        const cssVarName = `--chat-${camelToKebab(key)}`;
+        this.element!.style.setProperty(cssVarName, value);
       }
     });
   }

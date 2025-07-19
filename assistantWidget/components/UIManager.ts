@@ -1,6 +1,7 @@
 // UIManager.ts - Handles DOM creation, manipulation, and UI updates
 import type { ChatConfig, ChatState, ChatTheme, ChatAssets } from '../types/types';
 import { debounce } from '../utils/debounce';
+import { camelToKebab } from '../utils/style-utils';
 import * as icons from '../assets/icons';
 
 /**
@@ -153,7 +154,8 @@ export class UIManager {
     // Update CSS custom properties
     Object.entries(theme).forEach(([key, value]) => {
       if (value) {
-        this.element!.style.setProperty(`--chat-${key}`, value);
+        const cssVarName = `--chat-${camelToKebab(key)}`;
+        this.element!.style.setProperty(cssVarName, value);
       }
     });
 
@@ -233,13 +235,12 @@ export class UIManager {
   private generateToggleButton(): string {
     return `
       <button class="am-chat-toggle" 
-              style="background-color: ${this.theme.toggleBackgroundColor} !important;">
+>
         <div class="am-chat-toggle-content">
-          <div class="am-chat-logo" style="color: ${this.theme.toggleIconColor} !important;">
+          <div class="am-chat-logo">
             ${this.assets.logo || icons.agentmanLogo}
           </div>
-          <span class="am-chat-toggle-text" 
-                style="color: ${this.theme.toggleTextColor} !important;">
+          <span class="am-chat-toggle-text">
             ${this.config.toggleText || 'Ask AI'}
           </span>
         </div>
@@ -297,9 +298,7 @@ export class UIManager {
    */
   private generateMessagesArea(): string {
     return `
-      <div class="am-chat-messages" 
-           style="background-color: ${this.theme.backgroundColor}; 
-                  color: ${this.theme.textColor};">
+      <div class="am-chat-messages">
       </div>
     `;
   }
@@ -352,8 +351,6 @@ export class UIManager {
                     placeholder="${this.config.placeholder || 'Type your message...'}"
                     rows="1"></textarea>
           <button class="am-chat-send" 
-                  style="background-color: ${this.theme.buttonColor}; 
-                         color: ${this.theme.buttonTextColor};"
                   disabled>
             ${icons.send}
           </button>
@@ -609,19 +606,13 @@ export class UIManager {
     const toggleButton = this.element?.querySelector('.am-chat-toggle') as HTMLButtonElement;
     if (!toggleButton) return;
 
-    if (theme.toggleBackgroundColor) {
-      toggleButton.style.backgroundColor = theme.toggleBackgroundColor;
-    }
+    // Don't set inline style - CSS variables are already applied in applyTheme
+    // if (theme.toggleBackgroundColor) {
+    //   toggleButton.style.backgroundColor = theme.toggleBackgroundColor;
+    // }
 
-    const toggleText = toggleButton.querySelector('.am-chat-toggle-text') as HTMLElement;
-    if (toggleText && theme.toggleTextColor) {
-      toggleText.style.color = theme.toggleTextColor;
-    }
-
-    const toggleIcon = toggleButton.querySelector('.am-chat-logo') as HTMLElement;
-    if (toggleIcon && theme.toggleIconColor) {
-      toggleIcon.style.color = theme.toggleIconColor;
-    }
+    // CSS variables handle the color updates now
+    // No need for direct style assignments
   }
 
   /**
@@ -642,12 +633,8 @@ export class UIManager {
     const sendButton = this.element?.querySelector('.am-chat-send') as HTMLButtonElement;
     if (!sendButton) return;
 
-    if (theme.buttonColor) {
-      sendButton.style.backgroundColor = theme.buttonColor;
-    }
-    if (theme.buttonTextColor) {
-      sendButton.style.color = theme.buttonTextColor;
-    }
+    // CSS variables handle the color updates now
+    // No need for direct style assignments
   }
 
   /**

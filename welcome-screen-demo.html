@@ -284,8 +284,8 @@
                         
                         <div class="form-group">
                             <label for="toggleBackgroundColor">Toggle Background</label>
-                            <input type="color" id="toggleBackgroundColor" value="#2563eb">
-                            <span class="color-preview" style="background-color: #2563eb;"></span>
+                            <input type="color" id="toggleBackgroundColor" value="#FF0000">
+                            <span class="color-preview" style="background-color: #FF0000;"></span>
                         </div>
                         
                         <div class="form-group">
@@ -351,7 +351,7 @@
                         <li><strong>WelcomeScreen.ts:</strong> Minimalist welcome interface</li>
                         <li><strong>ConversationView.ts:</strong> Traditional chat interface</li>
                         <li><strong>ViewManager.ts:</strong> Handles smooth transitions</li>
-                        <li><strong>ChatWidgetRefactored.ts:</strong> Simplified coordinator (600 lines)</li>
+                        <li><strong>ChatWidget.ts:</strong> Simplified coordinator (600 lines)</li>
                     </ul>
                     
                     <div class="actions">
@@ -395,17 +395,10 @@
     <script>
         let chatWidget;
         
-        // Try to use the refactored ChatWidget if available, fallback to original
+        // Use the ChatWidget class (which is the refactored version with welcome screen)
         function getChatWidgetClass() {
-            // Check if the refactored version is available
-            if (window.AgentmanChatWidget && window.AgentmanChatWidget.ChatWidgetRefactored) {
-                console.log('🎉 Using ChatWidgetRefactored with welcome screen');
-                return window.AgentmanChatWidget.ChatWidgetRefactored;
-            }
-            
-            // Fallback to original ChatWidget
             if (window.AgentmanChatWidget && window.AgentmanChatWidget.ChatWidget) {
-                console.log('⚠️ Falling back to original ChatWidget (no welcome screen)');
+                console.log('🎉 Using ChatWidget with welcome screen and color fixes');
                 return window.AgentmanChatWidget.ChatWidget;
             }
             
@@ -526,7 +519,7 @@
             document.getElementById('textColor').value = '#111827';
             document.getElementById('buttonColor').value = '#2563eb';
             document.getElementById('buttonTextColor').value = '#FFFFFF';
-            document.getElementById('toggleBackgroundColor').value = '#2563eb';
+            document.getElementById('toggleBackgroundColor').value = '#FF0000';
             document.getElementById('toggleTextColor').value = '#FFFFFF';
             document.getElementById('toggleIconColor').value = '#FFFFFF';
             
@@ -700,7 +693,7 @@
             
             // Show welcome features
             const welcomeStatus = document.getElementById('welcomeStatus');
-            welcomeStatus.textContent = '🎉 Welcome Screen Demo Ready!\n\nThis demo uses the new ChatWidgetRefactored with:\n✨ Claude-style welcome screen\n🎯 Progressive disclosure\n🔄 Smooth view transitions\n⚡ Delayed agent initialization';
+            welcomeStatus.textContent = '🎉 Welcome Screen Demo Ready!\n\nThis demo uses the new ChatWidget with:\n✨ Claude-style welcome screen\n🎯 Progressive disclosure\n🔄 Smooth view transitions\n⚡ Delayed agent initialization';
         });
     </script>
 </body>

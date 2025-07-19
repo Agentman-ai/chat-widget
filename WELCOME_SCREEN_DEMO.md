@@ -19,7 +19,7 @@ This demo showcases the new Claude-style welcome screen implementation for the A
 ## Files
 
 - `welcome-screen-demo.html` - Interactive demo with configuration panel
-- `assistantWidget/ChatWidgetRefactored.ts` - New refactored widget implementation
+- `assistantWidget/ChatWidget.ts` - New refactored widget implementation
 - `assistantWidget/components/WelcomeScreen.ts` - Welcome screen component
 - `assistantWidget/components/ConversationView.ts` - Conversation interface
 - `assistantWidget/components/ViewManager.ts` - View transition manager
@@ -71,7 +71,7 @@ This demo showcases the new Claude-style welcome screen implementation for the A
 └─────────────────────────────────┘
 ```
 
-### After (ChatWidgetRefactored)
+### After (ChatWidget)
 ```
 ┌─────────────────────────────────────────┐
 │       ChatWidget (600 lines)            │

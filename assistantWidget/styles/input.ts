@@ -114,17 +114,24 @@ export const inputStyles = `
 
   .am-input-send:not(:disabled) {
     background-color: var(--chat-button-color, #2563eb);
-    color: white;
+    color: var(--chat-button-text-color, #ffffff);
     cursor: pointer;
   }
 
   .am-input-send:not(:disabled):hover {
-    background-color: var(--chat-button-hover-color, #1d4ed8);
+    background-color: var(--chat-button-color, #2563eb);
+    filter: brightness(1.1);
     transform: scale(1.05);
   }
 
   .am-input-send:not(:disabled):active {
     transform: scale(0.95);
+  }
+
+  .am-input-send:disabled:hover {
+    background-color: #f3f4f6;
+    cursor: not-allowed;
+    transform: none;
   }
 
   .am-input-send-icon {

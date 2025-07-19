@@ -114,7 +114,7 @@ POST {apiUrl}/v2/agentman_runtime/agent
 
 #### Simplified Flow
 ```
-ChatWidgetRefactored (600 lines vs 2136)
+ChatWidget (600 lines vs 2136)
 ├── ViewManager (welcome ↔ conversation transitions)
 ├── WelcomeScreen (minimal input + prompts)
 ├── ConversationView (full chat interface)

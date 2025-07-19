@@ -209,6 +209,8 @@ export const baseStyles = `
     gap: 1rem;
     min-height: 0;
     height: 0;
+    background-color: var(--chat-background-color, #ffffff);
+    color: var(--chat-text-color, #111827);
   }
 
   /* Style scrollbar to be always visible when content is scrollable */
@@ -442,7 +444,8 @@ export const baseStyles = `
     width: 32px;
     height: 32px;
     padding: 6px;
-    background: var(--chat-header-background-color, #2563eb);
+    background: var(--chat-button-color, #2563eb);
+    color: var(--chat-button-text-color, #ffffff);
     border: none;
     border-radius: 4px;
     cursor: pointer;
@@ -452,12 +455,19 @@ export const baseStyles = `
     transition: filter 0.2s;
   }
 
-  .am-chat-send:hover {
-    filter: brightness(1.5);
+  .am-chat-send:not(:disabled):hover {
+    background-color: var(--chat-button-color, #2563eb);
+    filter: brightness(1.1);
   }
 
   .am-chat-send:disabled {
     cursor: not-allowed;
+    opacity: 0.8;
+  }
+
+  .am-chat-send:disabled:hover {
+    background: var(--chat-button-color, #2563eb);
+    filter: none;
     opacity: 0.8;
   }
 
@@ -506,8 +516,8 @@ export const baseStyles = `
     display: flex;
     align-items: center;
     gap: 8px;
-    background: var(--chat-header-background-color, #2563eb);
-    color: var(--chat-header-text-color, #FFFFFF);
+    background: var(--chat-toggle-background-color, #2563eb);
+    color: var(--chat-toggle-text-color, #FFFFFF);
     padding: 8px 16px 8px 8px;
     border-radius: 100px;
     box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
@@ -516,6 +526,10 @@ export const baseStyles = `
   .am-chat-toggle-text {
     font-size: 16px;
     font-weight: 500;
+  }
+
+  .am-chat-toggle .am-chat-logo {
+    color: var(--chat-toggle-icon-color, #FFFFFF);
   }
 
   .am-chat-expanded {

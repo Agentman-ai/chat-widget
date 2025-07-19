@@ -25,11 +25,11 @@ export const messageStyles = `
   }
 
   .am-message.agent .am-message-content {
-    color: #111827;
+    color: var(--chat-agent-foreground-color, var(--chat-text-color, #111827));
   }
 
   .am-message.user .am-message-content {
-    color: #111827;
+    color: var(--chat-user-foreground-color, var(--chat-text-color, #111827));
   }
 
   /* Role labels */

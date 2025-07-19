@@ -2,6 +2,7 @@
 import type { ChatConfig, ChatState, ChatTheme, ChatAssets, Message } from '../types/types';
 import * as icons from '../assets/icons';
 import { UIUtils } from '../utils/UIUtils';
+import { camelToKebab } from '../utils/style-utils';
 import { MessageRenderer } from '../message-renderer/message-renderer';
 import { InputComponent } from './InputComponent';
 
@@ -114,7 +115,8 @@ export class ConversationView {
 
     Object.entries(theme).forEach(([key, value]) => {
       if (value) {
-        this.element!.style.setProperty(`--chat-${key}`, value);
+        const cssVarName = `--chat-${camelToKebab(key)}`;
+        this.element!.style.setProperty(cssVarName, value);
       }
     });
 
@@ -508,9 +510,7 @@ export class ConversationView {
   private generateMessagesArea(): string {
     return `
       <div class="am-chat-messages" 
-           style="background-color: ${this.theme.backgroundColor}; 
-                  color: ${this.theme.textColor};
-                  flex: 1 1 auto;
+           style="flex: 1 1 auto;
                   overflow-y: auto;
                   overflow-x: hidden;
                   padding: 1rem;
@@ -571,7 +571,7 @@ export class ConversationView {
                                            color: #334155;
                                            background: white;
                                            flex: 0 0 auto;">
-        Powered by <a href="https://agentman.ai" target="_blank" style="color: #334155; text-decoration: underline;">Agentman</a>
+        Powered by <a href="https://agentman.ai" target="_blank" style="color: var(--chat-text-color, #334155); text-decoration: underline;">Agentman</a>
       </div>
     `;
   }
@@ -636,12 +636,8 @@ export class ConversationView {
     const sendButton = this.getElement('.am-chat-send') as HTMLButtonElement;
     if (!sendButton) return;
 
-    if (theme.buttonColor) {
-      sendButton.style.backgroundColor = theme.buttonColor;
-    }
-    if (theme.buttonTextColor) {
-      sendButton.style.color = theme.buttonTextColor;
-    }
+    // CSS variables handle the color updates now
+    // No need for direct style assignments
     
     // Update input component theme
     this.inputComponent?.updateTheme(theme);
@@ -681,7 +677,8 @@ export class ConversationView {
 
     Object.entries(this.theme).forEach(([key, value]) => {
       if (value) {
-        this.element!.style.setProperty(`--chat-${key}`, value);
+        const cssVarName = `--chat-${camelToKebab(key)}`;
+        this.element!.style.setProperty(cssVarName, value);
       }
     });
   }
