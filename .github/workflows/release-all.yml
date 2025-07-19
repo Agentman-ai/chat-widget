@@ -52,7 +52,11 @@ jobs:
 
   trigger-shopify:
     name: Shopify Release
-    if: contains(fromJSON('["all", "shopify-only"]'), inputs.components)
+    needs: trigger-npm-wordpress  # Wait for NPM/WordPress to complete first
+    if: |
+      always() && 
+      contains(fromJSON('["all", "shopify-only"]'), inputs.components) &&
+      (needs.trigger-npm-wordpress.result == 'success' || needs.trigger-npm-wordpress.result == 'skipped')
     uses: ./.github/workflows/shopify-release.yml
     with:
       release_type: ${{ inputs.release_type }}
