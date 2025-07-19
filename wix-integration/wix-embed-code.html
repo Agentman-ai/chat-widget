@@ -1,0 +1,54 @@
+<!-- Agentman Chat Widget for Wix -->
+<script>
+(function() {
+    var script = document.createElement('script');
+    script.src = 'https://cdn.jsdelivr.net/npm/@agentman/chat-widget@latest/dist/index.js';
+    
+    script.onload = function() {
+        setTimeout(function() {
+            if (window.AgentmanChatWidget && window.AgentmanChatWidget.ChatWidget) {
+                new window.AgentmanChatWidget.ChatWidget({
+                    agentToken: 'YOUR_AGENT_TOKEN_HERE',
+                    apiUrl: 'https://studio-api.agentman.ai',
+                    variant: 'corner',
+                    position: 'bottom-right',
+                    title: 'AI Assistant',
+                    toggleText: 'Need Help?',
+                    placeholder: 'Type your message...',
+                    enableWelcomeScreen: true,
+                    showFloatingPrompts: true,
+                    initialMessage: 'Hello! How can I help you today?',
+                    messagePrompts: {
+                        show: true,
+                        welcome_message: 'What can I help you with?',
+                        prompts: [
+                            'Tell me about your services',
+                            'How do I get started?',
+                            'I need help with something',
+                            'Contact support'
+                        ]
+                    },
+                    theme: {
+                        backgroundColor: '#ffffff',
+                        textColor: '#111827',
+                        buttonColor: '#2563eb',
+                        buttonTextColor: '#ffffff',
+                        agentForegroundColor: '#111827',
+                        userForegroundColor: '#2563eb',
+                        toggleBackgroundColor: '#2563eb',
+                        toggleTextColor: '#ffffff',
+                        toggleIconColor: '#ffffff'
+                    },
+                    persistence: {
+                        enabled: true,
+                        days: 7
+                    },
+                    enableAttachments: true
+                });
+            }
+        }, 500);
+    };
+    
+    document.head.appendChild(script);
+})();
+</script>

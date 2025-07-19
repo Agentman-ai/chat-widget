@@ -1,0 +1,244 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Widget Preview</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 20px;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background-color: #f3f4f6;
+            min-height: 100vh;
+            position: relative;
+        }
+
+        .preview-container {
+            background-color: white;
+            min-height: calc(100vh - 40px);
+            border-radius: 8px;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .preview-header {
+            background-color: #1f2937;
+            color: white;
+            padding: 20px;
+            text-align: center;
+        }
+
+        .preview-header h2 {
+            margin: 0;
+            font-size: 1.5rem;
+        }
+
+        .preview-content {
+            padding: 40px;
+            text-align: center;
+            color: #6b7280;
+        }
+
+        .preview-content h3 {
+            color: #374151;
+            margin-bottom: 20px;
+        }
+
+        .preview-content p {
+            line-height: 1.6;
+            max-width: 600px;
+            margin: 0 auto 20px;
+        }
+
+        #widget-container {
+            position: relative;
+            width: 100%;
+            height: 100%;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: #6b7280;
+        }
+
+        .error {
+            background-color: #fef2f2;
+            border: 1px solid #fecaca;
+            color: #b91c1c;
+            padding: 20px;
+            border-radius: 6px;
+            margin: 20px;
+        }
+
+        /* Simulate Wix page styles */
+        .wix-simulation {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 40px;
+            box-sizing: border-box;
+        }
+
+        .wix-page {
+            background-color: white;
+            border-radius: 8px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+            min-height: 600px;
+            padding: 40px;
+        }
+
+        .wix-header {
+            text-align: center;
+            margin-bottom: 40px;
+        }
+
+        .wix-header h1 {
+            color: #1a202c;
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+        }
+
+        .wix-header p {
+            color: #718096;
+            font-size: 1.2rem;
+        }
+
+        .wix-content {
+            color: #4a5568;
+            line-height: 1.8;
+        }
+
+        .inline-widget-container {
+            margin: 40px 0;
+            border: 2px dashed #cbd5e0;
+            border-radius: 8px;
+            padding: 20px;
+            min-height: 400px;
+            position: relative;
+        }
+
+        .inline-widget-label {
+            position: absolute;
+            top: -12px;
+            left: 20px;
+            background-color: white;
+            padding: 0 10px;
+            color: #718096;
+            font-size: 0.875rem;
+        }
+    </style>
+</head>
+<body>
+    <div class="wix-simulation" id="mainContainer">
+        <div class="wix-page">
+            <div class="wix-header">
+                <h1>Your Wix Website</h1>
+                <p>This is a preview of how the widget will look on your site</p>
+            </div>
+            
+            <div class="wix-content">
+                <p>This simulates your Wix website content. The Agentman Chat Widget will appear based on your configuration.</p>
+                
+                <div id="inlineContainer" class="inline-widget-container" style="display: none;">
+                    <span class="inline-widget-label">Inline Widget Area</span>
+                </div>
+
+                <p>Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris.</p>
+            </div>
+        </div>
+    </div>
+
+    <div id="widget-container"></div>
+
+    <script src="https://cdn.jsdelivr.net/npm/@agentman/chat-widget@latest/dist/index.js"></script>
+    
+    <script>
+        let currentWidget = null;
+        let config = null;
+
+        // Listen for configuration updates from parent
+        window.addEventListener('message', function(event) {
+            if (event.data && event.data.type === 'updateConfig') {
+                updateWidget(event.data.config);
+            }
+        });
+
+        function updateWidget(newConfig) {
+            config = newConfig;
+            
+            // Destroy existing widget
+            if (currentWidget) {
+                try {
+                    currentWidget.destroy();
+                } catch (e) {
+                    console.error('Failed to destroy widget:', e);
+                }
+                currentWidget = null;
+            }
+
+            // Clear containers
+            document.getElementById('widget-container').innerHTML = '';
+            const inlineContainer = document.getElementById('inlineContainer');
+            
+            // Show/hide inline container based on variant
+            if (config.variant === 'inline') {
+                inlineContainer.style.display = 'block';
+                inlineContainer.innerHTML = '<span class="inline-widget-label">Inline Widget Area</span><div id="' + config.containerId + '"></div>';
+            } else {
+                inlineContainer.style.display = 'none';
+                document.getElementById('widget-container').innerHTML = '<div id="' + config.containerId + '"></div>';
+            }
+
+            // Initialize new widget
+            try {
+                // Add preview-specific settings
+                const previewConfig = {
+                    ...config,
+                    // Force some settings for preview
+                    persistence: {
+                        ...config.persistence,
+                        enabled: false // Disable persistence in preview
+                    }
+                };
+
+                // Small delay to ensure DOM is ready
+                setTimeout(() => {
+                    if (typeof window.ChatWidget !== 'undefined') {
+                        currentWidget = new window.ChatWidget(previewConfig);
+                        console.log('Widget initialized with config:', previewConfig);
+                    } else {
+                        console.error('ChatWidget not loaded yet');
+                    }
+                }, 100);
+            } catch (error) {
+                console.error('Failed to initialize widget:', error);
+                showError('Failed to initialize widget: ' + error.message);
+            }
+        }
+
+        function showError(message) {
+            const container = document.getElementById('widget-container');
+            container.innerHTML = `<div class="error">Error: ${message}</div>`;
+        }
+
+        // Initialize with default config if provided
+        window.addEventListener('DOMContentLoaded', function() {
+            // Wait for ChatWidget to be available
+            function checkWidget() {
+                if (typeof window.ChatWidget !== 'undefined') {
+                    console.log('ChatWidget loaded, ready for preview');
+                    // Request initial config from parent
+                    if (window.parent !== window) {
+                        window.parent.postMessage({ type: 'previewReady' }, '*');
+                    }
+                } else {
+                    setTimeout(checkWidget, 100);
+                }
+            }
+            checkWidget();
+        });
+    </script>
+</body>
+</html>

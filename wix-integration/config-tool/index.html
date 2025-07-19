@@ -1,0 +1,276 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Agentman Widget - Wix Configuration Tool</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Configure Agentman Widget for Wix</h1>
+            <p>Generate custom embed code for your Wix website</p>
+        </header>
+
+        <div class="config-tabs">
+            <button class="tab-btn active" data-tab="basic">Basic Setup</button>
+            <button class="tab-btn" data-tab="appearance">Appearance</button>
+            <button class="tab-btn" data-tab="content">Content</button>
+            <button class="tab-btn" data-tab="advanced">Advanced</button>
+            <button class="tab-btn" data-tab="preview">Preview & Code</button>
+        </div>
+
+        <!-- Basic Setup Tab -->
+        <div class="tab-content active" id="basic">
+            <h3>🔑 Basic Configuration</h3>
+            
+            <div class="form-group">
+                <label for="agentToken">Agent Token *</label>
+                <input type="text" id="agentToken" placeholder="Your Agentman token" required>
+                <small>Get your token from <a href="https://studio.agentman.ai" target="_blank">Agentman Studio</a></small>
+            </div>
+
+            <div class="form-group">
+                <label for="variant">Widget Style</label>
+                <select id="variant">
+                    <option value="corner">Corner (floating button)</option>
+                    <option value="inline">Inline (embedded in page)</option>
+                    <option value="centered">Centered overlay</option>
+                </select>
+            </div>
+
+            <div class="form-group" id="positionGroup">
+                <label for="position">Position (for corner variant)</label>
+                <select id="position">
+                    <option value="bottom-right">Bottom Right</option>
+                    <option value="bottom-left">Bottom Left</option>
+                    <option value="top-right">Top Right</option>
+                    <option value="top-left">Top Left</option>
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label for="enableWelcomeScreen">Enable Welcome Screen</label>
+                <label class="toggle">
+                    <input type="checkbox" id="enableWelcomeScreen" checked>
+                    <span class="toggle-slider"></span>
+                </label>
+                <small>Show welcome screen with prompts when first opened</small>
+            </div>
+        </div>
+
+        <!-- Appearance Tab -->
+        <div class="tab-content" id="appearance">
+            <h3>🎨 Appearance Customization</h3>
+            
+            <h4>Theme Presets</h4>
+            <div class="theme-presets">
+                <button class="preset-btn" data-preset="default">Default Blue</button>
+                <button class="preset-btn" data-preset="professional">Professional Dark</button>
+                <button class="preset-btn" data-preset="ecommerce">E-commerce Green</button>
+                <button class="preset-btn" data-preset="modern">Modern Purple</button>
+            </div>
+
+            <h4>Custom Colors</h4>
+            <div class="color-grid">
+                <div class="color-field">
+                    <label for="buttonColor">Primary Color</label>
+                    <input type="color" id="buttonColor" value="#2563eb">
+                </div>
+                <div class="color-field">
+                    <label for="backgroundColor">Background</label>
+                    <input type="color" id="backgroundColor" value="#ffffff">
+                </div>
+                <div class="color-field">
+                    <label for="textColor">Text Color</label>
+                    <input type="color" id="textColor" value="#111827">
+                </div>
+                <div class="color-field">
+                    <label for="agentForegroundColor">Assistant Text</label>
+                    <input type="color" id="agentForegroundColor" value="#111827">
+                </div>
+                <div class="color-field">
+                    <label for="userForegroundColor">User Text</label>
+                    <input type="color" id="userForegroundColor" value="#2563eb">
+                </div>
+                <div class="color-field">
+                    <label for="toggleBackgroundColor">Toggle Button Background</label>
+                    <input type="color" id="toggleBackgroundColor" value="#2563eb">
+                </div>
+                <div class="color-field">
+                    <label for="toggleTextColor">Toggle Button Text</label>
+                    <input type="color" id="toggleTextColor" value="#ffffff">
+                </div>
+                <div class="color-field">
+                    <label for="toggleIconColor">Toggle Button Icon</label>
+                    <input type="color" id="toggleIconColor" value="#ffffff">
+                </div>
+            </div>
+
+            <h4>Text & Labels</h4>
+            <div class="form-group">
+                <label for="title">Widget Title</label>
+                <input type="text" id="title" value="AI Assistant">
+            </div>
+
+            <div class="form-group">
+                <label for="toggleText">Toggle Button Text</label>
+                <input type="text" id="toggleText" value="Ask Agentman">
+            </div>
+
+            <div class="form-group">
+                <label for="placeholder">Input Placeholder</label>
+                <input type="text" id="placeholder" value="Ask me anything...">
+            </div>
+        </div>
+
+        <!-- Content Tab -->
+        <div class="tab-content" id="content">
+            <h3>💬 Content Settings</h3>
+
+            <div class="form-group">
+                <label for="initialMessage">Initial Welcome Message</label>
+                <textarea id="initialMessage" rows="3">Hello! How can I help you today?</textarea>
+            </div>
+
+            <div class="form-group">
+                <label for="showMessagePrompts">Show Message Prompts</label>
+                <label class="toggle">
+                    <input type="checkbox" id="showMessagePrompts" checked>
+                    <span class="toggle-slider"></span>
+                </label>
+            </div>
+
+            <div id="promptsSection">
+                <div class="form-group">
+                    <label for="welcomePromptMessage">Welcome Screen Message</label>
+                    <input type="text" id="welcomePromptMessage" value="How can I help you today?">
+                </div>
+
+                <div class="form-group">
+                    <label>Suggested Prompts</label>
+                    <div id="promptsList">
+                        <div class="prompt-item">
+                            <input type="text" class="prompt-input" value="What can you do?">
+                            <button class="remove-prompt">×</button>
+                        </div>
+                        <div class="prompt-item">
+                            <input type="text" class="prompt-input" value="Help me get started">
+                            <button class="remove-prompt">×</button>
+                        </div>
+                        <div class="prompt-item">
+                            <input type="text" class="prompt-input" value="Tell me about your services">
+                            <button class="remove-prompt">×</button>
+                        </div>
+                    </div>
+                    <button id="addPrompt" class="btn-secondary">+ Add Prompt</button>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label for="enableAttachments">Enable File Attachments</label>
+                <label class="toggle">
+                    <input type="checkbox" id="enableAttachments" checked>
+                    <span class="toggle-slider"></span>
+                </label>
+                <small>Allow users to upload files</small>
+            </div>
+        </div>
+
+        <!-- Advanced Tab -->
+        <div class="tab-content" id="advanced">
+            <h3>⚙️ Advanced Settings</h3>
+
+            <h4>Widget Dimensions</h4>
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="initialWidth">Width</label>
+                    <input type="text" id="initialWidth" value="400px">
+                </div>
+                <div class="form-group">
+                    <label for="initialHeight">Height</label>
+                    <input type="text" id="initialHeight" value="600px">
+                </div>
+            </div>
+
+            <h4>Persistence Settings</h4>
+            <div class="form-group">
+                <label for="persistenceEnabled">Enable Conversation History</label>
+                <label class="toggle">
+                    <input type="checkbox" id="persistenceEnabled" checked>
+                    <span class="toggle-slider"></span>
+                </label>
+            </div>
+
+            <div class="form-group">
+                <label for="persistenceDays">History Retention (days)</label>
+                <input type="number" id="persistenceDays" value="7" min="1" max="30">
+            </div>
+
+            <h4>API Configuration</h4>
+            <div class="form-group">
+                <label for="apiUrl">Custom API URL (optional)</label>
+                <input type="text" id="apiUrl" placeholder="https://api.agentman.ai">
+                <small>Leave empty to use default</small>
+            </div>
+
+            <h4>Behavior</h4>
+            <div class="form-group">
+                <label for="initiallyOpen">Open by Default</label>
+                <label class="toggle">
+                    <input type="checkbox" id="initiallyOpen">
+                    <span class="toggle-slider"></span>
+                </label>
+                <small>Widget starts in open state</small>
+            </div>
+
+            <div class="form-group">
+                <label for="showFloatingPrompts">Show Floating Prompts When Closed</label>
+                <label class="toggle">
+                    <input type="checkbox" id="showFloatingPrompts" checked>
+                    <span class="toggle-slider"></span>
+                </label>
+                <small>Display prompts after 5 seconds when widget is closed</small>
+            </div>
+        </div>
+
+        <!-- Preview & Code Tab -->
+        <div class="tab-content" id="preview">
+            <h3>👀 Live Preview</h3>
+            
+            <div class="preview-section">
+                <iframe id="preview-frame" src="preview.html"></iframe>
+                <button onclick="updatePreview()" class="btn-primary">Update Preview</button>
+            </div>
+
+            <div class="code-section">
+                <h4>Generated Code for Wix</h4>
+                <div class="code-actions">
+                    <button onclick="generateCode()" class="btn-primary">Generate Code</button>
+                    <button onclick="copyToClipboard()" class="btn-secondary">📋 Copy</button>
+                    <button onclick="downloadCode()" class="btn-secondary">💾 Download</button>
+                </div>
+                <textarea id="generated-code" readonly placeholder="Click 'Generate Code' to create your embed code"></textarea>
+            </div>
+
+            <div class="installation-guide">
+                <h4>📋 Installation Instructions</h4>
+                <ol>
+                    <li>Copy the generated code above</li>
+                    <li>In Wix Editor, go to <strong>Add → Embed → HTML iframe</strong></li>
+                    <li>Paste the code into the HTML Settings</li>
+                    <li>Adjust iframe size if needed (recommended: 100% width, 600px height for inline)</li>
+                    <li>Publish your site</li>
+                </ol>
+                
+                <div class="warning">
+                    <strong>⚠️ Important:</strong> Make sure to test the widget on both desktop and mobile views before publishing.
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
