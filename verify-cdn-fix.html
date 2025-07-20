@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Verify CDN Fix - Color Customization</title>
+    <style>
+        body { 
+            font-family: Arial, sans-serif; 
+            padding: 20px; 
+            background: #f5f5f5;
+        }
+        .test-card {
+            background: white;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .status { 
+            font-weight: bold; 
+            padding: 5px 10px;
+            border-radius: 4px;
+            display: inline-block;
+        }
+        .pass { 
+            background: #d4edda; 
+            color: #155724; 
+        }
+        .fail { 
+            background: #f8d7da; 
+            color: #721c24; 
+        }
+        .color-sample {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 1px solid #ccc;
+            vertical-align: middle;
+            margin: 0 5px;
+        }
+        pre {
+            background: #f4f4f4;
+            padding: 10px;
+            border-radius: 4px;
+            overflow-x: auto;
+        }
+    </style>
+</head>
+<body>
+    <h1>CDN Fix Verification - @agentman/chat-widget@3.0.7</h1>
+    
+    <div class="test-card">
+        <h2>Test Configuration</h2>
+        <p>Testing camelCase to kebab-case conversion for CSS variables</p>
+        <pre>{
+    toggleBackgroundColor: '#6FE267',  // Green
+    toggleTextColor: '#FFFFFF',
+    buttonColor: '#FF5733'             // Orange
+}</pre>
+    </div>
+
+    <div class="test-card" id="results">
+        <h2>Test Results</h2>
+        <p>Loading...</p>
+    </div>
+
+    <div id="chat-container"></div>
+
+    <!-- Load from CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/@agentman/chat-widget@3.0.7/dist/index.js"></script>
+    
+    <script>
+        function runTests() {
+            const results = document.getElementById('results');
+            let html = '<h2>Test Results</h2>';
+            
+            try {
+                // Initialize widget with test colors
+                const widget = new AgentmanChatWidget.ChatWidget({
+                    apiUrl: 'https://api.agentman.com',
+                    agentToken: 'test-token',
+                    containerId: 'chat-container',
+                    title: 'Test Widget',
+                    variant: 'corner',
+                    theme: {
+                        toggleBackgroundColor: '#6FE267',  // Green
+                        toggleTextColor: '#FFFFFF',
+                        buttonColor: '#FF5733'             // Orange  
+                    }
+                });
+
+                // Wait for DOM to update
+                setTimeout(() => {
+                    const widgetEl = document.querySelector('.am-chat-widget');
+                    const toggleBtn = document.querySelector('.am-chat-toggle');
+                    const tests = [];
+
+                    // Test 1: Check if widget element exists
+                    tests.push({
+                        name: 'Widget element created',
+                        pass: !!widgetEl,
+                        details: widgetEl ? 'Widget DOM element found' : 'Widget DOM element not found'
+                    });
+
+                    // Test 2: Check CSS variable conversion
+                    if (widgetEl) {
+                        const styles = getComputedStyle(widgetEl);
+                        const toggleBgVar = styles.getPropertyValue('--chat-toggle-background-color').trim();
+                        const buttonColorVar = styles.getPropertyValue('--chat-button-color').trim();
+                        
+                        tests.push({
+                            name: 'CSS variable --chat-toggle-background-color',
+                            pass: toggleBgVar === '#6FE267',
+                            details: `Expected: #6FE267, Got: ${toggleBgVar || 'not set'}`
+                        });
+
+                        tests.push({
+                            name: 'CSS variable --chat-button-color',
+                            pass: buttonColorVar === '#FF5733',
+                            details: `Expected: #FF5733, Got: ${buttonColorVar || 'not set'}`
+                        });
+                    }
+
+                    // Test 3: Check actual toggle button color
+                    if (toggleBtn) {
+                        const toggleStyles = getComputedStyle(toggleBtn);
+                        const bgColor = toggleStyles.backgroundColor;
+                        const rgb = bgColor.match(/\d+/g);
+                        let hex = '';
+                        if (rgb) {
+                            hex = '#' + rgb.map(x => parseInt(x).toString(16).padStart(2, '0')).join('').toUpperCase();
+                        }
+                        
+                        tests.push({
+                            name: 'Toggle button background color',
+                            pass: hex === '#6FE267',
+                            details: `Expected: #6FE267 <span class="color-sample" style="background: #6FE267"></span>, Got: ${hex} <span class="color-sample" style="background: ${hex}"></span>`
+                        });
+                    }
+
+                    // Generate results HTML
+                    html += '<table style="width: 100%; border-collapse: collapse;">';
+                    html += '<tr><th style="text-align: left; padding: 10px; border-bottom: 2px solid #ddd;">Test</th><th style="padding: 10px; border-bottom: 2px solid #ddd;">Status</th><th style="text-align: left; padding: 10px; border-bottom: 2px solid #ddd;">Details</th></tr>';
+                    
+                    tests.forEach(test => {
+                        html += `<tr>
+                            <td style="padding: 10px; border-bottom: 1px solid #eee;">${test.name}</td>
+                            <td style="padding: 10px; border-bottom: 1px solid #eee; text-align: center;"><span class="status ${test.pass ? 'pass' : 'fail'}">${test.pass ? 'PASS' : 'FAIL'}</span></td>
+                            <td style="padding: 10px; border-bottom: 1px solid #eee;">${test.details}</td>
+                        </tr>`;
+                    });
+                    
+                    html += '</table>';
+
+                    const allPass = tests.every(t => t.pass);
+                    html += `<div style="margin-top: 20px; padding: 15px; background: ${allPass ? '#d4edda' : '#f8d7da'}; border-radius: 4px;">
+                        <strong>${allPass ? '✅ All tests passed!' : '❌ Some tests failed'}</strong>
+                        ${allPass ? '<br>The camelToKebab fix is working correctly in the CDN version.' : ''}
+                    </div>`;
+
+                    results.innerHTML = html;
+                }, 500);
+
+            } catch (error) {
+                results.innerHTML = `<h2>Test Results</h2><div class="status fail">Error: ${error.message}</div>`;
+            }
+        }
+
+        // Run tests when page loads
+        window.addEventListener('load', runTests);
+    </script>
+</body>
+</html>
