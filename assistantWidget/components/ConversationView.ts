@@ -2,7 +2,6 @@
 import type { ChatConfig, ChatState, ChatTheme, ChatAssets, Message } from '../types/types';
 import * as icons from '../assets/icons';
 import { UIUtils } from '../utils/UIUtils';
-import { camelToKebab } from '../utils/style-utils';
 import { MessageRenderer } from '../message-renderer/message-renderer';
 import { InputComponent } from './InputComponent';
 
@@ -115,7 +114,9 @@ export class ConversationView {
 
     Object.entries(theme).forEach(([key, value]) => {
       if (value) {
-        const cssVarName = `--chat-${camelToKebab(key)}`;
+        // Inline camelToKebab conversion to ensure it's not tree-shaken
+        const kebabKey = key.replace(/([a-z0-9]|(?=[A-Z]))([A-Z])/g, '$1-$2').toLowerCase();
+        const cssVarName = `--chat-${kebabKey}`;
         this.element!.style.setProperty(cssVarName, value);
       }
     });
@@ -677,7 +678,9 @@ export class ConversationView {
 
     Object.entries(this.theme).forEach(([key, value]) => {
       if (value) {
-        const cssVarName = `--chat-${camelToKebab(key)}`;
+        // Inline camelToKebab conversion to ensure it's not tree-shaken
+        const kebabKey = key.replace(/([a-z0-9]|(?=[A-Z]))([A-Z])/g, '$1-$2').toLowerCase();
+        const cssVarName = `--chat-${kebabKey}`;
         this.element!.style.setProperty(cssVarName, value);
       }
     });

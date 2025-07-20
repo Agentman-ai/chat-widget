@@ -1,6 +1,5 @@
 // InputComponent.ts - Shared input component for welcome and conversation views
 import type { ChatConfig, ChatTheme } from '../types/types';
-import { camelToKebab } from '../utils/style-utils';
 import * as icons from '../assets/icons';
 
 /**
@@ -73,7 +72,9 @@ export class InputComponent {
     
     Object.entries(theme).forEach(([key, value]) => {
       if (value) {
-        const cssVarName = `--chat-${camelToKebab(key)}`;
+        // Inline camelToKebab conversion to ensure it's not tree-shaken
+        const kebabKey = key.replace(/([a-z0-9]|(?=[A-Z]))([A-Z])/g, '$1-$2').toLowerCase();
+        const cssVarName = `--chat-${kebabKey}`;
         this.element!.style.setProperty(cssVarName, value);
       }
     });

@@ -9,7 +9,6 @@ import { ConversationManager } from './components/ConversationManager';
 import { Logger } from './utils/logger';
 import { ApiService } from './services/ApiService';
 import { MessageService } from './services/MessageService';
-import { camelToKebab } from './utils/style-utils';
 import { AgentService } from './services/AgentService';
 import { EventBus, type EventSubscription } from './utils/EventBus';
 import { ErrorHandler } from './handlers/ErrorHandler';
@@ -686,7 +685,9 @@ export class ChatWidget {
     
     Object.entries(this.theme).forEach(([key, value]) => {
       if (value) {
-        const cssVarName = `--chat-${camelToKebab(key)}`;
+        // Inline camelToKebab conversion to ensure it's not tree-shaken
+        const kebabKey = key.replace(/([a-z0-9]|(?=[A-Z]))([A-Z])/g, '$1-$2').toLowerCase();
+        const cssVarName = `--chat-${kebabKey}`;
         this.element!.style.setProperty(cssVarName, value);
       }
     });
