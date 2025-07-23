@@ -235,49 +235,99 @@ export const attachmentStyles = `
     color: #ff0000;
   }
 
-  /* Attachments in messages */
+  /* Attachments in messages - matches upload preview styling */
   .chat-message-attachments {
-    margin-top: 8px;
+    margin-top: 12px;
     display: flex;
-    flex-direction: column;
-    gap: 4px;
+    flex-direction: row;
+    flex-wrap: wrap;
+    gap: 8px;
   }
 
+  /* File attachment card - matches chat-attachment-item styling */
   .chat-message-attachment {
-    display: flex;
+    display: inline-flex;
+    flex-direction: row;
     align-items: center;
-    gap: 8px;
-    background: rgba(0, 0, 0, 0.03);
+    background: rgba(255, 255, 255, 0.8);
     border: 1px solid rgba(0, 0, 0, 0.1);
-    border-radius: 6px;
-    padding: 6px 8px;
+    border-radius: 8px;
+    padding: 8px;
     text-decoration: none;
     color: inherit;
-    transition: background 0.2s;
+    transition: all 0.2s;
+    gap: 10px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+    min-width: 200px;
+    max-width: 300px;
   }
 
   .chat-message-attachment:hover {
-    background: rgba(0, 0, 0, 0.05);
+    background: rgba(255, 255, 255, 0.95);
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
     text-decoration: none;
   }
 
   .message-attachment-icon {
-    width: 16px;
-    height: 16px;
-    margin-right: 6px;
-    opacity: 0.6;
+    width: 40px;
+    height: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(59, 130, 246, 0.08);
+    border-radius: 6px;
+    flex-shrink: 0;
   }
 
+  .message-attachment-icon svg {
+    width: 20px;
+    height: 20px;
+    color: rgb(59, 130, 246);
+  }
+
+  /* Image attachments display */
   .message-attachment-image {
-    max-width: 200px;
+    max-width: 300px;
     max-height: 200px;
     border-radius: 8px;
     cursor: pointer;
     transition: transform 0.2s;
+    display: block;
+    width: 100%;
+    height: auto;
+    object-fit: cover;
   }
 
   .message-attachment-image:hover {
-    transform: scale(1.05);
+    transform: scale(1.02);
+  }
+
+  .chat-attachment-info {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+
+  .chat-attachment-name {
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--chat-text-color);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .chat-attachment-size {
+    font-size: 11px;
+    color: var(--chat-text-secondary, rgba(0, 0, 0, 0.5));
+  }
+
+  .chat-attachment-expired {
+    font-size: 11px;
+    color: #dc2626;
+    font-style: italic;
   }
 
   /* File type icons */

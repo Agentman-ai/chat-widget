@@ -347,6 +347,10 @@ export class ChatWidget {
           this.floatingPromptsTimeout = null;
         }
         this.hideFloatingPrompts();
+        // Focus input when opening widget
+        setTimeout(() => {
+          this.viewManager?.focusInput();
+        }, 150);
         
         // Check if we have an existing conversation with messages
         if (this.persistenceManager) {
@@ -1321,6 +1325,11 @@ export class ChatWidget {
     this.updateConversationHeaderButtons();
     
     this.logger.debug(`Restored ${messages.length} messages from current conversation`);
+    
+    // Focus input after restoring conversation
+    setTimeout(() => {
+      this.viewManager?.focusInput();
+    }, 200);
   }
 
   /**

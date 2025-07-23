@@ -314,15 +314,11 @@ export class ConversationView {
  * Render message attachments HTML
  */
 private renderMessageAttachments(message: Message): string {
-  if (!message.attachments || message.attachments.length === 0) {
-    return '';
-  }
-if (!message.attachments || message.attachments.length === 0) {
-return '';
-}
     if (!message.attachments || message.attachments.length === 0) {
       return '';
     }
+
+    console.log('[ConversationView] Rendering attachments for message:', message.sender, message.attachments);
 
     const attachmentsHtml = message.attachments.map(attachment => {
       const isImage = attachment.file_type === 'image' && attachment.url;

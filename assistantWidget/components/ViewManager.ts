@@ -152,6 +152,11 @@ export class ViewManager {
         this.welcomeScreen = null;
       }
 
+      // Focus input after transition completes
+      setTimeout(() => {
+        this.conversationView?.focusInput();
+      }, 100);
+
     } finally {
       this.isTransitioning = false;
     }
@@ -204,6 +209,11 @@ export class ViewManager {
         this.conversationView.destroy();
         this.conversationView = null;
       }
+
+      // Focus input after transition completes
+      setTimeout(() => {
+        this.welcomeScreen?.focusInput();
+      }, 100);
 
     } finally {
       this.isTransitioning = false;

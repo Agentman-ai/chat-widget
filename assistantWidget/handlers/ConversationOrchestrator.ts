@@ -293,6 +293,9 @@ export class ConversationOrchestrator {
               mainHeader.style.visibility = 'visible';
               mainHeader.style.opacity = '1';
             }
+            
+            // Focus the input after loading conversation
+            this.viewManager.focusInput();
           }
         }, 100);
       } else {

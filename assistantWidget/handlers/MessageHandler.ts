@@ -65,13 +65,23 @@ export class MessageHandler {
     this.isProcessingMessage = true;
 
     try {
-      // Create and add user message
+      // Create user message for the event, but only add it to view if there are no attachments
+      const hasAttachments = config.attachmentUrls && config.attachmentUrls.length > 0;
       const userMessage = this.messageService.createUserMessage(message);
       
-      await this.addMessageToView(userMessage);
+      if (!hasAttachments) {
+        // No attachments - add user message locally for immediate feedback
+        this.logger.debug('Creating user message without attachments:', userMessage);
+        await this.addMessageToView(userMessage);
+      } else {
+        // Has attachments - skip local message, wait for API response
+        this.logger.debug('User message has attachments, waiting for API response to display');
+        this.logger.debug('Attachment URLs being sent:', config.attachmentUrls);
+      }
       
       // Don't increment lastMessageCount here - we'll update it after API response
       this.logger.debug(`Current lastMessageCount: ${this.lastMessageCount} (not incrementing for user message)`);
+      this.logger.debug(`Has attachments: ${hasAttachments}`);
 
       // Start loading operation
       this.currentLoadingOperation = this.loadingManager.startLoading('message_send', {
@@ -104,6 +114,7 @@ export class MessageHandler {
 
       // Process response
       if (apiResponse.response && Array.isArray(apiResponse.response)) {
+        this.logger.debug('API Response received:', apiResponse.response);
         await this.handleApiResponse(apiResponse.response, conversationId);
 
         // Process agent metadata if available

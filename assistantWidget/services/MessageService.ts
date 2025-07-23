@@ -142,41 +142,50 @@ export class MessageService {
     const newMessages: Message[] = [];
 
     for (const msg of candidateMessages) {
-      // Skip human messages since we already display them when sending
-      if (msg.type !== 'ai') {
-        this.logger.debug('⏭️ Skipping human message');
-        continue;
-      }
-
+      // Determine sender based on message type
+      const sender = msg.type === 'ai' ? 'agent' : 'user';
+      
       // Extract content and attachments
       const { content, attachments } = this.extractMessageContent(msg);
       const trimmedContent = content.trim();
 
       // Skip empty messages
-      if (!trimmedContent) {
-        this.logger.debug('⏭️ Skipping empty message');
+      if (!trimmedContent && attachments.length === 0) {
+        this.logger.debug('⏭️ Skipping empty message with no attachments');
         continue;
       }
 
-      // Skip if this message content already exists
-      if (existingContents.includes(trimmedContent)) {
-        this.logger.debug('⏭️ Skipping duplicate message: ' + trimmedContent.substring(0, 30) + '...');
-        continue;
+      // For user messages, check if we need to update with attachments
+      if (sender === 'user' && existingContents.includes(trimmedContent)) {
+        // If this user message has attachments but our existing one doesn't, we should update it
+        if (attachments.length > 0) {
+          this.logger.info('📎 User message has attachments from API, will include for update');
+          // Continue processing to update the message with attachments
+        } else {
+          this.logger.debug('⏭️ Skipping duplicate user message: ' + trimmedContent.substring(0, 30) + '...');
+          continue;
+        }
       }
 
       // Create processed message
       const processedMessage: Message = {
         id: msg.id ?? this.generateMessageId(),
-        sender: 'agent',
-        content: trimmedContent,
+        sender: sender,
+        content: trimmedContent || (attachments.length > 0 ? '' : '...'), // Allow empty content if there are attachments
         timestamp: msg.timestamp || new Date().toISOString(),
         type: msg.type === 'text' ? 'text' : (msg.type || 'text'),
         attachments: attachments.length > 0 ? attachments : (msg.attachments || [])
       };
 
       newMessages.push(processedMessage);
-      existingContents.push(trimmedContent); // Add to dedup list for subsequent messages
-      this.logger.info('➕ Adding new agent message' + (attachments.length > 0 ? ` with ${attachments.length} attachments` : ''));
+      if (trimmedContent) {
+        existingContents.push(trimmedContent); // Add to dedup list for subsequent messages
+      }
+      this.logger.info(`➕ Adding new ${sender} message` + (attachments.length > 0 ? ` with ${attachments.length} attachments` : ''));
+      
+      if (attachments.length > 0) {
+        this.logger.debug('Message attachments:', attachments);
+      }
     }
 
     const result = {
