@@ -248,6 +248,66 @@ export const messageStyles = `
     padding: 0;
   }
 
+  /* Markdown image styling */
+  .am-message-image-container {
+    margin: 12px 0;
+    max-width: 100%;
+    text-align: left;
+  }
+
+  .am-message-image {
+    max-width: min(100%, 320px);  /* Fluid but capped */
+    max-height: 300px;
+    width: auto;
+    height: auto;
+    display: block;
+    border-radius: 8px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    cursor: pointer;
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+    object-fit: contain;  /* Better than cover for content visibility */
+  }
+
+  .am-message-image:hover {
+    transform: scale(1.02);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  }
+
+  /* Mobile responsiveness */
+  @media (max-width: 480px) {
+    .am-message-image {
+      max-width: 100%;
+      max-height: 250px;
+    }
+  }
+
+  /* Loading state */
+  .am-message-image:not([src]), 
+  .am-message-image[src=""] {
+    background: #f3f4f6;
+    min-height: 100px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .am-message-image:not([src]):before,
+  .am-message-image[src=""]:before {
+    content: "Loading image...";
+    color: #666;
+    font-size: 14px;
+  }
+
+  /* Fallback for any images not wrapped (safety net) */
+  .am-message-content img:not(.am-message-image) {
+    max-width: 100%;
+    max-height: 300px;
+    height: auto;
+    display: block;
+    margin: 8px 0;
+    border-radius: 8px;
+  }
+
   /* Blockquotes */
   .am-message-content blockquote {
     border-left: 4px solid #2563eb;

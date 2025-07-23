@@ -1,0 +1,260 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Tool Message Filtering - Chat Widget</title>
+    <style>
+        body { 
+            font-family: Arial, sans-serif; 
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .test-info {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .test-section {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 5px;
+            margin: 10px 0;
+        }
+        .test-button {
+            padding: 10px 20px;
+            margin: 5px;
+            border: none;
+            border-radius: 5px;
+            background: #007bff;
+            color: white;
+            cursor: pointer;
+        }
+        .test-button:hover {
+            background: #0056b3;
+        }
+        pre {
+            background: #f4f4f4;
+            padding: 10px;
+            border-radius: 5px;
+            overflow-x: auto;
+            font-size: 13px;
+        }
+        .json-example {
+            max-height: 300px;
+            overflow-y: auto;
+        }
+    </style>
+</head>
+<body>
+    <div class="test-info">
+        <h1>Tool Message Filtering Test</h1>
+        <p>Testing that messages with type="tool" are properly filtered out from the chat display</p>
+        
+        <h3>Problem:</h3>
+        <ul>
+            <li>Messages with type="tool" contain raw tool response data</li>
+            <li>These messages should not be displayed in the UI</li>
+            <li>Only messages with type="ai", "human", or "text" should be shown</li>
+        </ul>
+        
+        <h3>Solution:</h3>
+        <ul>
+            <li>Added filtering in MessageService.processResponse()</li>
+            <li>Added filtering in MessageService.processInitialResponse()</li>
+            <li>Tool messages are now skipped during message processing</li>
+        </ul>
+        
+        <div class="test-section">
+            <h4>Test Scenarios:</h4>
+            <button class="test-button" onclick="testMixedMessages()">Test Mixed Messages (Human, AI, Tool)</button>
+            <button class="test-button" onclick="testToolOnlyMessages()">Test Tool-Only Messages</button>
+            <button class="test-button" onclick="testRealWorldExample()">Test Real World Example</button>
+        </div>
+        
+        <div class="test-section">
+            <h4>Example Tool Message (should be filtered out):</h4>
+            <pre class="json-example"><code>{
+    "content": "meta=None content=[TextContent(type='text', text='{\"products\":[{\"product_id\":\"gid://shopify/Product/8067248718024\",\"title\":\"Jasmine Beaded Blouson Gown With Sheer Short Sleeves In Dusty Blue\"...}]}')] structuredContent=None isError=False",
+    "type": "tool",
+    "tool_calls": null,
+    "id": "e9178198-a65a-4667-a55c-b507e235a2b2"
+}</code></pre>
+        </div>
+        
+        <div id="test-results" style="margin-top: 20px;"></div>
+    </div>
+    
+    <div id="chat-widget"></div>
+
+    <!-- Load the locally built widget -->
+    <script src="./dist/index.js"></script>
+    
+    <script>
+        // Mock API endpoint for testing
+        const mockApiUrl = 'http://localhost:8000';
+        
+        // Initialize widget
+        const widget = new AgentmanChatWidget.ChatWidget({
+            apiUrl: mockApiUrl,
+            agentToken: 'test-token',
+            containerId: 'chat-widget',
+            variant: 'corner',
+            title: 'Tool Message Filter Test',
+            debug: true
+        });
+        
+        // Override fetch to simulate API responses
+        const originalFetch = window.fetch;
+        let messageSequence = [];
+        let currentIndex = 0;
+        
+        window.fetch = function(url, options) {
+            console.log('Intercepted fetch:', url, options);
+            
+            // Only intercept conversation API calls
+            if (url.includes('/v2/agentman_runtime/conversations')) {
+                // Return mock response based on current test
+                return Promise.resolve({
+                    ok: true,
+                    status: 200,
+                    json: () => Promise.resolve({
+                        workflow_id: "test-workflow",
+                        response: messageSequence.slice(0, currentIndex),
+                        metadata: {
+                            agent_id: 1,
+                            model_name: "test-model"
+                        }
+                    })
+                });
+            }
+            
+            // Pass through other requests
+            return originalFetch.apply(this, arguments);
+        };
+        
+        const resultsDiv = document.getElementById('test-results');
+        
+        function simulateConversation(messages) {
+            messageSequence = messages;
+            currentIndex = 0;
+            
+            // Simulate receiving messages one by one
+            const interval = setInterval(() => {
+                currentIndex++;
+                if (currentIndex > messageSequence.length) {
+                    clearInterval(interval);
+                    resultsDiv.innerHTML += '<p><strong>Test complete!</strong> Check the widget to see that tool messages are not displayed.</p>';
+                }
+                
+                // Trigger widget update by simulating a message send
+                if (currentIndex === 1) {
+                    // Send initial message to start conversation
+                    widget.sendMessage("Test message");
+                }
+            }, 1000);
+        }
+        
+        function testMixedMessages() {
+            resultsDiv.innerHTML = '<h3>Testing Mixed Messages</h3>';
+            resultsDiv.innerHTML += '<p>Sending: 1 human message, 1 tool message, 1 AI message</p>';
+            resultsDiv.innerHTML += '<p>Expected: Only human and AI messages should appear</p>';
+            
+            const messages = [
+                {
+                    content: "Find me blue dresses",
+                    type: "human",
+                    id: "msg-1"
+                },
+                {
+                    content: 'meta=None content=[TextContent(type=\'text\', text=\'{"products":[{"id":"123","name":"Blue Dress"}]}\')]',
+                    type: "tool",
+                    id: "msg-2"
+                },
+                {
+                    content: "I found a beautiful blue dress for you!",
+                    type: "ai",
+                    id: "msg-3"
+                }
+            ];
+            
+            simulateConversation(messages);
+        }
+        
+        function testToolOnlyMessages() {
+            resultsDiv.innerHTML = '<h3>Testing Tool-Only Messages</h3>';
+            resultsDiv.innerHTML += '<p>Sending: 3 tool messages</p>';
+            resultsDiv.innerHTML += '<p>Expected: No messages should appear in the widget</p>';
+            
+            const messages = [
+                {
+                    content: "Tool response 1",
+                    type: "tool",
+                    id: "tool-1"
+                },
+                {
+                    content: "Tool response 2",
+                    type: "tool",
+                    id: "tool-2"
+                },
+                {
+                    content: "Tool response 3",
+                    type: "tool",
+                    id: "tool-3"
+                }
+            ];
+            
+            simulateConversation(messages);
+        }
+        
+        function testRealWorldExample() {
+            resultsDiv.innerHTML = '<h3>Testing Real World Example</h3>';
+            resultsDiv.innerHTML += '<p>Simulating the exact scenario from the user\'s data</p>';
+            resultsDiv.innerHTML += '<p>Expected: Only the human query and AI response with formatted products should appear</p>';
+            
+            const messages = [
+                {
+                    "content": "find me bright blue dresses that I can wear to my friends wedding within $250",
+                    "type": "human",
+                    "tool_calls": null,
+                    "id": "15a772b9-4bb2-48bb-837f-7331d103664d"
+                },
+                {
+                    "content": "",
+                    "type": "ai",
+                    "tool_calls": [
+                        {
+                            "name": "AB_MCP-search_shop_catalog-4",
+                            "args": {
+                                "query": "bright blue dresses wedding guest under $250",
+                                "context": "User is searching for bright blue dresses suitable for attending a friend's wedding, with a price limit of $250."
+                            },
+                            "id": "call_XwSWwTN9uFHGyRzKFZUBNcS3",
+                            "type": "tool_call"
+                        }
+                    ],
+                    "id": "run--8fe9f0f3-38eb-49a7-b5b4-f3033f7bf04c-0"
+                },
+                {
+                    "content": 'meta=None content=[TextContent(type=\'text\', text=\'{"products":[{"product_id":"gid://shopify/Product/8067248718024","title":"Jasmine Beaded Blouson Gown With Sheer Short Sleeves In Dusty Blue"}]}\')]',
+                    "type": "tool",
+                    "tool_calls": null,
+                    "id": "e9178198-a65a-4667-a55c-b507e235a2b2"
+                },
+                {
+                    "content": "Here are some bright blue dresses under $250 that are perfect for attending your friend's wedding:\n\n### Jasmine Beaded Blouson Gown With Sheer Short Sleeves In Dusty Blue\n![Jasmine Beaded Blouson Gown](https://cdn.shopify.com/s/files/1/0408/4583/6453/files/AP1E211232_AA463_Regular_Side.jpg)\n\n**Price:** $249\n\nA formal dress featuring a bead-trimmed boat neckline, sheer short sleeves, blouson bodice, and mermaid skirt.",
+                    "type": "ai",
+                    "tool_calls": [],
+                    "id": "run--a46b30eb-0c15-4f37-8569-1bf947c00528-0"
+                }
+            ];
+            
+            simulateConversation(messages);
+        }
+        
+        console.log('Tool message filtering test initialized. Click the buttons to test different scenarios.');
+    </script>
+</body>
+</html>

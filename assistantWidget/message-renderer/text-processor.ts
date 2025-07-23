@@ -1,12 +1,28 @@
 // src/components/assistant/message-renderer/text-processor.ts
-import { MessageRendererOptions, EmojiMap } from './types';
+import { MessageRendererOptions } from './types';
 import { OfflineParser } from './offline-parser';
-import { MarkdownLoader } from '../utils/MarkdownLoader';
+import { MarkdownLoader, MarkdownConfig } from '../utils/MarkdownLoader';
 
 export class TextProcessor {
   private markdownLoadingPromise: Promise<boolean> | null = null;
+  private markdownConfig: MarkdownConfig = {
+    markedOptions: {
+      gfm: true,
+      breaks: true,
+      headerIds: false,
+      mangle: false,
+      pedantic: false,
+      smartLists: true,
+      smartypants: false
+    }
+  };
 
-  constructor(private emojiMap: EmojiMap) {
+  constructor(markdownConfig?: MarkdownConfig) {
+    // Apply custom markdown configuration if provided
+    if (markdownConfig) {
+      this.markdownConfig = { ...this.markdownConfig, ...markdownConfig };
+    }
+    
     // Start loading marked.js in the background
     this.initializeMarkdownLoader();
   }
@@ -22,20 +38,29 @@ export class TextProcessor {
       if (marked) {
         // Don't pre-sanitize - let marked.js handle it
         // Modern marked.js versions handle sanitization internally
-        
-        marked.setOptions({
-          gfm: true,
-          breaks: true,
-          headerIds: false,
-          mangle: false,
-          // sanitize option is deprecated - marked handles this internally
-        });
+        // Note: marked.setOptions is now handled in MarkdownLoader.getMarked()
         processed = marked.parse(processed);
 
         // Add target="_blank" to all links
         processed = processed.replace(
           /<a\s+(?:[^>]*?)href="([^"]*)"([^>]*?)>/gi,
           '<a href="$1" target="_blank" rel="noopener noreferrer" $2>'
+        );
+
+        // Style markdown images consistently with OfflineParser
+        processed = processed.replace(
+          /<img\s+([^>]*?)src="([^"]*)"([^>]*?)>/gi,
+          (_match, before, src, after) => {
+            // Extract alt text if present
+            const altMatch = (before + after).match(/alt="([^"]*)"/);
+            const altText = altMatch ? altMatch[1] : '';
+            
+            return `<div class="am-message-image-container">
+              <img src="${src}" alt="${altText}" class="am-message-image" 
+                   loading="lazy" onclick="window.open('${src}', '_blank')" 
+                   title="Click to view full size" />
+            </div>`;
+          }
         );
       } else {
         // Use enhanced offline parser as fallback (handles its own sanitization)
@@ -54,7 +79,7 @@ export class TextProcessor {
    */
   private initializeMarkdownLoader(): void {
     // Start loading marked.js asynchronously without blocking
-    this.markdownLoadingPromise = MarkdownLoader.loadMarked();
+    this.markdownLoadingPromise = MarkdownLoader.loadMarked(this.markdownConfig);
   }
 
   /**
@@ -75,38 +100,4 @@ export class TextProcessor {
     }
   }
 
-  private sanitizeText(text: string): string {
-    return text
-      .replace(/&/g, '&amp;')
-      .replace(/</g, '&lt;')
-      .replace(/>/g, '&gt;')
-      .replace(/"/g, '&quot;');
-    // Don't escape apostrophes - marked.js handles them properly
-  }
-
-  private replaceEmoji(text: string): string {
-    return text.replace(/:\)|:\(|:D|;\)|<3/g, match => this.emojiMap[match] || match);
-  }
-
-  private applyMarkdown(text: string): string {
-    let processed = text;
-
-    // Only apply our markdown processing if marked is not available
-    // Process links first to avoid interference
-    processed = processed.replace(
-      /\[([^\]]+)\]\(([^)]+)\)/g,
-      '<a href="$2" target="_blank" rel="noopener noreferrer">$1</a>'
-    );
-
-    // Then process other markdown elements
-    processed = processed
-      // Bold
-      .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
-      // Italic
-      .replace(/\*(.*?)\*/g, '<em>$1</em>')
-      // Line breaks
-      .replace(/\n/g, '<br>');
-
-    return processed;
-  }
 }

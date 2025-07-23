@@ -142,6 +142,12 @@ export class MessageService {
     const newMessages: Message[] = [];
 
     for (const msg of candidateMessages) {
+      // Skip tool messages - they should not be displayed in the UI
+      if (msg.type === 'tool') {
+        this.logger.debug('⏭️ Skipping tool message');
+        continue;
+      }
+      
       // Determine sender based on message type
       const sender = msg.type === 'ai' ? 'agent' : 'user';
       
@@ -217,6 +223,12 @@ export class MessageService {
     this.logger.info(`💬 Processing ${candidateMessages.length} new messages from initial response (sliced from index ${currentCount})`);
 
     for (const msg of candidateMessages) {
+      // Skip tool messages - they should not be displayed in the UI
+      if (msg.type === 'tool') {
+        this.logger.debug('⏭️ Skipping tool message in initial response');
+        continue;
+      }
+      
       // Skip human messages since we already display them when sending
       if (msg.type !== 'ai') {
         this.logger.debug('⏭️ Skipping human message in initial response');

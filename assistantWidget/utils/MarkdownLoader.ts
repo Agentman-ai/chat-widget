@@ -1,18 +1,55 @@
 /**
+ * Configuration options for markdown loading
+ */
+export interface MarkdownConfig {
+  cdnUrls?: string[];
+  timeout?: number;
+  markedOptions?: {
+    gfm?: boolean;
+    breaks?: boolean;
+    headerIds?: boolean;
+    mangle?: boolean;
+    pedantic?: boolean;
+    smartLists?: boolean;
+    smartypants?: boolean;
+  };
+}
+
+/**
  * Utility for dynamically loading the marked.js library
  * This keeps the bundle size small while providing full markdown support
  */
 export class MarkdownLoader {
   private static loadPromise: Promise<boolean> | null = null;
   private static isLoaded = false;
-  private static readonly CDN_URL = 'https://cdn.jsdelivr.net/npm/marked@12.0.0/marked.min.js';
-  private static readonly TIMEOUT_MS = 5000; // 5 second timeout
+  private static config: MarkdownConfig = {};
+  
+  // Default CDN URLs with fallback
+  private static readonly DEFAULT_CDN_URLS = [
+    'https://cdn.jsdelivr.net/npm/marked@12.0.0/marked.min.js',
+    'https://unpkg.com/marked@12.0.0/marked.min.js',
+    'https://cdnjs.cloudflare.com/ajax/libs/marked/12.0.0/marked.min.js'
+  ];
+  
+  private static readonly DEFAULT_TIMEOUT_MS = 5000; // 5 second timeout
+
+  /**
+   * Configure the markdown loader
+   */
+  public static configure(config: MarkdownConfig): void {
+    this.config = { ...this.config, ...config };
+  }
 
   /**
    * Dynamically load marked.js from CDN
    * Returns a promise that resolves to true if loaded successfully, false otherwise
    */
-  public static async loadMarked(): Promise<boolean> {
+  public static async loadMarked(config?: MarkdownConfig): Promise<boolean> {
+    // Apply configuration if provided
+    if (config) {
+      this.configure(config);
+    }
+
     // Return cached result if already loaded
     if (this.isLoaded) {
       return true;
@@ -36,10 +73,14 @@ export class MarkdownLoader {
   }
 
   /**
-   * Get the marked instance if available
+   * Get the marked instance if available with proper typing
    */
-  public static getMarked(): any {
+  public static getMarked(): typeof window.marked | null {
     if (typeof window !== 'undefined' && window.marked) {
+      // Apply configuration if marked is available and config exists
+      if (this.config.markedOptions && window.marked.setOptions) {
+        window.marked.setOptions(this.config.markedOptions);
+      }
       return window.marked;
     }
     return null;
@@ -56,40 +97,86 @@ export class MarkdownLoader {
         return true;
       }
 
-      // Create script element
-      const script = document.createElement('script');
-      script.src = this.CDN_URL;
-      script.async = true;
+      // Get CDN URLs to try
+      const cdnUrls = this.config.cdnUrls || this.DEFAULT_CDN_URLS;
+      const timeout = this.config.timeout || this.DEFAULT_TIMEOUT_MS;
 
-      // Create promise that resolves when script loads or fails
-      const loadPromise = new Promise<boolean>((resolve) => {
-        const timeout = setTimeout(() => {
-          console.warn('Marked.js loading timed out, falling back to OfflineParser');
-          resolve(false);
-        }, this.TIMEOUT_MS);
-
-        script.onload = () => {
-          clearTimeout(timeout);
+      // Try each CDN URL until one succeeds
+      for (let i = 0; i < cdnUrls.length; i++) {
+        const url = cdnUrls[i];
+        console.log(`Attempting to load marked.js from: ${url}`);
+        
+        const success = await this.tryLoadFromUrl(url, timeout);
+        if (success) {
           this.isLoaded = true;
-          console.log('Marked.js loaded successfully');
-          resolve(true);
-        };
+          console.log(`Successfully loaded marked.js from: ${url}`);
+          return true;
+        }
+        
+        // If this wasn't the last URL, log and try the next one
+        if (i < cdnUrls.length - 1) {
+          console.warn(`Failed to load from ${url}, trying next CDN...`);
+        }
+      }
 
-        script.onerror = () => {
-          clearTimeout(timeout);
-          console.warn('Failed to load marked.js, falling back to OfflineParser');
-          resolve(false);
-        };
-      });
-
-      // Add script to document
-      document.head.appendChild(script);
-
-      return await loadPromise;
+      console.warn('Failed to load marked.js from all CDN URLs, falling back to OfflineParser');
+      return false;
     } catch (error) {
       console.warn('Error loading marked.js:', error);
       return false;
     }
+  }
+
+  /**
+   * Try to load marked.js from a specific URL
+   */
+  private static async tryLoadFromUrl(url: string, timeout: number): Promise<boolean> {
+    // Check if script already exists to avoid duplicates
+    const existingScript = document.querySelector(`script[src="${url}"]`);
+    if (existingScript) {
+      // Script already exists, wait a bit to see if it loads
+      await new Promise(resolve => setTimeout(resolve, 100));
+      if (typeof window !== 'undefined' && window.marked) {
+        return true;
+      }
+      return false;
+    }
+
+    // Create script element
+    const script = document.createElement('script');
+    script.src = url;
+    script.async = true;
+    script.setAttribute('data-marked-loader', 'true');
+
+    // Create promise that resolves when script loads or fails
+    const loadPromise = new Promise<boolean>((resolve) => {
+      const timeoutId = setTimeout(() => {
+        script.remove();
+        resolve(false);
+      }, timeout);
+
+      script.onload = () => {
+        clearTimeout(timeoutId);
+        // Verify marked is actually available
+        if (typeof window !== 'undefined' && window.marked) {
+          resolve(true);
+        } else {
+          script.remove();
+          resolve(false);
+        }
+      };
+
+      script.onerror = () => {
+        clearTimeout(timeoutId);
+        script.remove();
+        resolve(false);
+      };
+    });
+
+    // Add script to document
+    document.head.appendChild(script);
+
+    return await loadPromise;
   }
 
   /**
@@ -98,5 +185,34 @@ export class MarkdownLoader {
   public static reset(): void {
     this.loadPromise = null;
     this.isLoaded = false;
+    this.config = {};
+  }
+
+  /**
+   * Clean up loaded scripts from the DOM
+   */
+  public static cleanup(): void {
+    // Remove all scripts added by this loader
+    const scripts = document.querySelectorAll('script[data-marked-loader="true"]');
+    scripts.forEach(script => script.remove());
+    
+    // Also try to remove scripts by known URLs if data attribute is missing
+    const cdnUrls = this.config.cdnUrls || this.DEFAULT_CDN_URLS;
+    cdnUrls.forEach(url => {
+      const script = document.querySelector(`script[src="${url}"]`);
+      if (script) {
+        script.remove();
+      }
+    });
+    
+    // Reset state
+    this.reset();
+  }
+
+  /**
+   * Get current configuration
+   */
+  public static getConfig(): Readonly<MarkdownConfig> {
+    return { ...this.config };
   }
 }

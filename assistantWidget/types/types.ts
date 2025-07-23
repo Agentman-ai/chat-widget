@@ -86,6 +86,20 @@ export interface ChatConfig {
   collectIPAddress?: boolean;
   /** Debug configuration for development and troubleshooting */
   debug?: boolean | DebugConfig;
+  /** Markdown configuration for customizing marked.js loading and options */
+  markdownConfig?: {
+    cdnUrls?: string[];
+    timeout?: number;
+    markedOptions?: {
+      gfm?: boolean;
+      breaks?: boolean;
+      headerIds?: boolean;
+      mangle?: boolean;
+      pedantic?: boolean;
+      smartLists?: boolean;
+      smartypants?: boolean;
+    };
+  };
 }
 
 export interface DebugConfig {

@@ -17,6 +17,7 @@ import { FileHandler } from './handlers/FileHandler';
 import { ConversationOrchestrator } from './handlers/ConversationOrchestrator';
 import type { UserInputEvent, PromptClickEvent, ViewTransitionEvent } from './types/events';
 import { createEvent } from './types/events';
+import { MarkdownLoader } from './utils/MarkdownLoader';
 
 /**
  * ChatWidget - Refactored component-based chat widget with welcome screen
@@ -799,6 +800,9 @@ export class ChatWidget {
 
     // Remove from instances
     ChatWidget.instances.delete(this.containerId);
+    
+    // Clean up markdown loader scripts
+    MarkdownLoader.cleanup();
 
     this.logger.info('✅ ChatWidget destroyed');
   }

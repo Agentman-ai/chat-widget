@@ -1,10 +1,15 @@
 // src/components/assistant/message-renderer/message-renderer.ts
 import type { Message } from '../types/types';
-import type { MessageRendererOptions, ProcessedContent, EmojiMap } from './types';
+import type { MessageRendererOptions } from './types';
 import { TextProcessor } from './text-processor';
 import { SvgProcessor } from './svg-processor';
-import { defaultEmojiMap } from './emoji-map';
 import { CustomRenderer } from './custom-renderer';
+import type { MarkdownConfig } from '../utils/MarkdownLoader';
+
+export interface MessageRendererConfig {
+  options?: Partial<MessageRendererOptions>;
+  markdownConfig?: MarkdownConfig;
+}
 
 export class MessageRenderer {
   private static readonly defaultOptions: MessageRendererOptions = {
@@ -16,27 +21,30 @@ export class MessageRenderer {
   };
 
   private readonly options: MessageRendererOptions;
-  private readonly emojiMap: EmojiMap;
   private readonly textProcessor: TextProcessor;
   private readonly svgProcessor: SvgProcessor;
   private readonly customRenderer: CustomRenderer;
 
   constructor(
-    options: Partial<MessageRendererOptions> = {},
-    customEmojiMap: Partial<EmojiMap> = {}
+    config: MessageRendererConfig | Partial<MessageRendererOptions> = {}
   ) {
+    // Handle both old and new constructor signatures for backward compatibility
+    let options: Partial<MessageRendererOptions>;
+    let markdownConfig: MarkdownConfig | undefined;
+    
+    if ('options' in config || 'markdownConfig' in config) {
+      // New config object format
+      const rendererConfig = config as MessageRendererConfig;
+      options = rendererConfig.options || {};
+      markdownConfig = rendererConfig.markdownConfig;
+    } else {
+      // Legacy options format
+      options = config as Partial<MessageRendererOptions>;
+    }
+    
     this.options = { ...MessageRenderer.defaultOptions, ...options };
 
-    // Fix: Filter out undefined values and ensure all values are strings
-    const validEmojiEntries = Object.entries(customEmojiMap)
-      .filter((entry): entry is [string, string] => typeof entry[1] === 'string');
-
-    this.emojiMap = {
-      ...defaultEmojiMap,
-      ...Object.fromEntries(validEmojiEntries)
-    };
-
-    this.textProcessor = new TextProcessor(this.emojiMap);
+    this.textProcessor = new TextProcessor(markdownConfig);
     this.svgProcessor = new SvgProcessor();
     this.customRenderer = new CustomRenderer();
   }
@@ -70,7 +78,7 @@ export class MessageRenderer {
 
           case 'text':
           default:
-            return await this.processTextWithSvg(message.content);
+            content = await this.processTextWithSvg(message.content);
             break;
       }
 

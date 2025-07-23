@@ -61,8 +61,10 @@ export class ConversationView {
     this.theme = theme;
     this.assets = assets;
     
-    // Initialize message renderer
-    this.messageRenderer = new MessageRenderer();
+    // Initialize message renderer with markdown configuration
+    this.messageRenderer = new MessageRenderer({
+      markdownConfig: config.markdownConfig
+    });
 
     // Bind event handlers
     this.boundToggleHandler = eventHandlers.onToggle;

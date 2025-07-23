@@ -50,6 +50,20 @@ export class OfflineParser {
       }
     },
     
+    // Images - support for markdown image syntax ![alt](url)
+    markdownImage: {
+      pattern: /!\[([^\]]*)\]\(([^)]+)\)/g,
+      replace: (match: string, alt: string, url: string) => {
+        const safeUrl = OfflineParser.sanitizeUrl(url.trim());
+        const safeAlt = OfflineParser.escapeHtml(alt);
+        return `<div class="am-message-image-container">
+          <img src="${safeUrl}" alt="${safeAlt}" class="am-message-image" 
+               loading="lazy" onclick="window.open('${safeUrl}', '_blank')" 
+               title="Click to view full size" />
+        </div>`;
+      }
+    },
+    
     // Code - enhanced with HTML escaping
     inlineCode: { 
       pattern: /`([^`]+)`/g, 
@@ -109,6 +123,9 @@ export class OfflineParser {
         .replace(this.rules.bold.pattern, this.rules.bold.replace)
         .replace(this.rules.italic.pattern, this.rules.italic.replace)
         .replace(this.rules.inlineCode.pattern, this.rules.inlineCode.replace);
+
+      // Process images before links to prevent URL conflicts
+      html = html.replace(this.rules.markdownImage.pattern, this.rules.markdownImage.replace);
 
       // Process links (emails first, then markdown, then auto-links)
       html = html
