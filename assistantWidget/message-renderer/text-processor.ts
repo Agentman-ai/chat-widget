@@ -1,40 +1,78 @@
 // src/components/assistant/message-renderer/text-processor.ts
-import type { MessageRendererOptions, EmojiMap } from './types';
+import { MessageRendererOptions, EmojiMap } from './types';
 import { OfflineParser } from './offline-parser';
+import { MarkdownLoader } from '../utils/MarkdownLoader';
 
 export class TextProcessor {
-  constructor(private emojiMap: EmojiMap) {}
+  private markdownLoadingPromise: Promise<boolean> | null = null;
 
-  public processText(content: string, options: MessageRendererOptions): string {
+  constructor(private emojiMap: EmojiMap) {
+    // Start loading marked.js in the background
+    this.initializeMarkdownLoader();
+  }
+
+  public async processText(content: string, options: MessageRendererOptions): Promise<string> {
     // Don't double-sanitize since OfflineParser handles this
     let processed = content;
     
-    // If marked is available and markdown is enabled, use it
-    if (options.enableMarkdown !== false && window.marked) {
-      // Don't pre-sanitize - let marked.js handle it
-      // Modern marked.js versions handle sanitization internally
+    // Try to use marked.js if available or can be loaded
+    if (options.enableMarkdown !== false) {
+      const marked = await this.getMarkedInstance();
       
-      window.marked.setOptions({
-        gfm: true,
-        breaks: true,
-        headerIds: false,
-        mangle: false,
-        // sanitize option is deprecated - marked handles this internally
-      });
-      processed = window.marked.parse(processed);
+      if (marked) {
+        // Don't pre-sanitize - let marked.js handle it
+        // Modern marked.js versions handle sanitization internally
+        
+        marked.setOptions({
+          gfm: true,
+          breaks: true,
+          headerIds: false,
+          mangle: false,
+          // sanitize option is deprecated - marked handles this internally
+        });
+        processed = marked.parse(processed);
 
-      // Add target="_blank" to all links
-      processed = processed.replace(
-        /<a\s+(?:[^>]*?)href="([^"]*)"([^>]*?)>/gi,
-        '<a href="$1" target="_blank" rel="noopener noreferrer" $2>'
-      );
-            
+        // Add target="_blank" to all links
+        processed = processed.replace(
+          /<a\s+(?:[^>]*?)href="([^"]*)"([^>]*?)>/gi,
+          '<a href="$1" target="_blank" rel="noopener noreferrer" $2>'
+        );
+      } else {
+        // Use enhanced offline parser as fallback (handles its own sanitization)
+        processed = OfflineParser.parse(processed);
+      }
     } else {
       // Use enhanced offline parser as fallback (handles its own sanitization)
       processed = OfflineParser.parse(processed);
     }
 
     return processed;
+  }
+
+  /**
+   * Initialize the markdown loader in the background
+   */
+  private initializeMarkdownLoader(): void {
+    // Start loading marked.js asynchronously without blocking
+    this.markdownLoadingPromise = MarkdownLoader.loadMarked();
+  }
+
+  /**
+   * Get the marked instance if available
+   */
+  private async getMarkedInstance(): Promise<any> {
+    try {
+      // Wait for the loading promise if it exists
+      if (this.markdownLoadingPromise) {
+        await this.markdownLoadingPromise;
+      }
+      
+      // Return the marked instance if available
+      return MarkdownLoader.getMarked();
+    } catch (error) {
+      console.warn('Error getting marked instance:', error);
+      return null;
+    }
   }
 
   private sanitizeText(text: string): string {

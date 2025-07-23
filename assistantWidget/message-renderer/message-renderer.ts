@@ -42,7 +42,7 @@ export class MessageRenderer {
   }
 
 
-  render(message: Message): string {
+  async render(message: Message): Promise<string> {
     
     if (!message?.content) return '';
 
@@ -54,7 +54,7 @@ export class MessageRenderer {
           // For HTML type, only sanitize if HTML is not allowed
           content = this.options.enableHtml ? 
             this.sanitizeHtml(message.content) : 
-            this.textProcessor.processText(message.content, this.options);
+            await this.textProcessor.processText(message.content, this.options);
           break;
 
           case 'svg':
@@ -70,7 +70,7 @@ export class MessageRenderer {
 
           case 'text':
           default:
-            return this.processTextWithSvg(message.content);
+            return await this.processTextWithSvg(message.content);
             break;
       }
 
@@ -82,7 +82,7 @@ export class MessageRenderer {
     }
   }
 
-  private processTextWithSvg(content: string): string {
+  private async processTextWithSvg(content: string): Promise<string> {
     // Find SVG code blocks
     const matches = content.match(/```svg([\s\S]*?)```/g) || [];
     const blocks = content.split(/```svg[\s\S]*?```/);
@@ -93,7 +93,7 @@ export class MessageRenderer {
     for (let i = 0; i < blocks.length; i++) {
       // Process text block
       if (blocks[i]) {
-        result += this.textProcessor.processText(blocks[i], this.options);
+        result += await this.textProcessor.processText(blocks[i], this.options);
       }
       
       // Process SVG block if exists

@@ -8,6 +8,7 @@ export interface SendMessageParams {
   userInput: string;
   clientMetadata?: ClientMetadata;
   forceLoad?: boolean;
+  attachmentUrls?: string[];
 }
 
 export interface ApiResponse {
@@ -49,6 +50,11 @@ export class ApiService {
       force_load: params.forceLoad || false,
       conversation_id: params.conversationId,
       user_input: params.userInput,
+      include_attachment_metadata: true, // Always include attachment metadata for rendering
+      ...(params.attachmentUrls && params.attachmentUrls.length > 0
+        ? { attachment_urls: params.attachmentUrls }
+        : {}
+      ),
       ...(params.clientMetadata && Object.keys(params.clientMetadata).length > 0 
         ? { client_metadata: params.clientMetadata } 
         : {}

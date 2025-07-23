@@ -156,7 +156,7 @@ export class ChatWidget {
   private initializeServices(): void {
     // Core services
     this.apiService = new ApiService(this.config.apiUrl, this.config.debug);
-    this.messageService = new MessageService(this.config.debug);
+    this.messageService = new MessageService(this.config.apiUrl, this.config.debug);
     this.agentService = new AgentService(this.config.debug);
     this.eventBus = new EventBus(this.config.debug);
     this.errorHandler = new ErrorHandler(this.messageService, this.eventBus, !!this.config.debug);
@@ -575,22 +575,8 @@ export class ChatWidget {
       container.style.right = '20px';
       container.style.position = 'fixed';
     }
-  }
-
-
-
-  /**
-   * Add message to conversation view
-   */
-  public addMessageToView(message: Message): void {
-    this.ensureMessageHandler();
-    this.messageHandler!.addMessageToView(message);
-  }
-
-  /**
-   * Ensure MessageHandler is initialized
-   */
-  private ensureMessageHandler(): void {
+    
+    // Initialize MessageHandler if needed
     if (!this.messageHandler && this.viewManager) {
       this.messageHandler = new MessageHandler(
         this.stateManager,
@@ -604,6 +590,9 @@ export class ChatWidget {
         !!this.config.debug
       );
     }
+    
+    // Initialize FileHandler if needed
+    this.ensureFileHandler();
   }
 
   /**
@@ -617,7 +606,9 @@ export class ChatWidget {
         this.errorHandler,
         this.config.apiUrl,
         this.config.agentToken,
-        !!this.config.debug
+        !!this.config.debug,
+        () => this.persistenceManager?.getConversationId() || null,
+        () => this.ensureConversationExists()
       );
       
       // Update supported MIME types if agent capabilities are available
@@ -628,12 +619,62 @@ export class ChatWidget {
   }
 
   /**
+   * Ensure a conversation exists, creating one if necessary
+   * Used when files are uploaded from welcome screen
+   */
+  private ensureConversationExists(): string {
+    // If we already have a conversation ID, return it
+    const existingId = this.persistenceManager?.getConversationId();
+    if (existingId) {
+      return existingId;
+    }
+    
+    // Create a new conversation
+    if (this.persistenceManager) {
+      const newId = this.persistenceManager.create('New chat');
+      this.logger.info('Created new conversation for file upload:', newId);
+      
+      // Initialize the conversation orchestrator to prepare for messages
+      this.ensureConversationOrchestrator();
+      
+      // If we're in welcome screen, transition to conversation view
+      if (this.viewManager?.getCurrentView() === 'welcome') {
+        this.viewManager.transitionToConversation().then(() => {
+          // Update state to reflect we've started a conversation
+          this.state.hasStartedConversation = true;
+          this.state.currentView = 'conversation';
+          this.stateManager.updateState(this.state);
+        });
+      }
+      
+      return newId;
+    }
+    
+    throw new Error('Cannot create conversation: PersistenceManager not available');
+  }
+  
+  /**
    * Ensure ConversationOrchestrator is initialized
    */
   private ensureConversationOrchestrator(): void {
     if (!this.conversationOrchestrator && this.viewManager) {
-      this.ensureMessageHandler();
+      // Ensure handlers are initialized first
       this.ensureFileHandler();
+      
+      // Initialize MessageHandler if needed
+      if (!this.messageHandler) {
+        this.messageHandler = new MessageHandler(
+          this.stateManager,
+          this.viewManager,
+          this.apiService,
+          this.messageService,
+          this.agentService,
+          this.errorHandler,
+          this.eventBus,
+          this.persistenceManager,
+          !!this.config.debug
+        );
+      }
       
       this.conversationOrchestrator = new ConversationOrchestrator(
         this.config,
@@ -1251,8 +1292,20 @@ export class ChatWidget {
     const messages = this.persistenceManager.loadMessages();
     if (messages.length === 0) return;
     
-    // Ensure we have necessary handlers
-    this.ensureMessageHandler();
+    // Ensure we have message handler initialized
+    if (!this.messageHandler && this.viewManager) {
+      this.messageHandler = new MessageHandler(
+        this.stateManager,
+        this.viewManager,
+        this.apiService,
+        this.messageService,
+        this.agentService,
+        this.errorHandler,
+        this.eventBus,
+        this.persistenceManager,
+        !!this.config.debug
+      );
+    }
     
     // Load messages into the UI
     if (this.messageHandler) {

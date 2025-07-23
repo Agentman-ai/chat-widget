@@ -19,9 +19,11 @@ export interface ProcessedResponse {
  */
 export class MessageService {
   private logger: Logger;
+  private apiUrl: string;
 
-  constructor(debug?: boolean | import('../types/types').DebugConfig) {
+  constructor(apiUrl: string, debug?: boolean | import('../types/types').DebugConfig) {
     this.logger = new Logger(debug || false, '[MessageService]');
+    this.apiUrl = apiUrl;
   }
 
   /**
@@ -33,7 +35,7 @@ export class MessageService {
       msg !== null &&
       'type' in msg &&
       'content' in msg &&
-      typeof msg.content === 'string'
+      (typeof msg.content === 'string' || Array.isArray(msg.content))
     );
 
     if (!isValid) {
@@ -41,6 +43,75 @@ export class MessageService {
     }
 
     return isValid;
+  }
+
+  /**
+   * Extract content and attachments from message data
+   */
+  private extractMessageContent(msg: any): { content: string; attachments: any[] } {
+    let content = '';
+    let attachments: any[] = [];
+    
+    // Check if content is an array (multimodal message with attachments)
+    if (Array.isArray(msg.content)) {
+      // Process multimodal content
+      for (const item of msg.content) {
+        if (item.type === 'text' && item.text) {
+          content = item.text;
+        } else if (item.type === 'image_url' && item.image_url) {
+          // OpenAI/Gemini format
+          const fileId = item.image_url.file_id;
+          const baseUrl = item.image_url.thumbnail_url || item.image_url.url;
+          
+          // If no URL provided but we have file_id, construct it
+          const url = baseUrl || (fileId && this.apiUrl ? `${this.apiUrl}/v2/agentman_runtime/files/${fileId}/download` : null);
+          
+          this.logger.debug('Processing image attachment:', {
+            fileId,
+            hasBaseUrl: !!baseUrl,
+            constructedUrl: url,
+            imageUrlData: item.image_url
+          });
+          
+          attachments.push({
+            file_id: fileId,
+            filename: item.image_url.filename || `image_${fileId}`,
+            file_type: 'image',
+            mime_type: item.image_url.mime_type || 'image/jpeg',
+            size_bytes: item.image_url.size || 0,
+            url: url
+          });
+        } else if (item.type === 'image' && item.source) {
+          // Anthropic format
+          attachments.push({
+            file_id: item.source.file_id,
+            filename: item.source.filename,
+            file_type: 'image',
+            mime_type: item.source.mime_type,
+            size_bytes: item.source.size,
+            url: item.source.thumbnail_url
+          });
+        } else if (item.type === 'document' && item.source) {
+          // Document format
+          attachments.push({
+            file_id: item.source.file_id,
+            filename: item.source.filename,
+            file_type: 'document',
+            mime_type: item.source.mime_type,
+            size_bytes: item.source.size,
+            url: item.source.download_url
+          });
+        }
+      }
+    } else if (typeof msg.content === 'string') {
+      content = msg.content;
+    } else if (msg.output) {
+      content = msg.output;
+    } else if (msg.text) {
+      content = msg.text;
+    }
+    
+    return { content, attachments };
   }
 
   /**
@@ -77,35 +148,35 @@ export class MessageService {
         continue;
       }
 
-      const content = msg.content?.trim();
+      // Extract content and attachments
+      const { content, attachments } = this.extractMessageContent(msg);
+      const trimmedContent = content.trim();
 
       // Skip empty messages
-      if (!content) {
+      if (!trimmedContent) {
         this.logger.debug('⏭️ Skipping empty message');
         continue;
       }
 
       // Skip if this message content already exists
-      if (existingContents.includes(content)) {
-        this.logger.debug('⏭️ Skipping duplicate message: ' + content.substring(0, 30) + '...');
+      if (existingContents.includes(trimmedContent)) {
+        this.logger.debug('⏭️ Skipping duplicate message: ' + trimmedContent.substring(0, 30) + '...');
         continue;
       }
 
-      // Validate message format
-      if (this.validateMessage(msg)) {
-        const processedMessage: Message = {
-          id: msg.id ?? this.generateMessageId(),
-          sender: 'agent',
-          content: content,
-          timestamp: msg.timestamp || new Date().toISOString(),
-          type: msg.type === 'text' ? 'text' : (msg.type || 'text'),
-          attachments: msg.attachments || []
-        };
+      // Create processed message
+      const processedMessage: Message = {
+        id: msg.id ?? this.generateMessageId(),
+        sender: 'agent',
+        content: trimmedContent,
+        timestamp: msg.timestamp || new Date().toISOString(),
+        type: msg.type === 'text' ? 'text' : (msg.type || 'text'),
+        attachments: attachments.length > 0 ? attachments : (msg.attachments || [])
+      };
 
-        newMessages.push(processedMessage);
-        existingContents.push(content); // Add to dedup list for subsequent messages
-        this.logger.info('➕ Adding new agent message');
-      }
+      newMessages.push(processedMessage);
+      existingContents.push(trimmedContent); // Add to dedup list for subsequent messages
+      this.logger.info('➕ Adding new agent message' + (attachments.length > 0 ? ` with ${attachments.length} attachments` : ''));
     }
 
     const result = {
@@ -143,17 +214,20 @@ export class MessageService {
         continue;
       }
 
-      if (this.validateMessage(msg) && msg.content.trim()) {
-        const content = msg.content.trim();
-        this.logger.info(`➕ Adding welcome message to queue: "${content.substring(0, 50)}..."`);
+      // Extract content and attachments
+      const { content, attachments } = this.extractMessageContent(msg);
+      const trimmedContent = content.trim();
+      
+      if (trimmedContent) {
+        this.logger.info(`➕ Adding welcome message to queue: "${trimmedContent.substring(0, 50)}..."`);
         
         newMessages.push({
           id: msg.id ?? this.generateMessageId(),
           sender: 'agent',
-          content: content,
+          content: trimmedContent,
           timestamp: new Date().toISOString(),
           type: 'text',
-          attachments: msg.attachments || []
+          attachments: attachments.length > 0 ? attachments : (msg.attachments || [])
         });
       }
     }

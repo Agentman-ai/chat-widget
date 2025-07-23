@@ -129,15 +129,24 @@ export class ConversationOrchestrator {
         // Could implement a wait or show user feedback
       }
 
+      // Get attachment URLs if any files have been uploaded
+      const attachmentUrls = this.fileHandler?.getUploadedFileUrls() || [];
+
       // Send message via MessageHandler
       await this.messageHandler.sendMessage(
         message,
         this.currentConversationId,
         {
           agentToken: this.config.agentToken,
-          clientMetadata: this.gatherClientMetadata()
+          clientMetadata: this.gatherClientMetadata(),
+          attachmentUrls
         }
       );
+
+      // Clear uploaded files after sending message
+      if (attachmentUrls.length > 0) {
+        this.fileHandler?.clearAllAttachments();
+      }
 
       // Increment message count
       this.messageCount++;

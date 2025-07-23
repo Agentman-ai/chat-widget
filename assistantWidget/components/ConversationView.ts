@@ -284,45 +284,42 @@ export class ConversationView {
   /**
    * Add a message to the conversation view
    */
-  public addMessage(message: Message): void {
-    const messagesContainer = this.getMessagesContainer();
-    if (!messagesContainer) {
-      return;
-    }
-
-    const messageElement = document.createElement('div');
-    messageElement.className = `am-message ${message.sender}`;
-    
-    const renderedContent = this.messageRenderer.render(message);
-    const attachmentsHtml = this.renderMessageAttachments(message);
-    
-    // Claude-style layout: role labels and no bubbles, both left-aligned
-    if (message.sender === 'user') {
-      messageElement.innerHTML = `
-        <div class="am-message-role">You</div>
-        <div class="am-message-content">
-          ${renderedContent}
-          ${attachmentsHtml}
-        </div>
-      `;
-    } else {
-      messageElement.innerHTML = `
-        <div class="am-message-role">Assistant</div>
-        <div class="am-message-content">
-          ${renderedContent}
-          ${attachmentsHtml}
-        </div>
-      `;
-    }
-
-    messagesContainer.appendChild(messageElement);
-    messagesContainer.scrollTop = messagesContainer.scrollHeight;
+  public async addMessage(message: Message): Promise<void> {
+  const messagesContainer = this.getMessagesContainer();
+  if (!messagesContainer) {
+    return;
   }
 
-  /**
-   * Render message attachments HTML
-   */
-  private renderMessageAttachments(message: Message): string {
+  const messageElement = document.createElement('div');
+  messageElement.className = `am-message ${message.sender}`;
+
+  const renderedContent = await this.messageRenderer.render(message);
+  const attachmentsHtml = this.renderMessageAttachments(message);
+
+  // Claude-style layout: role labels and no bubbles, both left-aligned
+  const role = message.sender === 'user' ? 'You' : 'Assistant';
+  messageElement.innerHTML = `
+    <div class="am-message-role">${role}</div>
+    <div class="am-message-content">
+      ${renderedContent}
+      ${attachmentsHtml}
+    </div>
+  `;
+
+  messagesContainer.appendChild(messageElement);
+  messagesContainer.scrollTop = messagesContainer.scrollHeight;
+}
+
+/**
+ * Render message attachments HTML
+ */
+private renderMessageAttachments(message: Message): string {
+  if (!message.attachments || message.attachments.length === 0) {
+    return '';
+  }
+if (!message.attachments || message.attachments.length === 0) {
+return '';
+}
     if (!message.attachments || message.attachments.length === 0) {
       return '';
     }
@@ -340,7 +337,8 @@ export class ConversationView {
                  alt="${escapedFilename}" 
                  class="message-attachment-image"
                  onclick="window.open('${attachment.url}', '_blank')"
-                 loading="lazy">
+                 loading="lazy"
+                 onerror="this.onerror=null; this.src='data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTAwIiBoZWlnaHQ9IjEwMCIgdmlld0JveD0iMCAwIDEwMCAxMDAiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+CjxyZWN0IHdpZHRoPSIxMDAiIGhlaWdodD0iMTAwIiBmaWxsPSIjRjNGNEY2Ii8+CjxwYXRoIGQ9Ik00MCA0MEg2MFY2MEg0MFY0MFoiIGZpbGw9IiM5Q0EzQUYiLz4KPHBhdGggZD0iTTQ1IDUwTDUwIDQ1TDU1IDUwTDYwIDQ1VjU1SDQwVjUwTDQ1IDUwWiIgZmlsbD0iI0UyRThGMCIvPgo8Y2lyY2xlIGN4PSI0OCIgY3k9IjQ3IiByPSIzIiBmaWxsPSIjRTJFOEYwIi8+Cjx0ZXh0IHg9IjUwIiB5PSI3NSIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZm9udC1mYW1pbHk9IkFyaWFsLCBzYW5zLXNlcmlmIiBmb250LXNpemU9IjEwIiBmaWxsPSIjNkI3MjgwIj5FeHBpcmVkPC90ZXh0Pgo8L3N2Zz4='; this.style.cursor='not-allowed'; this.onclick=null; this.title='Image expired - link no longer valid';">
           </div>
         `;
       } else {
@@ -349,11 +347,13 @@ export class ConversationView {
              class="chat-message-attachment" 
              target="_blank" 
              rel="noopener noreferrer"
-             ${!attachment.url ? 'onclick="return false;" style="cursor: not-allowed; opacity: 0.5;"' : ''}>
+             ${!attachment.url ? 'onclick="return false;" style="cursor: not-allowed; opacity: 0.5;"' : ''}
+>
             <div class="message-attachment-icon">${iconType}</div>
             <div class="chat-attachment-info">
               <div class="chat-attachment-name">${escapedFilename}</div>
               <div class="chat-attachment-size">${formattedSize}</div>
+              ${!attachment.url ? '<div class="chat-attachment-expired" style="font-size: 11px; color: #6b7280;">Link expired</div>' : ''}
             </div>
           </a>
         `;

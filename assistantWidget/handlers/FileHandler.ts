@@ -22,6 +22,7 @@ export class FileHandler {
   private activeUploads: Map<string, AbortController> = new Map();
   private uploadProgress: Map<string, number> = new Map();
   private attachments: Map<string, File> = new Map();
+  private uploadedFileIds: Map<string, string> = new Map(); // Maps temp IDs to server IDs
   
   // Configuration
   private readonly MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
@@ -32,6 +33,8 @@ export class FileHandler {
     'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
   ];
   private supportedMimeTypes: string[] = [];
+  private getConversationId: (() => string | null) | null = null;
+  private ensureConversation: (() => string) | null = null;
 
   constructor(
     private viewManager: ViewManager,
@@ -39,12 +42,16 @@ export class FileHandler {
     private errorHandler: ErrorHandler,
     private apiUrl: string,
     private agentToken: string,
-    debug: boolean = false
+    debug: boolean = false,
+    getConversationId?: () => string | null,
+    ensureConversation?: () => string
   ) {
     this.logger = new Logger(debug, '[FileHandler]');
     this.loadingManager = new LoadingManager(this.viewManager, this.eventBus, debug);
     // Default to built-in allowed types until agent capabilities are set
     this.supportedMimeTypes = this.DEFAULT_ALLOWED_TYPES;
+    this.getConversationId = getConversationId || null;
+    this.ensureConversation = ensureConversation || null;
   }
 
   /**
@@ -83,9 +90,12 @@ export class FileHandler {
       this.updateAttachmentPreview();
       
       // Start upload
+      this.logger.info(`Starting upload for file: ${file.name}`);
       await this.uploadFile(file, fileId);
       
     } catch (error) {
+      this.logger.error(`Failed to process file ${file.name}:`, error);
+      this.logger.error(`Error stack:`, error instanceof Error ? error.stack : 'No stack trace');
       const errorMessage = this.errorHandler.handleFileError(
         file.name,
         this.getFileErrorType(error),
@@ -110,7 +120,9 @@ export class FileHandler {
     }
 
     // Check file type against supported mime types
+    this.logger.debug(`Checking file type ${file.type} against supported types:`, this.supportedMimeTypes);
     if (!this.supportedMimeTypes.includes(file.type)) {
+      this.logger.error(`File type ${file.type} not in supported types:`, this.supportedMimeTypes);
       throw new Error('INVALID_FILE_TYPE');
     }
 
@@ -121,6 +133,8 @@ export class FileHandler {
    * Upload file with progress tracking
    */
   private async uploadFile(file: File, fileId: string): Promise<void> {
+    this.logger.info(`uploadFile called for: ${file.name}, fileId: ${fileId}`);
+    
     const abortController = new AbortController();
     this.activeUploads.set(fileId, abortController);
 
@@ -138,25 +152,77 @@ export class FileHandler {
         source: 'FileHandler'
       }));
 
-      // Create FormData
+      // Create FormData (only file, other params go in URL/headers)
       const formData = new FormData();
       formData.append('file', file);
-      formData.append('agentToken', this.agentToken);
+
+      // Build URL with query parameters - note: 'files' (plural) endpoint
+      const url = new URL(`${this.apiUrl}/v2/agentman_runtime/files/upload`);
+      
+      // Get or create conversation ID
+      let conversationId = this.getConversationId ? this.getConversationId() : null;
+      
+      // If no conversation ID and we're in welcome screen, create one
+      if (!conversationId && this.ensureConversation) {
+        this.logger.info('No conversation ID found, creating new conversation for file upload');
+        conversationId = this.ensureConversation();
+        
+        // Log that a conversation was created for file upload
+        this.logger.debug('Conversation created for file upload:', conversationId);
+      }
+      
+      if (conversationId) {
+        url.searchParams.append('conversation_id', conversationId);
+        this.logger.debug(`Uploading file with conversation ID: ${conversationId}`);
+      } else {
+        this.logger.warn('Uploading file without conversation ID');
+      }
 
       // Upload with progress tracking
       const response = await this.uploadWithProgress(
-        `${this.apiUrl}/v2/agentman_runtime/file/upload`,
+        url.toString(),
         formData,
         fileId,
-        abortController.signal
+        abortController.signal,
+        this.agentToken
       );
 
       if (!response.ok) {
-        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+        const errorText = await response.text();
+        this.logger.error(`Upload failed - Status: ${response.status}, Response: ${errorText}`);
+        
+        // Try to parse error response
+        let errorMessage = `HTTP ${response.status}: ${response.statusText}`;
+        try {
+          const errorResponse = JSON.parse(errorText);
+          if (response.status === 422 && errorResponse.detail) {
+            // Handle FastAPI validation errors
+            if (Array.isArray(errorResponse.detail)) {
+              const details = errorResponse.detail.map((err: any) => 
+                `${err.loc?.join('.')} - ${err.msg}`
+              ).join(', ');
+              errorMessage = `Validation error: ${details}`;
+            } else {
+              errorMessage = `Validation error: ${errorResponse.detail}`;
+            }
+          } else {
+            errorMessage = errorResponse.error || errorResponse.message || errorMessage;
+          }
+        } catch (e) {
+          errorMessage += ` - ${errorText}`;
+        }
+        
+        throw new Error(errorMessage);
       }
 
       const result = await response.json();
       this.logger.debug(`File upload successful: ${file.name}`, result);
+      
+      // Extract the file_id and other metadata from response
+      if (result.file_id) {
+        // Store the server-assigned file ID for later use
+        this.uploadedFileIds.set(fileId, result.file_id);
+      }
 
       // Complete loading operation
       this.loadingManager.completeLoading(loadingId, true);
@@ -209,7 +275,8 @@ export class FileHandler {
     url: string,
     formData: FormData,
     fileId: string,
-    signal: AbortSignal
+    signal: AbortSignal,
+    agentToken: string
   ): Promise<Response> {
     return new Promise((resolve, reject) => {
       const xhr = new XMLHttpRequest();
@@ -236,12 +303,36 @@ export class FileHandler {
             statusText: xhr.statusText
           }));
         } else {
-          reject(new Error(`HTTP ${xhr.status}: ${xhr.statusText}`));
+          // Log the error response for debugging
+          // Parse error response
+          let errorMessage = `HTTP ${xhr.status}: ${xhr.statusText}`;
+          try {
+            const errorResponse = JSON.parse(xhr.responseText);
+            if (xhr.status === 422 && errorResponse.detail) {
+              if (Array.isArray(errorResponse.detail)) {
+                const details = errorResponse.detail.map((err: any) => 
+                  `${err.loc?.join('.')} - ${err.msg}`
+                ).join(', ');
+                errorMessage = `Validation error: ${details}`;
+              } else {
+                errorMessage = `Validation error: ${errorResponse.detail}`;
+              }
+            } else {
+              errorMessage = errorResponse.error || errorResponse.message || errorMessage;
+            }
+          } catch (e) {
+            this.logger.error(`Failed to parse error response: ${xhr.responseText}`);
+            errorMessage += ` - ${xhr.responseText}`;
+          }
+          
+          this.logger.error(`Upload failed: ${errorMessage}`);
+          reject(new Error(errorMessage));
         }
       });
 
       // Handle errors
       xhr.addEventListener('error', () => {
+        this.logger.error('Network error during file upload');
         reject(new Error('Network error during file upload'));
       });
 
@@ -259,6 +350,11 @@ export class FileHandler {
 
       // Start upload
       xhr.open('POST', url);
+      // Set the agent_token header (FastAPI expects this exact header name)
+      xhr.setRequestHeader('agent_token', agentToken);
+      // Log the request details for debugging
+      this.logger.debug(`Uploading to: ${url}`);
+      this.logger.debug(`With agent_token header: ${agentToken.substring(0, 20)}...`);
       xhr.send(formData);
     });
   }
@@ -299,15 +395,31 @@ export class FileHandler {
     this.attachments.forEach((file, fileId) => {
       attachments.push({
         id: fileId,
-        name: file.name,
-        size: file.size,
-        type: file.type,
-        progress: this.uploadProgress.get(fileId) || 0,
-        status: this.getAttachmentStatus(fileId)
+        filename: file.name,
+        file_type: this.getFileTypeFromMimeType(file.type),
+        size_bytes: file.size,
+        mime_type: file.type,
+        upload_progress: this.uploadProgress.get(fileId) || 0,
+        upload_status: this.getAttachmentStatus(fileId)
       });
     });
     
     return attachments;
+  }
+
+  /**
+   * Get uploaded file URLs for sending with messages
+   */
+  public getUploadedFileUrls(): string[] {
+    const urls: string[] = [];
+    
+    // Iterate through uploadedFileIds to get server file IDs
+    this.uploadedFileIds.forEach((serverFileId) => {
+      // Construct the file URL using the server-assigned file ID
+      urls.push(`${this.apiUrl}/v2/agentman_runtime/files/${serverFileId}/download`);
+    });
+    
+    return urls;
   }
 
   /**
@@ -325,6 +437,7 @@ export class FileHandler {
     this.attachments.clear();
     this.activeUploads.clear();
     this.uploadProgress.clear();
+    this.uploadedFileIds.clear();
 
     // Update UI
     this.updateAttachmentPreview();
@@ -385,6 +498,20 @@ export class FileHandler {
     if (this.activeUploads.has(fileId)) return 'uploading';
     const progress = this.uploadProgress.get(fileId) || 0;
     return progress === 100 ? 'completed' : 'error';
+  }
+
+  /**
+   * Get file type from MIME type
+   */
+  private getFileTypeFromMimeType(mimeType: string): string {
+    if (mimeType.startsWith('image/')) return 'image';
+    if (mimeType.startsWith('video/')) return 'video';
+    if (mimeType.startsWith('audio/')) return 'audio';
+    if (mimeType === 'application/pdf') return 'document';
+    if (mimeType.includes('word') || mimeType.includes('document')) return 'document';
+    if (mimeType.includes('sheet') || mimeType.includes('excel')) return 'document';
+    if (mimeType.startsWith('text/')) return 'text';
+    return 'file';
   }
 
   /**

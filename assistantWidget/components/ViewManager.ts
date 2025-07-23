@@ -515,9 +515,9 @@ export class ViewManager {
   /**
    * Add message to current view (if conversation view)
    */
-  public addMessage(message: any): void {
+  public async addMessage(message: any): Promise<void> {
     if (this.currentView === 'conversation' && this.conversationView) {
-      this.conversationView.addMessage(message);
+      await this.conversationView.addMessage(message);
     }
   }
 

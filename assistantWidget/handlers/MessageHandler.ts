@@ -53,6 +53,7 @@ export class MessageHandler {
     config: {
       agentToken: string;
       clientMetadata?: any;
+      attachmentUrls?: string[];
     }
   ): Promise<void> {
     // Prevent duplicate processing
@@ -67,7 +68,7 @@ export class MessageHandler {
       // Create and add user message
       const userMessage = this.messageService.createUserMessage(message);
       
-      this.addMessageToView(userMessage);
+      await this.addMessageToView(userMessage);
       
       // Don't increment lastMessageCount here - we'll update it after API response
       this.logger.debug(`Current lastMessageCount: ${this.lastMessageCount} (not incrementing for user message)`);
@@ -91,7 +92,8 @@ export class MessageHandler {
         conversationId,
         userInput: message,
         clientMetadata: config.clientMetadata,
-        forceLoad: false
+        forceLoad: false,
+        attachmentUrls: config.attachmentUrls
       });
 
       // Complete loading operation
@@ -133,7 +135,7 @@ export class MessageHandler {
         'sending message'
       );
       
-      this.addMessageToView(errorMessage);
+      await this.addMessageToView(errorMessage);
     } finally {
       this.isProcessingMessage = false;
     }
@@ -142,12 +144,12 @@ export class MessageHandler {
   /**
    * Process initial response (e.g., from agent initialization)
    */
-  public handleInitialResponse(responseData: any[]): void {
+  public async handleInitialResponse(responseData: any[]): Promise<void> {
     const result = this.messageService.processInitialResponse(responseData, this.lastMessageCount);
     
     // Add new messages to UI
     for (const message of result.newMessages) {
-      this.addMessageToView(message);
+      await this.addMessageToView(message);
     }
     
     // Update message count to the total API response count
@@ -165,7 +167,7 @@ export class MessageHandler {
     
     // Add new messages to UI
     for (const message of result.newMessages) {
-      this.addMessageToView(message);
+      await this.addMessageToView(message);
       
       // Emit message received event
       this.eventBus.emit('message:received', createEvent('message:received', {
@@ -183,12 +185,14 @@ export class MessageHandler {
   /**
    * Add a message to the view and state
    */
-  public addMessageToView(message: Message): void {
+  public async addMessageToView(message: Message): Promise<void> {
     // Add to state manager
     this.stateManager.addMessage(message);
     
     // Add to view
-    this.viewManager?.addMessage(message);
+    if (this.viewManager) {
+      await this.viewManager.addMessage(message);
+    }
     
     // Mark for saving
     if (this.persistenceManager) {

@@ -47,7 +47,8 @@
       "mcp__ide__getDiagnostics",
       "Bash(cat:*)",
       "Bash(open test-cdn-colors.html)",
-      "Bash(open verify-cdn-fix.html)"
+      "Bash(open verify-cdn-fix.html)",
+      "Bash(open test-file-upload.html)"
     ],
     "deny": []
   }

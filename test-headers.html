@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Test Headers</title>
+</head>
+<body>
+    <h1>Testing File Upload Headers</h1>
+    <input type="file" id="fileInput">
+    <button onclick="testUpload()">Test Upload</button>
+    <pre id="output"></pre>
+
+    <script>
+        const output = document.getElementById('output');
+        
+        async function testUpload() {
+            const fileInput = document.getElementById('fileInput');
+            const file = fileInput.files[0];
+            if (!file) {
+                output.textContent = 'Please select a file first';
+                return;
+            }
+            
+            const token = '.eJyrVipJzUvMK4nPTFGyMtFRSiwoyMlMTizJzM-DC6WnQuUtTGoBmpsQUA.aH22OA.ut1VoVw-sNHcU3-IN7RIK7zG1HI';
+            const apiUrl = 'http://localhost:8000';
+            
+            // Test different header formats
+            const tests = [
+                { name: 'agent_token', header: { 'agent_token': token } },
+                { name: 'Agent-Token', header: { 'Agent-Token': token } },
+                { name: 'Authorization Bearer', header: { 'Authorization': `Bearer ${token}` } },
+                { name: 'X-Agent-Token', header: { 'X-Agent-Token': token } }
+            ];
+            
+            for (const test of tests) {
+                output.textContent += `\n\nTesting with header: ${test.name}\n`;
+                
+                try {
+                    const formData = new FormData();
+                    formData.append('file', file);
+                    
+                    const url = `${apiUrl}/v2/agentman_runtime/file/upload?expires_in_hours=24`;
+                    
+                    const response = await fetch(url, {
+                        method: 'POST',
+                        headers: test.header,
+                        body: formData
+                    });
+                    
+                    if (response.ok) {
+                        const data = await response.json();
+                        output.textContent += `✅ SUCCESS with ${test.name}: ${JSON.stringify(data, null, 2)}\n`;
+                        break; // Stop on first success
+                    } else {
+                        const error = await response.text();
+                        output.textContent += `❌ Failed (${response.status}): ${error}\n`;
+                    }
+                } catch (err) {
+                    output.textContent += `❌ Error: ${err.message}\n`;
+                }
+            }
+        }
+    </script>
+</body>
+</html>

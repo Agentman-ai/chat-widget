@@ -121,6 +121,7 @@ export const baseStyles = `
     display: flex;
     align-items: center;
     justify-content: center;
+    gap: 0px !important;
   }
 
   .am-chat-header button svg {
@@ -136,7 +137,7 @@ export const baseStyles = `
   .am-chat-header-actions {
     display: flex;
     align-items: center;
-    gap: 0px !important;
+    gap: 8px !important;
     flex-shrink: 0;
   }
 
