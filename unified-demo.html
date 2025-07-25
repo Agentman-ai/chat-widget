@@ -18,6 +18,17 @@
             right: 20px;
             z-index: 1000;
         }
+        #chat-container.inline-mode {
+            position: relative;
+            bottom: auto;
+            right: auto;
+            width: 100%;
+            height: 600px;
+            margin: 20px 0;
+            border: 1px solid #e5e7eb;
+            border-radius: 8px;
+            overflow: hidden;
+        }
         .config-panel {
             margin: 20px 0;
             padding: 20px;
@@ -230,7 +241,8 @@
                             <label for="variant">Widget Variant</label>
                             <select id="variant">
                                 <option value="corner">Corner (Floating Button)</option>
-                                <option value="embedded">Embedded</option>
+                                <option value="centered">Centered (Modal)</option>
+                                <option value="inline">Inline (Embedded in Page)</option>
                             </select>
                         </div>
                         
@@ -798,6 +810,14 @@
                 // Get new configuration
                 const newConfig = getFormConfig();
                 console.log('New configuration:', newConfig);
+                
+                // Update container styling based on variant
+                const container = document.getElementById('chat-container');
+                if (newConfig.variant === 'inline') {
+                    container.classList.add('inline-mode');
+                } else {
+                    container.classList.remove('inline-mode');
+                }
                 
                 // Initialize with new config
                 const ChatWidget = window.AgentmanChatWidget?.ChatWidget || window.AgentmanChatWidget;

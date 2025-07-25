@@ -23,10 +23,17 @@ export const welcomeStyles = `
     position: relative;
   }
   
-  /* Remove max-width constraint for inline variant */
+  /* Balanced max-width for inline variant */
   .am-chat-widget--inline .am-welcome-container {
-    max-width: none;
+    max-width: 720px; /* Wider than mobile but not too wide */
     padding: 40px 40px;
+  }
+  
+  /* For very large screens, allow a bit more width */
+  @media (min-width: 1200px) {
+    .am-chat-widget--inline .am-welcome-container {
+      max-width: 800px;
+    }
   }
 
   /* ===== MINIMIZE BUTTON ===== */
