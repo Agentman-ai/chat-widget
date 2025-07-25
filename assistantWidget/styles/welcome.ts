@@ -22,6 +22,12 @@ export const welcomeStyles = `
     gap: 20px;
     position: relative;
   }
+  
+  /* Remove max-width constraint for inline variant */
+  .am-chat-widget--inline .am-welcome-container {
+    max-width: none;
+    padding: 40px 40px;
+  }
 
   /* ===== MINIMIZE BUTTON ===== */
   
@@ -211,6 +217,11 @@ export const welcomeStyles = `
     .am-welcome-container {
       padding: 24px 16px;
       gap: 24px;
+    }
+    
+    /* Maintain better padding for inline on mobile */
+    .am-chat-widget--inline .am-welcome-container {
+      padding: 24px 24px;
     }
 
     .am-welcome-title {

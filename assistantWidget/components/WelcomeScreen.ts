@@ -152,8 +152,8 @@ export class WelcomeScreen {
    * Generate minimize button
    */
   private generateMinimizeButton(): string {
-    // Only show minimize button if toggle handler is provided
-    if (!this.boundToggleHandler) return '';
+    // Only show minimize button if toggle handler is provided and not in inline mode
+    if (!this.boundToggleHandler || this.config.variant === 'inline') return '';
     
     return `
       <button class="am-welcome-minimize" title="Close">

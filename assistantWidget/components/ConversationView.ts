@@ -443,7 +443,7 @@ private renderMessageAttachments(message: Message): string {
    * Generate header HTML - basic structure with dynamic button management
    */
   private generateHeader(): string {
-    // Only show expand/minimize buttons for corner variant
+    // Only show expand/minimize buttons for corner variant (not for inline or centered)
     const showWindowControls = this.config.variant === 'corner';
     
     return `
