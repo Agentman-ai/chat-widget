@@ -461,7 +461,7 @@ export class ViewManager {
     this.toggleButton.innerHTML = `
       <div class="am-chat-toggle-content">
         <div class="am-chat-logo">
-          ${this.assets.logo || icons.agentmanLogo}
+          ${icons.agentmanLogo}
         </div>
         <span class="am-chat-toggle-text">
           ${this.config.toggleText || 'Ask AI'}
