@@ -48,7 +48,7 @@
         variant: extractDataAttribute('variant', 'corner'),
         position: extractDataAttribute('position', 'bottom-right'),
         initialHeight: extractDataAttribute('initial-height', '600px'),
-        initialWidth: extractDataAttribute('initial-width', '400px'),
+        initialWidth: extractDataAttribute('initial-width', '460px'),
         title: extractDataAttribute('title', 'AI Assistant'),
         placeholder: extractDataAttribute('placeholder', 'Ask me anything...'),
         toggleText: extractDataAttribute('toggle-text', 'Ask Agentman'),
