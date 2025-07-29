@@ -131,7 +131,7 @@
         variant: 'corner',
         position: 'bottom-right',
         initialHeight: '600px',
-        initialWidth: '400px',
+        initialWidth: '460px',
         title: 'AI Assistant',
         placeholder: 'Ask me anything...',
         toggleText: 'Ask Agentman',
