@@ -70,13 +70,13 @@ shopify/
 
 **Basic Installation:**
 ```html
-<script src="https://storage.googleapis.com/chatwidget-shopify-storage-for-cdn/shopify/v1/widget.js" 
+<script src="https://storage.googleapis.com/chatwidget-shopify-storage-for-cdn/shopify/v2/widget.js" 
         data-agent-token="YOUR_AGENT_TOKEN"></script>
 ```
 
 **Customized Installation:**
 ```html
-<script src="https://storage.googleapis.com/chatwidget-shopify-storage-for-cdn/shopify/v1/widget.js" 
+<script src="https://storage.googleapis.com/chatwidget-shopify-storage-for-cdn/shopify/v2/widget.js" 
         data-agent-token="YOUR_AGENT_TOKEN"
         data-title="{{ shop.name }} Assistant"
         data-bg-color="{{ settings.colors_background_1 }}"
