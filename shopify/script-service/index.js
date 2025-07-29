@@ -78,6 +78,7 @@
         'messagePrompts.prompt1': extractDataAttribute('prompt-1', 'Track my order'),
         'messagePrompts.prompt2': extractDataAttribute('prompt-2', 'Product information'),
         'messagePrompts.prompt3': extractDataAttribute('prompt-3', 'Return policy'),
+        'messagePrompts.prompt4': extractDataAttribute('prompt-4', 'Other questions'),
         
         // Persistence settings
         'persistence.enabled': extractDataAttribute('persistence-enabled', true, v => v === 'true'),
