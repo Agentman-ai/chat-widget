@@ -24,6 +24,9 @@ export class WelcomeScreen {
   private boundPromptClickHandler: (prompt: string) => void;
   private boundConversationsClickHandler?: () => void;
   private boundToggleHandler?: () => void;
+  private boundAttachmentClickHandler?: () => void;
+  private boundFileSelectHandler?: (files: FileList) => void;
+  private boundAttachmentRemoveHandler?: (fileId: string) => void;
   
   // Input component
   private inputComponent: InputComponent | null = null;
@@ -38,6 +41,9 @@ export class WelcomeScreen {
       onPromptClick: (prompt: string) => void;
       onConversationsClick?: () => void;
       onToggle?: () => void;
+      onAttachmentClick?: () => void;
+      onFileSelect?: (files: FileList) => void;
+      onAttachmentRemove?: (fileId: string) => void;
     }
   ) {
     this.config = config;
@@ -50,6 +56,9 @@ export class WelcomeScreen {
     this.boundPromptClickHandler = eventHandlers.onPromptClick;
     this.boundConversationsClickHandler = eventHandlers.onConversationsClick;
     this.boundToggleHandler = eventHandlers.onToggle;
+    this.boundAttachmentClickHandler = eventHandlers.onAttachmentClick;
+    this.boundFileSelectHandler = eventHandlers.onFileSelect;
+    this.boundAttachmentRemoveHandler = eventHandlers.onAttachmentRemove;
   }
 
   /**
@@ -119,6 +128,20 @@ export class WelcomeScreen {
    */
   public getRootElement(): HTMLElement | null {
     return this.element;
+  }
+
+  /**
+   * Update attachment preview
+   */
+  public updateAttachmentPreview(attachments: Record<string, unknown>[]): void {
+    this.inputComponent?.updateAttachmentPreview(attachments as any[]);
+  }
+
+  /**
+   * Clear file input
+   */
+  public clearFileInput(): void {
+    this.inputComponent?.clearFileInput();
   }
 
   /**
@@ -263,13 +286,16 @@ export class WelcomeScreen {
     const placeholder = this.element.querySelector('.am-welcome-input-placeholder');
     if (!placeholder) return;
     
-    // Create input component with same handlers
+    // Create input component with all handlers
     this.inputComponent = new InputComponent(
       this.config,
       this.theme,
       {
         onInputKey: this.boundInputKeyHandler,
-        onSend: this.boundSendHandler
+        onSend: this.boundSendHandler,
+        onAttachmentClick: this.boundAttachmentClickHandler,
+        onFileSelect: this.boundFileSelectHandler,
+        onAttachmentRemove: this.boundAttachmentRemoveHandler
       }
     );
     

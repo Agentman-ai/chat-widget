@@ -390,6 +390,10 @@ class ShopifyConfigTool {
             floatingPromptsEnabled: document.getElementById('floatingPromptsEnabled').checked,
             floatingPromptsDelay: parseInt(document.getElementById('floatingPromptsDelay').value) || 5000,
             enableAttachments: document.getElementById('enableAttachments').checked,
+            // Streaming configuration
+            streaming: {
+                enabled: document.getElementById('streamingEnabled')?.checked !== false // Default to true
+            },
             shopifyIntegration: {
                 customerData: document.getElementById('customerData').checked,
                 cartSync: document.getElementById('cartSync').checked,
@@ -422,6 +426,7 @@ class ShopifyConfigTool {
             theme: this.config.theme,
             messagePrompts: this.config.content.messagePrompts,
             persistence: this.config.advanced.persistence,
+            streaming: this.config.advanced.streaming,
             shopifyIntegration: this.config.advanced.shopifyIntegration
         };
 

@@ -4,6 +4,10 @@ import * as icons from '../assets/icons';
 import { UIUtils } from '../utils/UIUtils';
 import { MessageRenderer } from '../message-renderer/message-renderer';
 import { InputComponent } from './InputComponent';
+import { MessageRenderer as IMessageRenderer } from '../renderers/MessageRenderer';
+import { StandardRenderer } from '../renderers/StandardRenderer';
+import { StreamingRenderer } from '../renderers/StreamingRenderer';
+import { ScrollManager } from '../utils/ScrollManager';
 
 /**
  * ConversationView Component - Traditional chat interface
@@ -33,14 +37,20 @@ export class ConversationView {
   // Cached DOM elements
   private cachedElements = new Map<string, HTMLElement>();
   
-  // Message renderer
+  // Message renderer (for markdown processing)
   private messageRenderer: MessageRenderer;
+  
+  // DOM renderer (for efficient updates)
+  private domRenderer: IMessageRenderer;
   
   // Loading element
   private loadingMessageElement: HTMLElement | null = null;
   
   // Input component
   private inputComponent: InputComponent | null = null;
+  
+  // Scroll manager for intelligent scrolling
+  private scrollManager: ScrollManager;
 
   constructor(
     config: ChatConfig,
@@ -64,6 +74,20 @@ export class ConversationView {
     // Initialize message renderer with markdown configuration
     this.messageRenderer = new MessageRenderer({
       markdownConfig: config.markdownConfig
+    });
+    
+    // Initialize DOM renderer based on streaming config (default: true)
+    const isStreamingEnabled = config.streaming?.enabled !== false;
+    const debugEnabled = typeof config.debug === 'boolean' ? config.debug : (config.debug?.enabled || false);
+    this.domRenderer = isStreamingEnabled 
+      ? new StreamingRenderer({ debug: debugEnabled })
+      : new StandardRenderer({ debug: debugEnabled });
+    
+    // Initialize scroll manager
+    this.scrollManager = new ScrollManager({
+      threshold: 50,
+      smoothScroll: true,
+      debug: debugEnabled
     });
 
     // Bind event handlers
@@ -95,6 +119,12 @@ export class ConversationView {
     this.attachEventListeners();
     this.applyTheme();
     this.createInputComponent();
+    
+    // Initialize scroll manager with messages container
+    const messagesContainer = this.getMessagesContainer();
+    if (messagesContainer) {
+      this.scrollManager.init(messagesContainer);
+    }
 
     return this.element;
   }
@@ -287,30 +317,31 @@ export class ConversationView {
    * Add a message to the conversation view
    */
   public async addMessage(message: Message): Promise<void> {
-  const messagesContainer = this.getMessagesContainer();
-  if (!messagesContainer) {
-    return;
+    const messagesContainer = this.getMessagesContainer();
+    if (!messagesContainer) {
+      return;
+    }
+
+    const messageElement = document.createElement('div');
+    messageElement.className = `am-message ${message.sender}`;
+    messageElement.id = `message-${message.id}`;
+
+    // Claude-style layout: role labels and no bubbles, both left-aligned
+    const role = message.sender === 'user' ? 'You' : 'Assistant';
+    messageElement.innerHTML = `
+      <div class="am-message-role">${role}</div>
+      <div class="am-message-content"></div>
+    `;
+
+    messagesContainer.appendChild(messageElement);
+    
+    // Use renderer to populate content
+    const contentElement = messageElement.querySelector('.am-message-content') as HTMLElement;
+    await this.domRenderer.render(message, contentElement);
+    
+    // Use scroll manager for intelligent scrolling
+    this.scrollManager.scrollToBottom();
   }
-
-  const messageElement = document.createElement('div');
-  messageElement.className = `am-message ${message.sender}`;
-
-  const renderedContent = await this.messageRenderer.render(message);
-  const attachmentsHtml = this.renderMessageAttachments(message);
-
-  // Claude-style layout: role labels and no bubbles, both left-aligned
-  const role = message.sender === 'user' ? 'You' : 'Assistant';
-  messageElement.innerHTML = `
-    <div class="am-message-role">${role}</div>
-    <div class="am-message-content">
-      ${renderedContent}
-      ${attachmentsHtml}
-    </div>
-  `;
-
-  messagesContainer.appendChild(messageElement);
-  messagesContainer.scrollTop = messagesContainer.scrollHeight;
-}
 
 /**
  * Render message attachments HTML
@@ -389,7 +420,7 @@ private renderMessageAttachments(message: Message): string {
     `;
 
     messagesContainer.appendChild(this.loadingMessageElement);
-    messagesContainer.scrollTop = messagesContainer.scrollHeight;
+    this.scrollManager.scrollToBottom();
   }
 
   /**
@@ -401,6 +432,43 @@ private renderMessageAttachments(message: Message): string {
       this.loadingMessageElement = null;
     }
   }
+  
+  /**
+   * Update an existing message (for streaming)
+   */
+  public updateMessage(message: Message): void {
+    const messagesContainer = this.getMessagesContainer();
+    if (!messagesContainer) {
+      return;
+    }
+    
+    const existingMessage = messagesContainer.querySelector(`#message-${message.id}`);
+    if (existingMessage) {
+      const contentElement = existingMessage.querySelector('.am-message-content') as HTMLElement;
+      if (contentElement) {
+        // Use renderer to update content efficiently
+        this.domRenderer.update(message, contentElement);
+        
+        // Handle scrolling for streaming updates
+        this.scrollManager.handleStreamingUpdate();
+      }
+    } else {
+      // Message doesn't exist yet, add it
+      this.addMessage(message);
+    }
+  }
+  
+  /**
+   * Check if a message exists (for streaming)
+   */
+  public hasMessage(messageId: string): boolean {
+    const messagesContainer = this.getMessagesContainer();
+    if (!messagesContainer) {
+      return false;
+    }
+    
+    return !!messagesContainer.querySelector(`#message-${messageId}`);
+  }
 
   /**
    * Clear all messages from the view
@@ -411,6 +479,9 @@ private renderMessageAttachments(message: Message): string {
       // Remove all message elements
       const messages = messagesContainer.querySelectorAll('.am-message');
       messages.forEach(msg => msg.remove());
+      
+      // Reset scroll manager state
+      this.scrollManager.reset();
     }
   }
 
@@ -421,6 +492,8 @@ private renderMessageAttachments(message: Message): string {
     this.removeEventListeners();
     this.cachedElements.clear();
     this.inputComponent?.destroy();
+    this.domRenderer.cleanup();
+    this.scrollManager.destroy();
     if (this.element) {
       this.element.remove();
       this.element = null;
@@ -477,7 +550,7 @@ private renderMessageAttachments(message: Message): string {
                              justify-content: center;
                              transition: background-color 0.2s;
                              border-radius: 4px;
-                             color: #6b7280;">
+                             color: var(--chat-header-text-color, #333);">
                 ${icons.expand2}
               </button>
               
@@ -493,7 +566,7 @@ private renderMessageAttachments(message: Message): string {
                              justify-content: center;
                              transition: background-color 0.2s;
                              border-radius: 4px;
-                             color: #6b7280;">
+                             color: var(--chat-header-text-color, #333);">
                 ${icons.minimize}
               </button>
             ` : ''}

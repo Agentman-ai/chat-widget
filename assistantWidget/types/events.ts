@@ -105,6 +105,20 @@ export interface LoadingEndedEvent extends BaseEvent {
   duration: number;
 }
 
+// Unified loading state events
+export interface LoadingStateChangedEvent extends BaseEvent {
+  previousState: 'none' | 'initial' | 'streaming';
+  currentState: 'none' | 'initial' | 'streaming';
+}
+
+export interface LoadingHideInitialEvent extends BaseEvent {
+  reason: string;
+}
+
+export interface LoadingCompleteEvent extends BaseEvent {
+  previousState: 'none' | 'initial' | 'streaming';
+}
+
 // File attachment events
 export interface FileSelectedEvent extends BaseEvent {
   files: FileList;
@@ -223,6 +237,9 @@ export interface EventTypeRegistry {
   // Loading states
   'loading:start': LoadingStartedEvent;
   'loading:end': LoadingEndedEvent;
+  'loading:stateChanged': LoadingStateChangedEvent;
+  'loading:hideInitial': LoadingHideInitialEvent;
+  'loading:complete': LoadingCompleteEvent;
 
   // File handling
   'file:selected': FileSelectedEvent;
@@ -461,6 +478,24 @@ export const EVENT_METADATA: Record<EventName, EventMetadata> = {
     priority: EventPriority.NORMAL,
     description: 'Loading operation completed',
     examples: ['Message sent successfully', 'Agent initialized']
+  },
+  'loading:stateChanged': {
+    category: EventCategory.STATE_MANAGEMENT,
+    priority: EventPriority.NORMAL,
+    description: 'Unified loading state changed',
+    examples: ['NONE → INITIAL', 'INITIAL → STREAMING', 'STREAMING → NONE']
+  },
+  'loading:hideInitial': {
+    category: EventCategory.STATE_MANAGEMENT,
+    priority: EventPriority.NORMAL,
+    description: 'Hide initial loading indicator',
+    examples: ['Streaming started', 'Loading cancelled']
+  },
+  'loading:complete': {
+    category: EventCategory.STATE_MANAGEMENT,
+    priority: EventPriority.NORMAL,
+    description: 'All loading operations complete',
+    examples: ['Message fully received', 'Stream ended']
   },
   'file:selected': {
     category: EventCategory.FILE_HANDLING,

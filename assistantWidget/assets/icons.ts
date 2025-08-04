@@ -50,7 +50,7 @@ export const send = `<svg enable-background="new 0 0 32 32" viewBox="0 0 32 32" 
 </svg>`;
 
 export const minimize = `<svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-  <path d="M6 9L12 15L18 9" stroke="var(--chat-header-text-color, currentColor)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M6 9L12 15L18 9" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
 </svg>`;
 
 export const maximize = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="var(--chat-header-text-color, currentColor)">
@@ -67,8 +67,7 @@ export const expand = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 2
 
 export const expand2 = `<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="size-6">
   <path stroke-linecap="round" stroke-linejoin="round" d="M3.75 3.75v4.5m0-4.5h4.5m-4.5 0L9 9M3.75 20.25v-4.5m0 4.5h4.5m-4.5 0L9 15M20.25 3.75h-4.5m4.5 0v4.5m0-4.5L15 9m5.25 11.25h-4.5m4.5 0v-4.5m0 4.5L15 15" />
-</svg>
-`;
+</svg>`;
 
 export const collapse = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="var(--chat-header-text-color, currentColor)">
   <path d="M9 3H5v4h2V5h2V3m10 0h-4v2h2v2h2V3M9 21H5v-4h2v2h2v2m10-4h-2v2h-2v2h4v-4"/>

@@ -340,6 +340,15 @@
                             <p class="description"><?php _e('Allow users to attach files in the chat. File types supported depend on your agent configuration.', 'agentman-chat-widget'); ?></p>
                         </td>
                     </tr>
+                    <tr>
+                        <th scope="row">
+                            <label for="agentman_chat_widget_options[streaming_enabled]"><?php _e('Enable Streaming Responses', 'agentman-chat-widget'); ?></label>
+                        </th>
+                        <td>
+                            <input type="checkbox" id="agentman_chat_widget_options[streaming_enabled]" name="agentman_chat_widget_options[streaming_enabled]" value="1" <?php checked(1, isset($this->options['streaming_enabled']) ? $this->options['streaming_enabled'] : true); ?> />
+                            <p class="description"><?php _e('Show AI responses as they are generated for a more interactive experience. Enabled by default.', 'agentman-chat-widget'); ?></p>
+                        </td>
+                    </tr>
                 </table>
             </div>
             

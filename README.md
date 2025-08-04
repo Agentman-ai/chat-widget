@@ -416,6 +416,22 @@ Icons can be:
 - SVG strings (with color customization via theme)
 - Base64 encoded images
 
+### Streaming
+
+The chat widget supports real-time streaming responses (enabled by default):
+
+```javascript
+const config = {
+  streaming: {
+    enabled: true,          // Enable streaming (default: true)
+    preferStreaming: true,  // Prefer streaming when available
+    fallbackToNonStreaming: true  // Fallback on error
+  }
+};
+```
+
+**Note**: Streaming is now enabled by default. To disable streaming and use traditional request/response mode, set `enabled: false`.
+
 ### Persistence
 
 Enable conversation history across page reloads:

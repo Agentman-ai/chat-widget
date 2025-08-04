@@ -592,6 +592,7 @@ export class ChatWidget {
         this.errorHandler,
         this.eventBus,
         this.persistenceManager,
+        { streaming: this.config.streaming, debug: typeof this.config.debug === 'boolean' ? this.config.debug : false },
         !!this.config.debug
       );
     }
@@ -677,6 +678,7 @@ export class ChatWidget {
           this.errorHandler,
           this.eventBus,
           this.persistenceManager,
+          { streaming: this.config.streaming, debug: typeof this.config.debug === 'boolean' ? this.config.debug : false },
           !!this.config.debug
         );
       }
@@ -747,6 +749,23 @@ export class ChatWidget {
     this.applyThemeToWidget();
     this.styleManager?.updateTheme(theme);
     this.viewManager?.updateTheme(theme);
+  }
+
+  /**
+   * Get the current conversation ID
+   * Returns null if no conversation has been created yet
+   * @returns {string | null} The current conversation ID or null
+   */
+  public getConversationId(): string | null {
+    return this.persistenceManager?.getConversationId() || null;
+  }
+
+  /**
+   * Getter property for conversation ID
+   * Provides easy access: chatWidget.conversationId
+   */
+  public get conversationId(): string | null {
+    return this.getConversationId();
   }
 
   /**
@@ -1311,6 +1330,7 @@ export class ChatWidget {
         this.errorHandler,
         this.eventBus,
         this.persistenceManager,
+        { streaming: this.config.streaming, debug: typeof this.config.debug === 'boolean' ? this.config.debug : false },
         !!this.config.debug
       );
     }

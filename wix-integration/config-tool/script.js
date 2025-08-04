@@ -55,7 +55,10 @@ class WixConfigTool {
                 days: 7
             },
             apiUrl: '',
-            enableAttachments: true
+            enableAttachments: true,
+            streaming: {
+                enabled: true
+            }
         };
     }
 
@@ -229,6 +232,9 @@ class WixConfigTool {
         this.config.apiUrl = document.getElementById('apiUrl').value;
         this.config.initiallyOpen = document.getElementById('initiallyOpen').checked;
         this.config.showFloatingPrompts = document.getElementById('showFloatingPrompts').checked;
+        this.config.streaming = {
+            enabled: document.getElementById('streamingEnabled')?.checked !== false // Default to true
+        };
     }
 
     generateCode() {
@@ -394,6 +400,9 @@ class WixConfigTool {
         document.getElementById('apiUrl').value = this.config.apiUrl || '';
         document.getElementById('initiallyOpen').checked = this.config.initiallyOpen;
         document.getElementById('showFloatingPrompts').checked = this.config.showFloatingPrompts;
+        if (document.getElementById('streamingEnabled')) {
+            document.getElementById('streamingEnabled').checked = this.config.streaming?.enabled !== false;
+        }
 
         // Update visibility
         this.togglePositionVisibility(this.config.variant);

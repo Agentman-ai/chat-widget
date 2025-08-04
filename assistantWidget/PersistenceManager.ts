@@ -1,5 +1,5 @@
 // PersistenceManager.ts
-import { v4 as uuid } from "uuid";
+import { generateId } from "./utils/id-generator";
 import type { Message, AgentMetadata } from "./types/types";
 import type { PersistenceError, PersistenceResult, PersistenceEventCallback, StorageInfo, PersistenceEvent } from "./types/persistence-types";
 import { StateManager } from "./StateManager";
@@ -161,7 +161,7 @@ export class PersistenceManager {
   getCurrentId() {return this.readIndex().currentId;}
 
   create(initialTitle = "New chat") {
-    const id = uuid();
+    const id = generateId();
     const meta: ConversationMeta = { id, title: initialTitle, lastUpdated: Date.now() };
     
     const ix = this.readIndex();
