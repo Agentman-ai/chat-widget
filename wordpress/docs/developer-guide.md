@@ -137,6 +137,11 @@ const config = {
     persistence: {
         enabled: true,
         days: 7
+    },
+    
+    // Streaming (enabled by default)
+    streaming: {
+        enabled: true
     }
 };
 ```

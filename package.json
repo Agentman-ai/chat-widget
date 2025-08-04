@@ -1,6 +1,6 @@
 {
   "name": "@agentman/chat-widget",
-  "version": "3.0.10",
+  "version": "4.0.0",
   "description": "Agentman Chat Widget for easy integration with web applications",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
@@ -45,6 +45,7 @@
     "@types/node": "^20.10.6",
     "@typescript-eslint/eslint-plugin": "^6.17.0",
     "@typescript-eslint/parser": "^6.17.0",
+    "ajv": "^8.17.1",
     "css-loader": "^6.8.1",
     "eslint": "^8.56.0",
     "jest": "^29.7.0",
@@ -62,9 +63,5 @@
   },
   "bugs": {
     "url": "https://github.com/Agentman-ai/.github/issues"
-  },
-  "dependencies": {
-    "@types/uuid": "^10.0.0",
-    "uuid": "^11.1.0"
   }
 }

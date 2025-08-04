@@ -9,6 +9,7 @@ import type { AgentService } from '../services/AgentService';
 import type { ErrorHandler } from './ErrorHandler';
 import type { EventBus } from '../utils/EventBus';
 import { LoadingManager } from './LoadingManager';
+import { UnifiedLoadingManager, LoadingType } from './UnifiedLoadingManager';
 import { Logger } from '../utils/logger';
 import { createEvent } from '../types/events';
 
@@ -27,6 +28,7 @@ export class MessageHandler {
   private lastMessageCount: number = 0;
   private isProcessingMessage: boolean = false;
   private loadingManager: LoadingManager;
+  private unifiedLoadingManager: UnifiedLoadingManager;
   private currentLoadingOperation: string | null = null;
   
   constructor(
@@ -38,10 +40,15 @@ export class MessageHandler {
     private errorHandler: ErrorHandler,
     private eventBus: EventBus,
     private persistenceManager: PersistenceManager | null,
+    private config: { streaming?: { enabled?: boolean }, debug?: boolean },
     debug: boolean = false
   ) {
     this.logger = new Logger(debug, '[MessageHandler]');
     this.loadingManager = new LoadingManager(this.viewManager, this.eventBus, debug);
+    this.unifiedLoadingManager = new UnifiedLoadingManager(this.eventBus, { debug });
+    
+    // Subscribe to unified loading events
+    this.setupUnifiedLoadingListeners();
   }
 
   /**
@@ -83,11 +90,14 @@ export class MessageHandler {
       this.logger.debug(`Current lastMessageCount: ${this.lastMessageCount} (not incrementing for user message)`);
       this.logger.debug(`Has attachments: ${hasAttachments}`);
 
-      // Start loading operation
+      // Start loading operation and set initial loading state
       this.currentLoadingOperation = this.loadingManager.startLoading('message_send', {
         message: 'Sending message...',
         timeout: 30000
       });
+      
+      // Set unified loading state to INITIAL
+      this.unifiedLoadingManager.transitionTo(LoadingType.INITIAL);
 
       // Emit message sent event
       this.eventBus.emit('message:sent', createEvent('message:sent', {
@@ -96,20 +106,82 @@ export class MessageHandler {
         source: 'MessageHandler'
       }));
 
-      // Send message via API
-      const apiResponse = await this.apiService.sendMessage({
-        agentToken: config.agentToken,
-        conversationId,
-        userInput: message,
-        clientMetadata: config.clientMetadata,
-        forceLoad: false,
-        attachmentUrls: config.attachmentUrls
-      });
+      // Check if streaming is enabled (default: true)
+      const streamingEnabled = this.config.streaming?.enabled !== false;
+      
+      let apiResponse;
+      
+      if (streamingEnabled) {
+        // Streaming mode
+        this.logger.debug('Using streaming mode');
+        
+        // Create streaming callbacks
+        const streamingCallbacks = {
+          onMessage: async (streamMessage: Message) => {
+            // On first message chunk, transition to STREAMING state
+            if (this.unifiedLoadingManager.getLoadingState() === LoadingType.INITIAL) {
+              this.logger.debug('First streaming chunk received, transitioning to STREAMING state');
+              this.unifiedLoadingManager.transitionTo(LoadingType.STREAMING);
+            }
+            
+            // Check if message already exists in view
+            if (this.viewManager?.hasMessage(streamMessage.id)) {
+              // Update existing message
+              this.viewManager.updateMessage(streamMessage);
+            } else {
+              // Add new message
+              await this.addMessageToView(streamMessage);
+            }
+          },
+          onError: (error: Error) => {
+            this.logger.error('Streaming error:', error);
+          },
+          onComplete: () => {
+            this.logger.debug('Streaming complete');
+            // Complete loading operation
+            if (this.currentLoadingOperation) {
+              this.loadingManager.completeLoading(this.currentLoadingOperation, true);
+              this.currentLoadingOperation = null;
+            }
+            
+            // Transition to NONE state
+            this.unifiedLoadingManager.transitionTo(LoadingType.NONE);
+          }
+        };
+        
+        // Send with streaming
+        apiResponse = await this.apiService.sendMessage({
+          agentToken: config.agentToken,
+          conversationId,
+          userInput: message,
+          clientMetadata: config.clientMetadata,
+          forceLoad: false,
+          attachmentUrls: config.attachmentUrls,
+          streaming: true,
+          debug: this.config.debug
+        }, streamingCallbacks);
+      } else {
+        // Non-streaming mode
+        this.logger.debug('Using non-streaming mode');
+        apiResponse = await this.apiService.sendMessage({
+          agentToken: config.agentToken,
+          conversationId,
+          userInput: message,
+          clientMetadata: config.clientMetadata,
+          forceLoad: false,
+          attachmentUrls: config.attachmentUrls
+        });
+      }
 
       // Complete loading operation
       if (this.currentLoadingOperation) {
         this.loadingManager.completeLoading(this.currentLoadingOperation, true);
         this.currentLoadingOperation = null;
+      }
+      
+      // In non-streaming mode, transition directly to NONE
+      if (!streamingEnabled) {
+        this.unifiedLoadingManager.transitionTo(LoadingType.NONE);
       }
 
       // Process response
@@ -138,6 +210,9 @@ export class MessageHandler {
         );
         this.currentLoadingOperation = null;
       }
+      
+      // Reset loading state on error
+      this.unifiedLoadingManager.transitionTo(LoadingType.NONE);
       
       // Handle error
       const errorMessage = this.errorHandler.handleApiError(
@@ -342,6 +417,29 @@ export class MessageHandler {
   }
 
   /**
+   * Setup unified loading event listeners
+   */
+  private setupUnifiedLoadingListeners(): void {
+    // Listen for state change events
+    this.eventBus.on('loading:stateChanged', (event) => {
+      const data = event.data as { previousState: LoadingType; currentState: LoadingType };
+      this.logger.debug(`Loading state changed: ${data.previousState} → ${data.currentState}`);
+    });
+    
+    // Listen for hide initial indicator event
+    this.eventBus.on('loading:hideInitial', () => {
+      this.logger.debug('Hiding initial loading indicator due to streaming start');
+      this.viewManager?.hideLoadingIndicator();
+    });
+    
+    // Listen for loading complete event
+    this.eventBus.on('loading:complete', () => {
+      this.logger.debug('Loading complete, hiding all indicators');
+      this.viewManager?.hideLoadingIndicator();
+    });
+  }
+
+  /**
    * Clean up resources
    */
   public destroy(): void {
@@ -350,8 +448,9 @@ export class MessageHandler {
       this.saveDebounceTimer = null;
     }
     
-    // Clean up loading manager
+    // Clean up loading managers
     this.loadingManager.destroy();
+    this.unifiedLoadingManager.destroy();
     
     this.isProcessingMessage = false;
     this.lastMessageCount = 0;

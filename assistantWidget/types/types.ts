@@ -100,6 +100,15 @@ export interface ChatConfig {
       smartypants?: boolean;
     };
   };
+  /** Streaming configuration (default: enabled) */
+  streaming?: {
+    /** Enable streaming responses (default: true) */
+    enabled?: boolean;
+    /** Prefer streaming when available */
+    preferStreaming?: boolean;
+    /** Fallback to non-streaming on error */
+    fallbackToNonStreaming?: boolean;
+  };
 }
 
 export interface DebugConfig {

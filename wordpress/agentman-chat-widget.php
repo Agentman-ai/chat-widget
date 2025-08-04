@@ -3,7 +3,7 @@
  * Plugin Name: Agentman AI Agents
  * Plugin URI: https://github.com/Agentman-ai/chat-widget/tree/main/wordpress
  * Description: Integrates the Agentman AI Agents into your WordPress site with admin customization options.
- * Version: 0.26.0
+ * Version: 4.0.0
  * Author: Agentman
  * Author URI: https://agentman.ai
  * License: MIT
@@ -161,7 +161,9 @@ class Agentman_Chat_Widget {
             'floating_prompts_enabled' => true,
             'floating_prompts_delay' => 5000,
             // Attachments now default to true (v0.26.0+)
-            'enable_attachments' => true
+            'enable_attachments' => true,
+            // Streaming now defaults to true
+            'streaming_enabled' => true
         );
     }
 
@@ -256,6 +258,7 @@ class Agentman_Chat_Widget {
         $sanitized['floating_prompts_enabled'] = isset($input['floating_prompts_enabled']) ? (bool) $input['floating_prompts_enabled'] : true;
         $sanitized['floating_prompts_delay'] = absint(isset($input['floating_prompts_delay']) ? $input['floating_prompts_delay'] : 5000);
         $sanitized['enable_attachments'] = isset($input['enable_attachments']) ? (bool) $input['enable_attachments'] : true;
+        $sanitized['streaming_enabled'] = isset($input['streaming_enabled']) ? (bool) $input['streaming_enabled'] : true;
         
         return $sanitized;
     }
@@ -400,7 +403,11 @@ class Agentman_Chat_Widget {
             'showWelcomeMinimize' => isset($this->options['show_welcome_minimize']) ? (bool)$this->options['show_welcome_minimize'] : true,
             'floatingPromptsEnabled' => isset($this->options['floating_prompts_enabled']) ? (bool)$this->options['floating_prompts_enabled'] : true,
             'floatingPromptsDelay' => isset($this->options['floating_prompts_delay']) ? (int)$this->options['floating_prompts_delay'] : 5000,
-            'enableAttachments' => isset($this->options['enable_attachments']) ? (bool)$this->options['enable_attachments'] : true
+            'enableAttachments' => isset($this->options['enable_attachments']) ? (bool)$this->options['enable_attachments'] : true,
+            // Streaming configuration (enabled by default)
+            'streaming' => array(
+                'enabled' => isset($this->options['streaming_enabled']) ? (bool)$this->options['streaming_enabled'] : true
+            )
         );
     }
 

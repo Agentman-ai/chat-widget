@@ -106,6 +106,11 @@ shopify-integration/
             days: 7
         },
         
+        // Streaming (enabled by default)
+        streaming: {
+            enabled: true
+        },
+        
         // Shopify-specific
         shopifyIntegration: {
             customerData: true,

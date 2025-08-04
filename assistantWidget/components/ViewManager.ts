@@ -189,7 +189,10 @@ export class ViewManager {
             onSend: this.eventHandlers.onSend,
             onPromptClick: this.eventHandlers.onPromptClick,
             onConversationsClick: this.eventHandlers.onConversationsClick,
-            onToggle: this.eventHandlers.onToggle
+            onToggle: this.eventHandlers.onToggle,
+            onAttachmentClick: this.eventHandlers.onAttachmentClick,
+            onFileSelect: this.eventHandlers.onFileSelect,
+            onAttachmentRemove: this.eventHandlers.onAttachmentRemove
           }
         );
       }
@@ -318,20 +321,24 @@ export class ViewManager {
   }
 
   /**
-   * Update attachment preview (conversation view only)
+   * Update attachment preview
    */
   public updateAttachmentPreview(attachments: Record<string, unknown>[]): void {
     if (this.currentView === 'conversation' && this.conversationView) {
       this.conversationView.updateAttachmentPreview(attachments);
+    } else if (this.currentView === 'welcome' && this.welcomeScreen) {
+      this.welcomeScreen.updateAttachmentPreview(attachments);
     }
   }
 
   /**
-   * Clear file input (conversation view only)
+   * Clear file input
    */
   public clearFileInput(): void {
     if (this.currentView === 'conversation' && this.conversationView) {
       this.conversationView.clearFileInput();
+    } else if (this.currentView === 'welcome' && this.welcomeScreen) {
+      this.welcomeScreen.clearFileInput();
     }
   }
 
@@ -366,7 +373,10 @@ export class ViewManager {
         onSend: this.eventHandlers.onSend,
         onPromptClick: this.eventHandlers.onPromptClick,
         onConversationsClick: this.eventHandlers.onConversationsClick,
-        onToggle: this.eventHandlers.onToggle
+        onToggle: this.eventHandlers.onToggle,
+        onAttachmentClick: this.eventHandlers.onAttachmentClick,
+        onFileSelect: this.eventHandlers.onFileSelect,
+        onAttachmentRemove: this.eventHandlers.onAttachmentRemove
       }
     );
 
@@ -529,6 +539,25 @@ export class ViewManager {
     if (this.currentView === 'conversation' && this.conversationView) {
       await this.conversationView.addMessage(message);
     }
+  }
+  
+  /**
+   * Update an existing message (for streaming)
+   */
+  public updateMessage(message: any): void {
+    if (this.currentView === 'conversation' && this.conversationView) {
+      this.conversationView.updateMessage(message);
+    }
+  }
+  
+  /**
+   * Check if a message exists (for streaming)
+   */
+  public hasMessage(messageId: string): boolean {
+    if (this.currentView === 'conversation' && this.conversationView) {
+      return this.conversationView.hasMessage(messageId);
+    }
+    return false;
   }
 
   /**

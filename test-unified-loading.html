@@ -1,0 +1,367 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Unified Loading State Test</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        
+        .test-container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        
+        .test-header {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+        
+        .test-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+        }
+        
+        .test-section {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+        
+        .debug-console {
+            background: #1e1e1e;
+            color: #d4d4d4;
+            padding: 15px;
+            border-radius: 4px;
+            font-family: 'Courier New', monospace;
+            font-size: 12px;
+            height: 300px;
+            overflow-y: auto;
+        }
+        
+        .debug-console .timestamp {
+            color: #858585;
+            margin-right: 8px;
+        }
+        
+        .debug-console .state-change {
+            color: #4ec9b0;
+        }
+        
+        .debug-console .loading-show {
+            color: #dcdcaa;
+        }
+        
+        .debug-console .loading-hide {
+            color: #ce9178;
+        }
+        
+        .debug-console .error {
+            color: #f48771;
+        }
+        
+        .status-indicator {
+            display: inline-block;
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            margin-right: 8px;
+        }
+        
+        .status-indicator.active {
+            background: #4caf50;
+        }
+        
+        .status-indicator.inactive {
+            background: #ccc;
+        }
+        
+        button {
+            background: #2196F3;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            margin-right: 10px;
+            font-size: 14px;
+        }
+        
+        button:hover {
+            background: #1976D2;
+        }
+        
+        button:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+        
+        .loading-states {
+            margin-top: 20px;
+        }
+        
+        .loading-state-item {
+            display: flex;
+            align-items: center;
+            padding: 10px;
+            border: 1px solid #eee;
+            margin-bottom: 5px;
+            border-radius: 4px;
+        }
+        
+        .loading-state-item.active {
+            background: #e3f2fd;
+            border-color: #2196F3;
+        }
+        
+        #chat-widget-container {
+            height: 600px;
+            position: relative;
+        }
+    </style>
+</head>
+<body>
+    <div class="test-container">
+        <div class="test-header">
+            <h1>Unified Loading State Test</h1>
+            <p>Test the unified loading state management to ensure no double loading indicators appear.</p>
+        </div>
+        
+        <div class="test-grid">
+            <div class="test-section">
+                <h2>Chat Widget</h2>
+                <div id="chat-widget-container"></div>
+            </div>
+            
+            <div class="test-section">
+                <h2>Loading State Monitor</h2>
+                
+                <div class="loading-states">
+                    <h3>Current Loading States:</h3>
+                    <div class="loading-state-item" id="state-none">
+                        <span class="status-indicator inactive"></span>
+                        <strong>NONE</strong> - No loading
+                    </div>
+                    <div class="loading-state-item" id="state-initial">
+                        <span class="status-indicator inactive"></span>
+                        <strong>INITIAL</strong> - Wave indicator (5 dots)
+                    </div>
+                    <div class="loading-state-item" id="state-streaming">
+                        <span class="status-indicator inactive"></span>
+                        <strong>STREAMING</strong> - Streaming dots (●●●)
+                    </div>
+                </div>
+                
+                <h3>Test Controls:</h3>
+                <button onclick="sendTestMessage()">Send Test Message</button>
+                <button onclick="clearDebugLog()">Clear Debug Log</button>
+                <button onclick="toggleDebugMode()">Toggle Debug Mode</button>
+                
+                <h3>Debug Console:</h3>
+                <div class="debug-console" id="debug-console"></div>
+            </div>
+        </div>
+    </div>
+
+    <script src="./dist/chatwidget.js"></script>
+    <script>
+        let widget;
+        let debugMode = true;
+        let stateMonitor;
+        
+        // Debug logging
+        function debugLog(message, type = 'info') {
+            const console = document.getElementById('debug-console');
+            const timestamp = new Date().toLocaleTimeString();
+            const entry = document.createElement('div');
+            entry.innerHTML = `<span class="timestamp">${timestamp}</span><span class="${type}">${message}</span>`;
+            console.appendChild(entry);
+            console.scrollTop = console.scrollHeight;
+        }
+        
+        // Clear debug log
+        function clearDebugLog() {
+            document.getElementById('debug-console').innerHTML = '';
+            debugLog('Debug log cleared', 'info');
+        }
+        
+        // Toggle debug mode
+        function toggleDebugMode() {
+            debugMode = !debugMode;
+            debugLog(`Debug mode: ${debugMode ? 'ON' : 'OFF'}`, 'info');
+        }
+        
+        // Update loading state display
+        function updateLoadingStateDisplay(state) {
+            // Reset all states
+            document.querySelectorAll('.loading-state-item').forEach(item => {
+                item.classList.remove('active');
+                item.querySelector('.status-indicator').classList.remove('active');
+                item.querySelector('.status-indicator').classList.add('inactive');
+            });
+            
+            // Activate current state
+            const stateElement = document.getElementById(`state-${state.toLowerCase()}`);
+            if (stateElement) {
+                stateElement.classList.add('active');
+                stateElement.querySelector('.status-indicator').classList.remove('inactive');
+                stateElement.querySelector('.status-indicator').classList.add('active');
+            }
+        }
+        
+        // Monitor for loading indicators in the DOM
+        function startLoadingMonitor() {
+            stateMonitor = setInterval(() => {
+                const waveIndicator = document.querySelector('.am-chat-loading-message');
+                const streamingDots = document.querySelector('.am-streaming-indicator');
+                
+                if (waveIndicator && streamingDots) {
+                    debugLog('⚠️ DOUBLE INDICATORS DETECTED! Both wave and streaming dots visible!', 'error');
+                }
+            }, 100);
+        }
+        
+        // Send test message
+        function sendTestMessage() {
+            const messages = [
+                "Test the unified loading state system",
+                "Show me how loading indicators work",
+                "Can you demonstrate streaming with a long response?",
+                "What happens when I send a message quickly?"
+            ];
+            
+            const message = messages[Math.floor(Math.random() * messages.length)];
+            
+            debugLog(`Sending message: "${message}"`, 'info');
+            
+            // Trigger send event
+            const event = new CustomEvent('widget:send', {
+                detail: { message }
+            });
+            window.dispatchEvent(event);
+        }
+        
+        // Initialize widget
+        function initializeWidget() {
+            try {
+                // Your actual agent token - replace with your token
+                const AGENT_TOKEN = 'YOUR_AGENT_TOKEN_HERE';
+                
+                widget = new ChatWidget({
+                    containerId: 'chat-widget-container',
+                    agentToken: AGENT_TOKEN,
+                    apiUrl: 'https://api.agentman.ai',
+                    title: 'Unified Loading Test',
+                    variant: 'inline',
+                    streaming: {
+                        enabled: true
+                    },
+                    debug: debugMode,
+                    theme: {
+                        primaryColor: '#2196F3',
+                        backgroundColor: '#ffffff',
+                        textColor: '#333333'
+                    }
+                });
+                
+                widget.mount();
+                
+                debugLog('Chat widget initialized with streaming enabled', 'info');
+                
+                // Start monitoring for double indicators
+                startLoadingMonitor();
+                
+                // Hook into widget's event system if possible
+                setupEventListeners();
+                
+            } catch (error) {
+                debugLog(`Error initializing widget: ${error.message}`, 'error');
+            }
+        }
+        
+        // Setup event listeners to monitor loading state changes
+        function setupEventListeners() {
+            // Listen for loading state changes via custom events
+            window.addEventListener('loading:stateChanged', (event) => {
+                const data = event.detail || event.data;
+                if (data) {
+                    debugLog(`Loading state changed: ${data.previousState} → ${data.currentState}`, 'state-change');
+                    updateLoadingStateDisplay(data.currentState);
+                }
+            });
+            
+            window.addEventListener('loading:start', (event) => {
+                debugLog('Loading started', 'loading-show');
+            });
+            
+            window.addEventListener('loading:hideInitial', (event) => {
+                debugLog('Hiding initial loading indicator (wave)', 'loading-hide');
+            });
+            
+            window.addEventListener('loading:complete', (event) => {
+                debugLog('Loading complete - all indicators hidden', 'loading-hide');
+            });
+            
+            // Monitor DOM mutations for loading indicators
+            const observer = new MutationObserver((mutations) => {
+                mutations.forEach((mutation) => {
+                    mutation.addedNodes.forEach((node) => {
+                        if (node.nodeType === 1) { // Element node
+                            if (node.classList && node.classList.contains('am-chat-loading-message')) {
+                                debugLog('Wave loading indicator added to DOM', 'loading-show');
+                            }
+                            if (node.classList && node.classList.contains('am-streaming-indicator')) {
+                                debugLog('Streaming dots indicator added to DOM', 'loading-show');
+                            }
+                        }
+                    });
+                    
+                    mutation.removedNodes.forEach((node) => {
+                        if (node.nodeType === 1) { // Element node
+                            if (node.classList && node.classList.contains('am-chat-loading-message')) {
+                                debugLog('Wave loading indicator removed from DOM', 'loading-hide');
+                            }
+                            if (node.classList && node.classList.contains('am-streaming-indicator')) {
+                                debugLog('Streaming dots indicator removed from DOM', 'loading-hide');
+                            }
+                        }
+                    });
+                });
+            });
+            
+            // Start observing the chat widget container
+            const container = document.getElementById('chat-widget-container');
+            if (container) {
+                observer.observe(container, {
+                    childList: true,
+                    subtree: true
+                });
+            }
+        }
+        
+        // Initialize on page load
+        window.addEventListener('DOMContentLoaded', () => {
+            initializeWidget();
+            debugLog('Test page loaded and ready', 'info');
+            updateLoadingStateDisplay('none');
+        });
+        
+        // Cleanup on page unload
+        window.addEventListener('beforeunload', () => {
+            if (stateMonitor) {
+                clearInterval(stateMonitor);
+            }
+        });
+    </script>
+</body>
+</html>

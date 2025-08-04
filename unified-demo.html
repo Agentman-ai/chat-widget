@@ -188,7 +188,7 @@
                         
                         <div class="form-group">
                             <label for="agentToken">Agent Token</label>
-                            <input type="text" id="agentToken" value=".eJyrVipJzUvMK4nPTFGyMtFRSiwoyMlMTizJzM-DC6WnQuXNDWoBmpAQSw.aHAoWA.FdqMS1-c5orsGBixs9hsK5KEQWU">
+                            <input type="text" id="agentToken" value=".eJyrVipJzUvMK4nPTFGyMtJRSiwoyMlMTizJzM-DC6WnQuUNDQ1qAao_EHI.aI1tQA.hTJc3JYGdTzSBl-hL5xJPts9ysI">
                         </div>
                         
                         <div class="form-group">
@@ -259,6 +259,12 @@
                         <div class="form-group">
                             <label>
                                 <input type="checkbox" id="initiallyOpen"> Initially Open
+                            </label>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label>
+                                <input type="checkbox" id="streamingEnabled" checked> Enable Streaming
                             </label>
                         </div>
                     </div>
@@ -391,12 +397,6 @@
                             <label for="persistenceKey">Custom Storage Key (optional)</label>
                             <input type="text" id="persistenceKey" placeholder="Leave blank for default">
                         </div>
-
-                        <h2 class="section-title">Attachment Settings</h2>
-                        
-                        
-                        <h2 class="section-title">Attachment Settings</h2>
-                        
                     </div>
                 </div>
                 
@@ -791,7 +791,12 @@
                     logLevel: document.getElementById('debugLogLevel').value,
                     timestamps: document.getElementById('debugTimestamps').checked,
                     console: true
-                } : false
+                } : false,
+                
+                // Streaming configuration
+                streaming: {
+                    enabled: document.getElementById('streamingEnabled').checked
+                }
             };
         }
         
@@ -837,13 +842,14 @@
         
         function resetConfig() {
             // Reset form to defaults
-            document.getElementById('apiUrl').value = 'https://studio-api.chainofagents.ai';
-            document.getElementById('agentToken').value = '.eJyrVipJzUvMK4nPTFGyMjHTUUosKMjJTE4syczPQ4ilp0JVGBqa1wIAxoEQ6Q.Z32csg.xbR3NqyuNlDpt-Dafp1O2GpKw5U';
+            document.getElementById('apiUrl').value = 'http://localhost:8000';
+            document.getElementById('agentToken').value = '.eJyrVipJzUvMK4nPTFGyMtJRSiwoyMlMTizJzM-DC6WnQuUNDQ1qAao_EHI.aI1tQA.hTJc3JYGdTzSBl-hL5xJPts9ysI';
             document.getElementById('title').value = 'Chat Assistant';
             document.getElementById('placeholder').value = 'Ask me anything...';
             document.getElementById('variant').value = 'corner';
             document.getElementById('position').value = 'bottom-right';
             document.getElementById('initiallyOpen').checked = false;
+            document.getElementById('streamingEnabled').checked = true;
             
             // Theme settings
             document.getElementById('buttonColor').value = '#2563eb';

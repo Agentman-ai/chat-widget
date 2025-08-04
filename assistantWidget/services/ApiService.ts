@@ -1,6 +1,7 @@
 // ApiService.ts - Centralized API communication service
 import type { ClientMetadata } from '../types/types';
 import { Logger } from '../utils/logger';
+import { StreamingClient, StreamingCallbacks } from './StreamingClient';
 
 export interface SendMessageParams {
   agentToken: string;
@@ -9,6 +10,8 @@ export interface SendMessageParams {
   clientMetadata?: ClientMetadata;
   forceLoad?: boolean;
   attachmentUrls?: string[];
+  streaming?: boolean;
+  debug?: boolean;
 }
 
 export interface ApiResponse {
@@ -35,16 +38,25 @@ export interface FileUploadResponse {
 export class ApiService {
   private logger: Logger;
   private apiUrl: string;
+  private streamingClient: StreamingClient;
 
   constructor(apiUrl: string, debug?: boolean | import('../types/types').DebugConfig) {
     this.apiUrl = apiUrl;
     this.logger = new Logger(debug || false, '[ApiService]');
+    this.streamingClient = new StreamingClient({ apiUrl, debug: !!debug });
   }
 
   /**
    * Send message to the agent API
+   * Routes to streaming or non-streaming based on params
    */
-  async sendMessage(params: SendMessageParams): Promise<ApiResponse> {
+  async sendMessage(params: SendMessageParams, streamCallbacks?: StreamingCallbacks): Promise<ApiResponse> {
+    // If streaming is requested and callbacks are provided, use streaming
+    if (params.streaming && streamCallbacks) {
+      return this.sendMessageStreaming(params, streamCallbacks);
+    }
+    
+    // Otherwise use standard non-streaming
     const requestBody = {
       agent_token: params.agentToken,
       force_load: params.forceLoad || false,
@@ -93,6 +105,59 @@ export class ApiService {
       this.logger.error('❌ API request failed:', error);
       throw this.handleApiError(error as Error);
     }
+  }
+  
+  /**
+   * Send message with streaming
+   */
+  private async sendMessageStreaming(params: SendMessageParams, callbacks: StreamingCallbacks): Promise<ApiResponse> {
+    this.logger.debug('🔄 Starting streaming request');
+    
+    // Create a promise to collect messages
+    const messages: any[] = [];
+    let streamError: Error | null = null;
+    
+    return new Promise<ApiResponse>((resolve, reject) => {
+      // Set up callbacks to collect messages
+      const wrappedCallbacks: StreamingCallbacks = {
+        onMessage: (message) => {
+          messages.push({
+            agent: {
+              id: message.id,
+              role: 'agent',
+              content: message.content
+            }
+          });
+          callbacks.onMessage?.(message);
+        },
+        onError: (error) => {
+          streamError = error;
+          callbacks.onError?.(error);
+        },
+        onComplete: () => {
+          callbacks.onComplete?.();
+          
+          if (streamError) {
+            reject(streamError);
+          } else {
+            resolve({
+              response: messages,
+              metadata: { streaming: true }
+            });
+          }
+        },
+        onChunk: callbacks.onChunk
+      };
+      
+      // Start streaming
+      this.streamingClient.sendMessage({
+        agentToken: params.agentToken,
+        conversationId: params.conversationId,
+        userInput: params.userInput,
+        attachmentUrls: params.attachmentUrls,
+        debug: params.debug
+      }, wrappedCallbacks).catch(reject);
+    });
   }
 
   /**
@@ -224,5 +289,19 @@ export class ApiService {
    */
   getApiUrl(): string {
     return this.apiUrl;
+  }
+  
+  /**
+   * Abort any active streaming
+   */
+  abortStreaming(): void {
+    this.streamingClient.abort();
+  }
+  
+  /**
+   * Check if currently streaming
+   */
+  isStreaming(): boolean {
+    return this.streamingClient.isStreaming();
   }
 }

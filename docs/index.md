@@ -20,6 +20,9 @@ A customizable chat widget that can be easily integrated into any web applicatio
 - 🌐 Easy integration with any web application
 - 📱 Responsive design for all devices
 - ⚡ Lightweight and performant
+- 🚀 Real-time streaming responses (enabled by default)
+- 💾 Conversation persistence across sessions
+- 📎 File attachment support
 
 ## Installation
 
@@ -51,6 +54,11 @@ const config = {
   toggleText: 'Ask Agentman', // Text shown on the toggle button (corner variant)
   initiallyOpen: false,
   initialMessage: 'Hello! How can I help you today?',
+  
+  // Streaming configuration (enabled by default)
+  streaming: {
+    enabled: true,  // Set to false to disable streaming
+  },
   
   // Theme customization
   theme: {
@@ -104,6 +112,7 @@ chatWidget.destroy();
 | `toggleText` | `string` | No | Text shown on toggle button (corner variant). Default: 'Ask Agentman' |
 | `initiallyOpen` | `boolean` | No | Whether to open chat on load. Default: false |
 | `initialMessage` | `string` | No | Initial bot message |
+| `streaming` | `object` | No | Streaming configuration. Default: `{ enabled: true }` |
 | `theme` | `object` | No | UI theme customization (see Theme Customization) |
 | `icons` | `object` | No | Icon customization (see Icon Customization) |
 | `logo` | `string` | No | URL for the main logo |
