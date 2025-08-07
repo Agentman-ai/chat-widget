@@ -1,5 +1,5 @@
 // ConversationOrchestrator.ts - High-level conversation flow management
-import type { ChatConfig, ChatState, Message } from '../types/types';
+import type { ChatConfig } from '../types/types';
 import type { StateManager } from '../StateManager';
 import type { ViewManager } from '../components/ViewManager';
 import type { PersistenceManager } from '../PersistenceManager';
@@ -129,8 +129,8 @@ export class ConversationOrchestrator {
         // Could implement a wait or show user feedback
       }
 
-      // Get attachment URLs if any files have been uploaded
-      const attachmentUrls = this.fileHandler?.getUploadedFileUrls() || [];
+      // Get attachment file IDs if any files have been uploaded
+      const attachmentFileIds = this.fileHandler?.getUploadedFileIds() || [];
 
       // Send message via MessageHandler
       await this.messageHandler.sendMessage(
@@ -139,12 +139,12 @@ export class ConversationOrchestrator {
         {
           agentToken: this.config.agentToken,
           clientMetadata: this.gatherClientMetadata(),
-          attachmentUrls
+          attachmentFileIds
         }
       );
 
       // Clear uploaded files after sending message
-      if (attachmentUrls.length > 0) {
+      if (attachmentFileIds.length > 0) {
         this.fileHandler?.clearAllAttachments();
       }
 

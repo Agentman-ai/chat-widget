@@ -5,6 +5,7 @@ import type { ErrorHandler } from './ErrorHandler';
 import { LoadingManager } from './LoadingManager';
 import { Logger } from '../utils/logger';
 import { createEvent } from '../types/events';
+import { FileSignatureValidator } from '../utils/FileSignatureValidator';
 
 /**
  * FileHandler - Manages file operations and attachment handling
@@ -80,18 +81,25 @@ export class FileHandler {
     const fileId = this.generateFileId(file);
     
     try {
-      // Validate file
-      this.validateFile(file);
+      // Validate file and get corrected MIME type if needed
+      const mimeType = await this.validateFileAndGetMimeType(file);
+      
+      // Create a new File object with correct MIME type if needed
+      let fileToUpload = file;
+      if (mimeType && mimeType !== file.type) {
+        this.logger.info(`Creating new File object with corrected MIME type: ${mimeType}`);
+        fileToUpload = new File([file], file.name, { type: mimeType });
+      }
       
       // Add to attachments
-      this.attachments.set(fileId, file);
+      this.attachments.set(fileId, fileToUpload);
       
       // Update UI preview
       this.updateAttachmentPreview();
       
       // Start upload
-      this.logger.info(`Starting upload for file: ${file.name}`);
-      await this.uploadFile(file, fileId);
+      this.logger.info(`Starting upload for file: ${fileToUpload.name} (type: ${fileToUpload.type})`);
+      await this.uploadFile(fileToUpload, fileId);
       
     } catch (error) {
       this.logger.error(`Failed to process file ${file.name}:`, error);
@@ -111,22 +119,85 @@ export class FileHandler {
   }
 
   /**
-   * Validate file size and type
+   * Get MIME type from file extension as fallback
    */
-  private validateFile(file: File): void {
+  private getMimeTypeFromExtension(filename: string): string | null {
+    const ext = filename.split('.').pop()?.toLowerCase();
+    if (!ext) return null;
+    
+    const mimeMap: Record<string, string> = {
+      // Images
+      'jpg': 'image/jpeg',
+      'jpeg': 'image/jpeg',
+      'png': 'image/png',
+      'gif': 'image/gif',
+      'webp': 'image/webp',
+      // Documents
+      'pdf': 'application/pdf',
+      'txt': 'text/plain',
+      'csv': 'text/csv',
+      'docx': 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+      'xlsx': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+    };
+    
+    return mimeMap[ext] || null;
+  }
+
+  /**
+   * Validate file size and type, returns the correct MIME type
+   */
+  private async validateFileAndGetMimeType(file: File): Promise<string> {
     // Check file size
     if (file.size > this.MAX_FILE_SIZE) {
       throw new Error('FILE_TOO_LARGE');
     }
 
-    // Check file type against supported mime types
-    this.logger.debug(`Checking file type ${file.type} against supported types:`, this.supportedMimeTypes);
-    if (!this.supportedMimeTypes.includes(file.type)) {
-      this.logger.error(`File type ${file.type} not in supported types:`, this.supportedMimeTypes);
+    // Use FileSignatureValidator to detect actual file type from content
+    const contentMimeType = await FileSignatureValidator.detect(file);
+    const browserMimeType = file.type;
+    const extensionMimeType = this.getMimeTypeFromExtension(file.name);
+    
+    // Log all detected types for debugging
+    this.logger.debug(`File type detection for ${file.name}:`, {
+      content: contentMimeType,
+      browser: browserMimeType,
+      extension: extensionMimeType
+    });
+    
+    // Priority: content-based detection > browser > extension
+    let mimeType = contentMimeType || browserMimeType || extensionMimeType;
+    
+    // Security check: Warn if content doesn't match extension
+    if (contentMimeType && extensionMimeType && contentMimeType !== extensionMimeType) {
+      this.logger.warn(`Security warning: File content (${contentMimeType}) doesn't match extension (${extensionMimeType}) for ${file.name}`);
+      // Use the actual content type for security
+      mimeType = contentMimeType;
+    }
+    
+    // If still no MIME type detected
+    if (!mimeType || mimeType === '') {
+      this.logger.error(`Could not determine MIME type for file ${file.name}`);
       throw new Error('INVALID_FILE_TYPE');
     }
 
-    this.logger.debug(`File validation passed: ${file.name} (${file.size} bytes, ${file.type})`);
+    // Check file type against supported mime types
+    this.logger.debug(`Checking file type "${mimeType}" against supported types:`, this.supportedMimeTypes);
+    
+    if (!this.supportedMimeTypes.includes(mimeType)) {
+      const friendlyName = FileSignatureValidator.getFriendlyName(mimeType);
+      this.logger.error(`File type "${friendlyName}" (${mimeType}) not in supported types:`, this.supportedMimeTypes);
+      throw new Error('INVALID_FILE_TYPE');
+    }
+
+    this.logger.debug(`File validation passed: ${file.name} (${file.size} bytes, MIME: ${mimeType})`);
+    return mimeType;
+  }
+
+  /**
+   * Validate file size and type (legacy method for compatibility)
+   */
+  private async validateFile(file: File): Promise<void> {
+    await this.validateFileAndGetMimeType(file);
   }
 
   /**
@@ -408,7 +479,23 @@ export class FileHandler {
   }
 
   /**
-   * Get uploaded file URLs for sending with messages
+   * Get uploaded file IDs for sending with messages
+   */
+  public getUploadedFileIds(): string[] {
+    const fileIds: string[] = [];
+    
+    // Iterate through uploadedFileIds to get server file IDs
+    this.uploadedFileIds.forEach((serverFileId) => {
+      // Return just the file ID, not the full URL
+      fileIds.push(serverFileId);
+    });
+    
+    return fileIds;
+  }
+  
+  /**
+   * Get uploaded file URLs for sending with messages (deprecated - use getUploadedFileIds)
+   * @deprecated Use getUploadedFileIds instead
    */
   public getUploadedFileUrls(): string[] {
     const urls: string[] = [];
