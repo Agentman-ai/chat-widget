@@ -9,7 +9,8 @@ export interface SendMessageParams {
   userInput: string;
   clientMetadata?: ClientMetadata;
   forceLoad?: boolean;
-  attachmentUrls?: string[];
+  attachmentFileIds?: string[];
+  attachmentUrls?: string[]; // Deprecated - use attachmentFileIds
   streaming?: boolean;
   debug?: boolean;
 }
@@ -63,8 +64,11 @@ export class ApiService {
       conversation_id: params.conversationId,
       user_input: params.userInput,
       include_attachment_metadata: true, // Always include attachment metadata for rendering
-      ...(params.attachmentUrls && params.attachmentUrls.length > 0
-        ? { attachment_urls: params.attachmentUrls }
+      // Prefer attachment_file_ids over attachment_urls
+      ...(params.attachmentFileIds && params.attachmentFileIds.length > 0
+        ? { attachment_file_ids: params.attachmentFileIds }
+        : params.attachmentUrls && params.attachmentUrls.length > 0
+        ? { attachment_urls: params.attachmentUrls } // Fallback for backwards compatibility
         : {}
       ),
       ...(params.clientMetadata && Object.keys(params.clientMetadata).length > 0 
@@ -154,7 +158,8 @@ export class ApiService {
         agentToken: params.agentToken,
         conversationId: params.conversationId,
         userInput: params.userInput,
-        attachmentUrls: params.attachmentUrls,
+        attachmentFileIds: params.attachmentFileIds,
+        attachmentUrls: params.attachmentUrls, // Fallback
         debug: params.debug
       }, wrappedCallbacks).catch(reject);
     });

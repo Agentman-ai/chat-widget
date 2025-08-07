@@ -38,7 +38,8 @@ export class StreamingClient {
       agentToken: string;
       conversationId: string;
       userInput: string;
-      attachmentUrls?: string[];
+      attachmentFileIds?: string[];
+      attachmentUrls?: string[]; // Deprecated - use attachmentFileIds
       debug?: boolean;
     },
     callbacks: StreamingCallbacks
@@ -53,7 +54,13 @@ export class StreamingClient {
       agent_token: params.agentToken,
       conversation_id: params.conversationId,
       user_input: params.userInput,
-      attachment_urls: params.attachmentUrls || [],
+      // Prefer attachment_file_ids over attachment_urls
+      ...(params.attachmentFileIds && params.attachmentFileIds.length > 0
+        ? { attachment_file_ids: params.attachmentFileIds }
+        : params.attachmentUrls && params.attachmentUrls.length > 0
+        ? { attachment_urls: params.attachmentUrls } // Fallback for backwards compatibility
+        : {}
+      ),
       stream: true,
       debug: params.debug || false
     };

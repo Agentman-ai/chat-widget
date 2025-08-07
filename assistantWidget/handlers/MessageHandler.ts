@@ -60,7 +60,8 @@ export class MessageHandler {
     config: {
       agentToken: string;
       clientMetadata?: any;
-      attachmentUrls?: string[];
+      attachmentFileIds?: string[];
+      attachmentUrls?: string[]; // Deprecated - use attachmentFileIds
     }
   ): Promise<void> {
     // Prevent duplicate processing
@@ -73,7 +74,8 @@ export class MessageHandler {
 
     try {
       // Create user message for the event, but only add it to view if there are no attachments
-      const hasAttachments = config.attachmentUrls && config.attachmentUrls.length > 0;
+      const hasAttachments = (config.attachmentFileIds && config.attachmentFileIds.length > 0) || 
+                             (config.attachmentUrls && config.attachmentUrls.length > 0);
       const userMessage = this.messageService.createUserMessage(message);
       
       if (!hasAttachments) {
@@ -83,7 +85,8 @@ export class MessageHandler {
       } else {
         // Has attachments - skip local message, wait for API response
         this.logger.debug('User message has attachments, waiting for API response to display');
-        this.logger.debug('Attachment URLs being sent:', config.attachmentUrls);
+        this.logger.debug('Attachment file IDs being sent:', config.attachmentFileIds);
+        this.logger.debug('Attachment URLs being sent (deprecated):', config.attachmentUrls);
       }
       
       // Don't increment lastMessageCount here - we'll update it after API response
@@ -156,7 +159,8 @@ export class MessageHandler {
           userInput: message,
           clientMetadata: config.clientMetadata,
           forceLoad: false,
-          attachmentUrls: config.attachmentUrls,
+          attachmentFileIds: config.attachmentFileIds,
+          attachmentUrls: config.attachmentUrls, // Fallback for backwards compatibility
           streaming: true,
           debug: this.config.debug
         }, streamingCallbacks);
@@ -169,7 +173,8 @@ export class MessageHandler {
           userInput: message,
           clientMetadata: config.clientMetadata,
           forceLoad: false,
-          attachmentUrls: config.attachmentUrls
+          attachmentFileIds: config.attachmentFileIds,
+          attachmentUrls: config.attachmentUrls // Fallback for backwards compatibility
         });
       }
 
