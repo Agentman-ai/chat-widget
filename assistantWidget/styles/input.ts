@@ -11,7 +11,7 @@ export const inputStyles = `
     position: relative;
     background: white;
     border: 1px solid #e5e7eb;
-    border-radius: 12px;
+    border-radius: 12px !important;
     overflow: visible;
     box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
     transition: all 0.2s ease;
@@ -21,6 +21,7 @@ export const inputStyles = `
   .am-input-container:focus-within {
     border-color: var(--chat-button-color, #2563eb);
     box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+    border-radius: 12px !important;
   }
 
   .am-input-top-bar {
@@ -37,7 +38,7 @@ export const inputStyles = `
     background: white;
     color: #111827;
     border: none;
-    outline: none;
+    outline: none !important;
     resize: none;
     font-size: 14px;
     line-height: 1.5;
@@ -46,6 +47,28 @@ export const inputStyles = `
     height: 48px;
     font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
     box-sizing: border-box;
+  }
+  
+  /* Override Shopify's focus-visible styles */
+  .am-input-textarea:focus,
+  .am-input-textarea:focus-visible {
+    outline: none !important;
+    outline-offset: 0 !important;
+    box-shadow: none !important;
+  }
+  
+  .am-input-container,
+  .am-input-container:focus,
+  .am-input-container:focus-visible,
+  .am-input-container:focus-within {
+    outline: none !important;
+    outline-offset: 0 !important;
+  }
+  
+  /* Ensure our custom focus styles take precedence */
+  .am-input-container:focus-within {
+    border-color: var(--chat-button-color, #2563eb) !important;
+    box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.05) !important;
   }
 
   .am-input-textarea::placeholder {
@@ -84,6 +107,14 @@ export const inputStyles = `
     font-weight: 500;
     line-height: 1;
     padding: 0px;
+    outline: none !important;
+  }
+  
+  .am-input-add-btn:focus,
+  .am-input-add-btn:focus-visible {
+    outline: none !important;
+    outline-offset: 0 !important;
+    box-shadow: none !important;
   }
 
   .am-input-add-btn:hover {
@@ -110,6 +141,14 @@ export const inputStyles = `
     align-items: center;
     justify-content: center;
     padding: 8px;
+    outline: none !important;
+  }
+  
+  .am-input-send:focus,
+  .am-input-send:focus-visible {
+    outline: none !important;
+    outline-offset: 0 !important;
+    box-shadow: none !important;
   }
 
   .am-input-send:not(:disabled) {
