@@ -10,32 +10,64 @@ export const inputStyles = `
   .am-input-container {
     position: relative;
     background: white;
-    border: 1px solid #e5e7eb;
+    /* Primary border with explicit properties */
+    border: 1px solid #e5e7eb !important;
+    border-style: solid !important;
+    border-width: 1px !important;
     border-radius: 12px !important;
+    /* Ensure border renders in all contexts */
+    border-collapse: separate;
     overflow: visible;
     box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
     transition: all 0.2s ease;
     box-sizing: border-box;
+    /* Performance optimization for focus transitions */
+    will-change: border-color, box-shadow;
+  }
+  
+  /* Fallback border using box-shadow for better compatibility */
+  .am-input-container::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    border-radius: 12px;
+    pointer-events: none;
+    z-index: 0;
+    /* Use inset box-shadow as more reliable border alternative */
+    box-shadow: inset 0 0 0 1px #e5e7eb;
   }
 
   .am-input-container:focus-within {
-    border-color: var(--chat-button-color, #2563eb);
+    border-color: var(--chat-button-color, #2563eb) !important;
     box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.05);
     border-radius: 12px !important;
+  }
+  
+  .am-input-container:focus-within::before {
+    box-shadow: inset 0 0 0 1px var(--chat-button-color, #2563eb);
   }
 
   .am-input-top-bar {
     height: 12px;
-    background: white;
+    /* Fallback to white if container background fails */
+    background: transparent;
+    background-color: rgba(255, 255, 255, 0);
     width: 100%;
-    border-radius: 12px 12px 0 0;
+    border-radius: 11px 11px 0 0;
     box-sizing: border-box;
+    position: relative;
+    z-index: 1;
   }
 
   .am-input-textarea {
     width: 100%;
     padding: 10px 12px;
-    background: white;
+    /* Transparent with white fallback for safety */
+    background: transparent;
+    background-color: rgba(255, 255, 255, 0);
     color: #111827;
     border: none;
     outline: none !important;
@@ -47,6 +79,8 @@ export const inputStyles = `
     height: 48px;
     font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
     box-sizing: border-box;
+    position: relative;
+    z-index: 1;
   }
   
   /* Override Shopify's focus-visible styles */
@@ -80,9 +114,13 @@ export const inputStyles = `
     align-items: center;
     justify-content: space-between;
     padding: 8px 12px;
-    background: white;
-    border-radius: 0 0 12px 12px;
+    /* Transparent with white fallback */
+    background: transparent;
+    background-color: rgba(255, 255, 255, 0);
+    border-radius: 0 0 11px 11px;
     box-sizing: border-box;
+    position: relative;
+    z-index: 1;
   }
 
   .am-input-actions-left {
