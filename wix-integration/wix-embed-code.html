@@ -43,7 +43,14 @@
                         enabled: true,
                         days: 7
                     },
-                    enableAttachments: true
+                    enableAttachments: true,
+                    // AI Disclaimer configuration (optional)
+                    disclaimer: {
+                        enabled: false, // Set to true to show disclaimer
+                        message: 'AI-generated responses',
+                        linkText: '', // Optional: 'Learn more'
+                        linkUrl: '' // Optional: 'https://your-site.com/ai-policy'
+                    }
                 });
             }
         }, 500);

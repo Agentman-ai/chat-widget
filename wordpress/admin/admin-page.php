@@ -349,6 +349,50 @@
                             <p class="description"><?php _e('Show AI responses as they are generated for a more interactive experience. Enabled by default.', 'agentman-chat-widget'); ?></p>
                         </td>
                     </tr>
+                    
+                    <!-- AI Disclaimer Settings -->
+                    <tr>
+                        <th scope="row" colspan="2">
+                            <h3><?php _e('AI Disclaimer', 'agentman-chat-widget'); ?></h3>
+                            <p class="description"><?php _e('Display a disclaimer that responses are AI-generated.', 'agentman-chat-widget'); ?></p>
+                        </th>
+                    </tr>
+                    <tr>
+                        <th scope="row">
+                            <label for="agentman_chat_widget_options[disclaimer_enabled]"><?php _e('Show AI Disclaimer', 'agentman-chat-widget'); ?></label>
+                        </th>
+                        <td>
+                            <input type="checkbox" id="agentman_chat_widget_options[disclaimer_enabled]" name="agentman_chat_widget_options[disclaimer_enabled]" value="1" <?php checked(1, isset($this->options['disclaimer_enabled']) ? $this->options['disclaimer_enabled'] : false); ?> />
+                            <p class="description"><?php _e('Display disclaimer in welcome screen and next to "Powered by Agentman".', 'agentman-chat-widget'); ?></p>
+                        </td>
+                    </tr>
+                    <tr>
+                        <th scope="row">
+                            <label for="agentman_chat_widget_options[disclaimer_message]"><?php _e('Disclaimer Message', 'agentman-chat-widget'); ?></label>
+                        </th>
+                        <td>
+                            <input type="text" id="agentman_chat_widget_options[disclaimer_message]" name="agentman_chat_widget_options[disclaimer_message]" value="<?php echo esc_attr(isset($this->options['disclaimer_message']) ? $this->options['disclaimer_message'] : 'AI-generated responses'); ?>" class="regular-text" />
+                            <p class="description"><?php _e('Short message displayed as the disclaimer.', 'agentman-chat-widget'); ?></p>
+                        </td>
+                    </tr>
+                    <tr>
+                        <th scope="row">
+                            <label for="agentman_chat_widget_options[disclaimer_link_text]"><?php _e('Disclaimer Link Text', 'agentman-chat-widget'); ?></label>
+                        </th>
+                        <td>
+                            <input type="text" id="agentman_chat_widget_options[disclaimer_link_text]" name="agentman_chat_widget_options[disclaimer_link_text]" value="<?php echo esc_attr(isset($this->options['disclaimer_link_text']) ? $this->options['disclaimer_link_text'] : ''); ?>" class="regular-text" placeholder="<?php _e('Learn more (optional)', 'agentman-chat-widget'); ?>" />
+                            <p class="description"><?php _e('Optional link text for the disclaimer.', 'agentman-chat-widget'); ?></p>
+                        </td>
+                    </tr>
+                    <tr>
+                        <th scope="row">
+                            <label for="agentman_chat_widget_options[disclaimer_link_url]"><?php _e('Disclaimer Link URL', 'agentman-chat-widget'); ?></label>
+                        </th>
+                        <td>
+                            <input type="url" id="agentman_chat_widget_options[disclaimer_link_url]" name="agentman_chat_widget_options[disclaimer_link_url]" value="<?php echo esc_attr(isset($this->options['disclaimer_link_url']) ? $this->options['disclaimer_link_url'] : ''); ?>" class="regular-text" placeholder="https://example.com/ai-policy" />
+                            <p class="description"><?php _e('Optional URL to your AI usage policy or terms.', 'agentman-chat-widget'); ?></p>
+                        </td>
+                    </tr>
                 </table>
             </div>
             

@@ -109,6 +109,17 @@ export interface ChatConfig {
     /** Fallback to non-streaming on error */
     fallbackToNonStreaming?: boolean;
   };
+  /** AI Disclaimer configuration */
+  disclaimer?: {
+    /** Enable disclaimer display */
+    enabled: boolean;
+    /** Disclaimer message text */
+    message: string;
+    /** Optional link text */
+    linkText?: string;
+    /** Optional link URL */
+    linkUrl?: string;
+  };
 }
 
 export interface DebugConfig {

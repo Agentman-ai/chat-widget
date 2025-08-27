@@ -17,6 +17,24 @@ export const responsiveStyles = `
     .desktop-only {
       display: none !important;
     }
+    
+    /* Branding section - single line on mobile */
+    .am-chat-branding {
+      padding: 3px 12px !important;
+      font-size: 9px !important;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      gap: 2px !important;
+    }
+    
+    .am-chat-branding > span {
+      white-space: nowrap;
+    }
+    
+    .am-chat-branding a {
+      font-size: 9px;
+    }
   }
 
   @media (max-width: 480px) {

@@ -568,4 +568,171 @@ export const baseStyles = `
   .am-chat-header * {
     color: inherit !important;
   }
+  
+  /* AI Disclaimer Component Styles */
+  .am-disclaimer {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    font-size: 11px;
+    line-height: 1.4;
+    color: var(--disclaimer-text-color, rgba(0, 0, 0, 0.6));
+    text-align: center;
+    flex-shrink: 0;
+    transition: opacity 0.2s ease;
+  }
+  
+  /* Variant: Standalone (default) */
+  .am-disclaimer--standalone {
+    padding: 8px 12px;
+    background: var(--disclaimer-bg-color, rgba(0, 0, 0, 0.02));
+    border-top: 1px solid var(--disclaimer-border-color, rgba(0, 0, 0, 0.06));
+  }
+  
+  /* Variant: Welcome screen */
+  .am-disclaimer--welcome,
+  .am-disclaimer--standalone.am-disclaimer--welcome {
+    background: transparent;
+    border: none;
+    padding: 8px 16px;
+    margin-top: 8px;
+  }
+  
+  /* Variant: Inline (conversation view) */
+  .am-disclaimer--inline {
+    display: inline-flex;
+    align-items: center;
+    flex-wrap: wrap;
+    padding: 0;
+    background: transparent;
+    border: none;
+  }
+  
+  /* Variant: Compact */
+  .am-disclaimer--compact {
+    gap: 4px;
+    font-size: 10px;
+    padding: 4px 8px;
+  }
+  
+  /* Disclaimer content container */
+  .am-disclaimer__content {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    flex-wrap: wrap;
+  }
+  
+  /* Disclaimer text */
+  .am-disclaimer__text,
+  .am-disclaimer-text {
+    color: inherit;
+  }
+  
+  /* Disclaimer icons */
+  .am-disclaimer__icon {
+    flex-shrink: 0;
+    opacity: 0.7;
+  }
+  
+  .am-disclaimer__icon--warning {
+    color: var(--disclaimer-warning-color, #f59e0b);
+  }
+  
+  .am-disclaimer__icon--alert {
+    color: var(--disclaimer-alert-color, #ef4444);
+  }
+  
+  /* Disclaimer link */
+  .am-disclaimer__link,
+  .am-disclaimer-link {
+    color: var(--disclaimer-link-color, rgba(37, 99, 235, 0.8));
+    text-decoration: none;
+    font-weight: 500;
+    transition: color 0.2s ease, text-decoration 0.2s ease;
+    display: inline-flex;
+    align-items: center;
+    gap: 2px;
+  }
+  
+  .am-disclaimer__link:hover,
+  .am-disclaimer-link:hover {
+    color: var(--disclaimer-link-hover-color, rgba(37, 99, 235, 1));
+    text-decoration: underline;
+  }
+  
+  .am-disclaimer__link:focus-visible,
+  .am-disclaimer-link:focus-visible {
+    outline: 2px solid var(--disclaimer-link-focus-color, #2563eb);
+    outline-offset: 2px;
+    border-radius: 2px;
+  }
+  
+  /* External link icon */
+  .am-disclaimer__external-icon {
+    opacity: 0.6;
+    margin-left: 1px;
+  }
+  
+  /* Separator for inline variant */
+  .am-disclaimer__separator {
+    margin: 0 8px;
+    color: var(--disclaimer-separator-color, #94a3b8);
+  }
+  
+  /* Accessibility: High contrast mode support */
+  @media (prefers-contrast: high) {
+    .am-disclaimer {
+      border-width: 2px;
+    }
+    
+    .am-disclaimer__icon {
+      opacity: 1;
+    }
+  }
+  
+  /* Accessibility: Reduced motion support */
+  @media (prefers-reduced-motion: reduce) {
+    .am-disclaimer,
+    .am-disclaimer__link,
+    .am-disclaimer-link {
+      transition: none;
+    }
+  }
+  
+  /* Dark mode support */
+  @media (prefers-color-scheme: dark) {
+    .am-disclaimer {
+      color: var(--disclaimer-text-color-dark, rgba(255, 255, 255, 0.7));
+    }
+    
+    .am-disclaimer--standalone {
+      background: var(--disclaimer-bg-color-dark, rgba(255, 255, 255, 0.05));
+      border-color: var(--disclaimer-border-color-dark, rgba(255, 255, 255, 0.1));
+    }
+  }
+  
+  /* Branding with disclaimer */
+  .am-chat-branding {
+    display: flex !important;
+    align-items: center;
+    flex-wrap: nowrap;
+    gap: 4px;
+    visibility: visible !important;
+    opacity: 1 !important;
+  }
+  
+  .am-branding-separator {
+    margin: 0 8px;
+    color: #94a3b8;
+  }
+  
+  /* Responsive disclaimer */
+  @media (max-width: 480px) {
+    .am-disclaimer {
+      font-size: 10px;
+      padding: 6px 10px;
+    }
+  }
 `;

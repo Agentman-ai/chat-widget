@@ -4,6 +4,7 @@ import * as icons from '../assets/icons';
 import { UIUtils } from '../utils/UIUtils';
 import { MessageRenderer } from '../message-renderer/message-renderer';
 import { InputComponent } from './InputComponent';
+import { DisclaimerComponent } from './DisclaimerComponent';
 import { MessageRenderer as IMessageRenderer } from '../renderers/MessageRenderer';
 import { StandardRenderer } from '../renderers/StandardRenderer';
 import { StreamingRenderer } from '../renderers/StreamingRenderer';
@@ -605,6 +606,17 @@ private renderMessageAttachments(message: Message): string {
       </div>
     `;
   }
+  /**
+   * Escape HTML to prevent XSS
+   */
+  private escapeHtml(unsafe: string): string {
+    return unsafe
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;")
+      .replace(/"/g, "&quot;")
+      .replace(/'/g, "&#039;");
+  }
 
   /**
    * Generate message prompts HTML
@@ -633,17 +645,29 @@ private renderMessageAttachments(message: Message): string {
   }
 
   /**
-   * Generate branding HTML - matches original ChatWidget exactly
+   * Generate branding HTML - includes disclaimer if configured
    */
   private generateBranding(): string {
+    // Create disclaimer component for inline display
+    const disclaimerComponent = new DisclaimerComponent(
+      this.config.disclaimer as any,
+      { variant: 'inline' }
+    );
+    
+    const disclaimerElement = disclaimerComponent.render();
+    const disclaimerHtml = disclaimerElement ? disclaimerElement.outerHTML : '';
+    
     return `
       <div class="am-chat-branding" style="text-align: left;
                                            font-size: 10px;
                                            padding: 4px 16px;
                                            color: #334155;
                                            background: white;
-                                           flex: 0 0 auto;">
-        Powered by <a href="https://agentman.ai" target="_blank" style="color: var(--chat-text-color, #334155); text-decoration: underline;">Agentman</a>
+                                           flex: 0 0 auto;
+                                           display: flex;
+                                           align-items: center;">
+        <span>Powered by <a href="https://agentman.ai" target="_blank" style="color: var(--chat-text-color, #334155); text-decoration: underline;">Agentman</a></span>
+        ${disclaimerHtml}
       </div>
     `;
   }

@@ -2,6 +2,7 @@
 import type { ChatConfig, ChatTheme, ChatAssets } from '../types/types';
 import * as icons from '../assets/icons';
 import { InputComponent } from './InputComponent';
+import { DisclaimerComponent } from './DisclaimerComponent';
 
 /**
  * WelcomeScreen Component - Claude-style minimalist welcome interface
@@ -30,6 +31,9 @@ export class WelcomeScreen {
   
   // Input component
   private inputComponent: InputComponent | null = null;
+  
+  // Disclaimer component
+  private disclaimerComponent: DisclaimerComponent | null = null;
 
   constructor(
     config: ChatConfig,
@@ -72,6 +76,7 @@ export class WelcomeScreen {
     this.attachEventListeners();
     this.applyTheme();
     this.createInputComponent();
+    this.createDisclaimerComponent();
 
     return this.element;
   }
@@ -150,6 +155,7 @@ export class WelcomeScreen {
   public destroy(): void {
     this.removeEventListeners();
     this.inputComponent?.destroy();
+    this.disclaimerComponent?.destroy();
     if (this.element) {
       this.element.remove();
       this.element = null;
@@ -211,6 +217,7 @@ export class WelcomeScreen {
     return `
       <div class="am-welcome-input-section">
         <div class="am-welcome-message">${this.escapeHtml(welcomeMessage)}</div>
+        <div class="am-disclaimer-placeholder"></div>
         <div class="am-welcome-input-placeholder"></div>
       </div>
     `;
@@ -301,6 +308,30 @@ export class WelcomeScreen {
     
     const inputElement = this.inputComponent.create();
     placeholder.appendChild(inputElement);
+  }
+
+  /**
+   * Create and mount the disclaimer component
+   */
+  private createDisclaimerComponent(): void {
+    if (!this.element) return;
+    
+    const placeholder = this.element.querySelector('.am-disclaimer-placeholder');
+    if (!placeholder) return;
+    
+    // Create disclaimer component
+    this.disclaimerComponent = new DisclaimerComponent(
+      this.config.disclaimer as any,
+      {
+        variant: 'standalone',
+        className: 'am-disclaimer--welcome'
+      }
+    );
+    
+    const disclaimerElement = this.disclaimerComponent.render();
+    if (disclaimerElement) {
+      placeholder.appendChild(disclaimerElement);
+    }
   }
 
   /**

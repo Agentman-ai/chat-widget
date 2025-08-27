@@ -12,6 +12,7 @@ import { conversationStyles } from './conversations';
 import { notificationStyles } from './notifications';
 import { welcomeStyles } from './welcome';
 import { inputStyles } from './input';
+import { disclaimerStyles } from './disclaimer';
 
 export class StyleManager {
   private styleElement: HTMLStyleElement | null = null;
@@ -31,6 +32,7 @@ export class StyleManager {
       notificationStyles,
       welcomeStyles,
       inputStyles,
+      disclaimerStyles,
       variantStyles[this.variant],
       animationStyles,
       responsiveStyles

@@ -407,7 +407,14 @@ class Agentman_Chat_Widget {
             // Streaming configuration (enabled by default)
             'streaming' => array(
                 'enabled' => isset($this->options['streaming_enabled']) ? (bool)$this->options['streaming_enabled'] : true
-            )
+            ),
+            // AI Disclaimer configuration
+            'disclaimer' => isset($this->options['disclaimer_enabled']) && $this->options['disclaimer_enabled'] ? array(
+                'enabled' => true,
+                'message' => isset($this->options['disclaimer_message']) ? $this->options['disclaimer_message'] : 'AI-generated responses',
+                'linkText' => isset($this->options['disclaimer_link_text']) && !empty($this->options['disclaimer_link_text']) ? $this->options['disclaimer_link_text'] : null,
+                'linkUrl' => isset($this->options['disclaimer_link_url']) && !empty($this->options['disclaimer_link_url']) ? $this->options['disclaimer_link_url'] : null
+            ) : null
         );
     }
 

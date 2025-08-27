@@ -237,6 +237,31 @@
                             <input type="text" id="prompt3" value="I need help with my account" />
                         </div>
                         
+                        <h3 style="margin-top: 20px; padding-top: 10px; border-top: 1px solid #ddd;">AI Disclaimer</h3>
+                        
+                        <div class="form-group">
+                            <label>
+                                <input type="checkbox" id="disclaimerEnabled"> Show AI Disclaimer
+                            </label>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="disclaimerMessage">Disclaimer Message</label>
+                            <input type="text" id="disclaimerMessage" value="AI can make mistakes. Please check responses." />
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="disclaimerLinkText">Link Text (optional)</label>
+                            <input type="text" id="disclaimerLinkText" value="Learn more" />
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="disclaimerLinkUrl">Link URL (optional)</label>
+                            <input type="text" id="disclaimerLinkUrl" value="https://example.com/ai-policy" />
+                        </div>
+                        
+                        <h3 style="margin-top: 20px; padding-top: 10px; border-top: 1px solid #ddd;">Display Settings</h3>
+                        
                         <div class="form-group">
                             <label for="variant">Widget Variant</label>
                             <select id="variant">
@@ -796,6 +821,16 @@
                 // Streaming configuration
                 streaming: {
                     enabled: document.getElementById('streamingEnabled').checked
+                },
+                
+                // AI Disclaimer configuration
+                disclaimer: document.getElementById('disclaimerEnabled').checked ? {
+                    enabled: true,
+                    message: document.getElementById('disclaimerMessage').value,
+                    linkText: document.getElementById('disclaimerLinkText').value || undefined,
+                    linkUrl: document.getElementById('disclaimerLinkUrl').value || undefined
+                } : {
+                    enabled: false
                 }
             };
         }
@@ -877,6 +912,12 @@
             document.getElementById('persistenceEnabled').checked = true;
             document.getElementById('persistenceDays').value = '7';
             document.getElementById('persistenceKey').value = '';
+            
+            // Disclaimer settings
+            document.getElementById('disclaimerEnabled').checked = false;
+            document.getElementById('disclaimerMessage').value = 'Responses are AI-generated and should be verified.';
+            document.getElementById('disclaimerLinkText').value = 'Learn more';
+            document.getElementById('disclaimerLinkUrl').value = 'https://example.com/ai-policy';
             
             // Branding settings
             

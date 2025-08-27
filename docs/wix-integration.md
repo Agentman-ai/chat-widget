@@ -48,12 +48,30 @@ The Wix HTML widget provides **90% of WordPress functionality** with full config
 - **Content**: Messages, prompts, placeholders
 - **Advanced Features**: Persistence, icons, branding
 - **API Settings**: Token, URL, custom endpoints
+- **AI Disclaimer**: Configurable disclaimer message with optional link
 
 #### ❌ Limitations vs WordPress
 - No native admin interface (external config tool)
 - Manual installation (copy/paste vs one-click)
 - No automatic updates
 - No server-side settings storage
+
+#### AI Disclaimer Configuration
+The widget supports displaying an AI disclaimer to inform users that responses are AI-generated:
+
+```javascript
+disclaimer: {
+    enabled: true,                        // Enable/disable disclaimer
+    message: 'AI-generated responses',    // Disclaimer text
+    linkText: 'Learn more',              // Optional link text
+    linkUrl: 'https://your-site.com/ai-policy' // Optional link URL
+}
+```
+
+When enabled, the disclaimer appears:
+- In the welcome screen below the main message
+- Next to "Powered by Agentman" in the conversation view
+- With optional link to your AI usage policy or terms
 
 ### Technical Implementation
 

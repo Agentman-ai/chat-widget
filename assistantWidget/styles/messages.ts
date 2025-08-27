@@ -349,7 +349,7 @@ export const messageStyles = `
   @media (max-width: 480px) {
     .am-message-content {
       font-size: 13px;
-      padding: 10px 14px;
+      padding: 0;  /* Keep padding consistent with desktop */
     }
     
     .am-message-content ul,

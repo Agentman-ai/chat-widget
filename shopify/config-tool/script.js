@@ -133,6 +133,12 @@ class ShopifyConfigTool {
             promptsSection.style.display = e.target.checked ? 'block' : 'none';
         });
 
+        // Disclaimer toggle
+        document.getElementById('disclaimerEnabled').addEventListener('change', (e) => {
+            const disclaimerSection = document.getElementById('disclaimerSection');
+            disclaimerSection.style.display = e.target.checked ? 'block' : 'none';
+        });
+
         // Color picker updates
         document.querySelectorAll('input[type="color"]').forEach(input => {
             input.addEventListener('change', (e) => {
@@ -364,6 +370,14 @@ class ShopifyConfigTool {
             if (prompt) prompts.push(prompt);
         }
 
+        const disclaimerEnabled = document.getElementById('disclaimerEnabled').checked;
+        const disclaimerConfig = disclaimerEnabled ? {
+            enabled: true,
+            message: document.getElementById('disclaimerMessage').value || 'AI-generated responses',
+            linkText: document.getElementById('disclaimerLinkText').value || undefined,
+            linkUrl: document.getElementById('disclaimerLinkUrl').value || undefined
+        } : undefined;
+
         return {
             title: document.getElementById('title').value,
             toggleText: document.getElementById('toggleText').value,
@@ -373,7 +387,8 @@ class ShopifyConfigTool {
                 show: document.getElementById('showPrompts').checked,
                 welcome_message: 'How can I help you today?',
                 prompts: prompts
-            }
+            },
+            disclaimer: disclaimerConfig
         };
     }
 
@@ -425,6 +440,7 @@ class ShopifyConfigTool {
             enableAttachments: this.config.advanced.enableAttachments,
             theme: this.config.theme,
             messagePrompts: this.config.content.messagePrompts,
+            disclaimer: this.config.content.disclaimer,
             persistence: this.config.advanced.persistence,
             streaming: this.config.advanced.streaming,
             shopifyIntegration: this.config.advanced.shopifyIntegration

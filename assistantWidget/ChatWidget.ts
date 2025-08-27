@@ -975,10 +975,12 @@ export class ChatWidget {
         }
         
         if (branding) {
-          branding.style.display = '';
-          branding.style.opacity = '';
+          branding.style.display = 'flex';
+          branding.style.opacity = '1';
           branding.style.transform = '';
           branding.classList.remove('sliding-out');
+        } else {
+          console.warn('Branding section not found when loading conversation');
         }
       }, 350); // After animation completes
     }
