@@ -88,7 +88,11 @@ shopify/
         data-prompt-2="Product information"
         data-prompt-3="Return policy"
         data-persistence-enabled="true"
-        data-enable-attachments="true"></script>
+        data-enable-attachments="true"
+        data-disclaimer-enabled="true"
+        data-disclaimer-message="AI-generated responses"
+        data-disclaimer-link-text="Learn more"
+        data-disclaimer-link-url="https://{{ shop.domain }}/pages/ai-policy"></script>
 ```
 
 ## Configuration Options
@@ -130,6 +134,33 @@ All ChatWidget options can now be customized directly in your Shopify theme usin
 | | `data-persistence-days` | `7` | Days to keep conversations |
 | | `data-persistence-key` | `agentman_chat` | Storage key prefix |
 | | `data-max-conversations` | `10` | Max conversations to store |
+| **AI Disclaimer** | `data-disclaimer-enabled` | `false` | Show AI disclaimer |
+| | `data-disclaimer-message` | `AI-generated responses` | Disclaimer text |
+| | `data-disclaimer-link-text` | - | Optional link text (e.g., "Learn more") |
+| | `data-disclaimer-link-url` | - | Optional URL to AI policy |
+
+### AI Disclaimer Feature 🆕
+
+The widget now supports displaying an AI disclaimer to inform customers that responses are AI-generated:
+
+**Basic Disclaimer:**
+```html
+data-disclaimer-enabled="true"
+data-disclaimer-message="AI-generated responses"
+```
+
+**With Link to Policy:**
+```html
+data-disclaimer-enabled="true"
+data-disclaimer-message="AI-generated responses"
+data-disclaimer-link-text="Learn more"
+data-disclaimer-link-url="https://{{ shop.domain }}/pages/ai-policy"
+```
+
+**Where it appears:**
+- In the welcome screen below the main message
+- Next to "Powered by Agentman" in the conversation view
+- Responsive design optimized for mobile devices
 
 ### Integration with Shopify Themes
 

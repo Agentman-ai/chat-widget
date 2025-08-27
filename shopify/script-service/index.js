@@ -11,7 +11,7 @@
     'use strict';
     
     // Script metadata
-    const SCRIPT_VERSION = '5.3.0';
+    const SCRIPT_VERSION = '5.5.0';
     // Use your own CDN URL for the core widget
     const WIDGET_CDN = 'https://storage.googleapis.com/chatwidget-shopify-storage-for-cdn/core/chat-widget.js';
     
@@ -61,6 +61,12 @@
         floatingPromptsEnabled: extractDataAttribute('floating-prompts-enabled', true, v => v === 'true'),
         floatingPromptsDelay: extractDataAttribute('floating-prompts-delay', 5000, v => parseInt(v, 10)),
         
+        // AI Disclaimer settings
+        'disclaimer.enabled': extractDataAttribute('disclaimer-enabled', false, v => v === 'true'),
+        'disclaimer.message': extractDataAttribute('disclaimer-message', 'AI-generated responses'),
+        'disclaimer.linkText': extractDataAttribute('disclaimer-link-text', ''),
+        'disclaimer.linkUrl': extractDataAttribute('disclaimer-link-url', ''),
+        
         // Theme colors
         'theme.backgroundColor': extractDataAttribute('bg-color', '#ffffff'),
         'theme.textColor': extractDataAttribute('text-color', '#111827'),
@@ -109,6 +115,10 @@
                         result.messagePrompts.prompts[promptIndex] = value;
                     } else {
                         if (!result[parent]) result[parent] = {};
+                        // For disclaimer, skip empty string values for linkText and linkUrl
+                        if (parent === 'disclaimer' && (child === 'linkText' || child === 'linkUrl') && value === '') {
+                            continue;
+                        }
                         result[parent][child] = value;
                     }
                 } else {
@@ -116,6 +126,15 @@
                     result[key] = value;
                 }
             }
+        }
+        
+        // Clean up disclaimer object if not enabled
+        if (result.disclaimer && !result.disclaimer.enabled) {
+            delete result.disclaimer;
+        } else if (result.disclaimer) {
+            // Remove empty linkText and linkUrl
+            if (!result.disclaimer.linkText) delete result.disclaimer.linkText;
+            if (!result.disclaimer.linkUrl) delete result.disclaimer.linkUrl;
         }
         
         return result;

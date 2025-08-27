@@ -3,7 +3,7 @@ Contributors: Agentman.ai
 Tags: chatbot, agent, sales, support, assistant
 Requires at least: 5.6
 Tested up to: 6.5
-Stable tag: 4.0.0
+Stable tag: 5.5.0
 Requires PHP: 7.2
 License: MIT
 License URI: https://opensource.org/licenses/MIT
