@@ -39,10 +39,18 @@ export class ConversationOrchestrator {
   ) {
     this.logger = new Logger(debug, '[ConversationOrchestrator]');
     this.setupEventListeners();
+    
+    // Connect FileHandler to MessageHandler if both are available
+    if (this.fileHandler && this.messageHandler.setFileHandler) {
+      this.messageHandler.setFileHandler(this.fileHandler);
+    }
   }
 
   /**
    * Start a new conversation
+   * @param conversationId - Optional ID for the conversation, will generate if not provided
+   * @param initialMessage - Optional initial message to send immediately
+   * @returns Promise that resolves when conversation is started
    */
   public async startNewConversation(
     conversationId?: string,
@@ -94,6 +102,10 @@ export class ConversationOrchestrator {
 
   /**
    * Send a message in the current conversation
+   * @param message - Text message to send
+   * @param attachments - Optional array of attachment file paths
+   * @returns Promise that resolves when message is sent
+   * @throws Error if message sending fails
    */
   public async sendMessage(
     message: string,
@@ -188,6 +200,8 @@ export class ConversationOrchestrator {
 
   /**
    * Handle prompt click from welcome screen
+   * @param prompt - The prompt text clicked by user
+   * @returns Promise that resolves when prompt is sent as message
    */
   public async handlePromptClick(prompt: string): Promise<void> {
     this.logger.debug('Handling prompt click', { prompt: prompt.substring(0, 50) + '...' });
@@ -202,7 +216,10 @@ export class ConversationOrchestrator {
   }
 
   /**
-   * Load an existing conversation
+   * Load an existing conversation from storage
+   * @param conversationId - ID of the conversation to load
+   * @returns Promise that resolves when conversation is loaded
+   * @throws Error if persistence is not enabled or conversation cannot be loaded
    */
   public async loadConversation(conversationId: string): Promise<void> {
     this.logger.debug('Loading conversation', { conversationId });
@@ -331,7 +348,10 @@ export class ConversationOrchestrator {
   }
 
   /**
-   * Delete a conversation
+   * Delete a conversation from storage
+   * @param conversationId - ID of the conversation to delete
+   * @returns Promise that resolves when conversation is deleted
+   * @throws Error if persistence is not enabled or deletion fails
    */
   public async deleteConversation(conversationId: string): Promise<void> {
     this.logger.debug('Deleting conversation', { conversationId });
@@ -371,6 +391,7 @@ export class ConversationOrchestrator {
 
   /**
    * Clear current conversation and return to welcome screen
+   * @returns Promise that resolves when conversation is cleared
    */
   public async clearConversation(): Promise<void> {
     this.logger.debug('Clearing current conversation');
@@ -407,7 +428,8 @@ export class ConversationOrchestrator {
   }
 
   /**
-   * Get current conversation info
+   * Get current conversation information
+   * @returns Object containing conversation ID, message count, start time, and duration
    */
   public getConversationInfo(): {
     id: string | null;
@@ -428,7 +450,8 @@ export class ConversationOrchestrator {
   }
 
   /**
-   * Check if there's an active conversation
+   * Check if there's an active conversation with messages
+   * @returns True if there's an active conversation with at least one message
    */
   public hasActiveConversation(): boolean {
     return !!this.currentConversationId && this.messageCount > 0;
@@ -500,7 +523,8 @@ export class ConversationOrchestrator {
   }
 
   /**
-   * Clean up resources
+   * Clean up resources and save current conversation
+   * @description Auto-saves current conversation before cleanup
    */
   public destroy(): void {
     this.logger.debug('Destroying ConversationOrchestrator');

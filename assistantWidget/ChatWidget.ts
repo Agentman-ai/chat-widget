@@ -599,6 +599,11 @@ export class ChatWidget {
     
     // Initialize FileHandler if needed
     this.ensureFileHandler();
+    
+    // Connect FileHandler to MessageHandler
+    if (this.messageHandler && this.fileHandler) {
+      this.messageHandler.setFileHandler(this.fileHandler);
+    }
   }
 
   /**
@@ -681,6 +686,11 @@ export class ChatWidget {
           { streaming: this.config.streaming, debug: typeof this.config.debug === 'boolean' ? this.config.debug : false },
           !!this.config.debug
         );
+        
+        // Connect FileHandler to MessageHandler
+        if (this.fileHandler) {
+          this.messageHandler.setFileHandler(this.fileHandler);
+        }
       }
       
       this.conversationOrchestrator = new ConversationOrchestrator(
@@ -1335,6 +1345,11 @@ export class ChatWidget {
         { streaming: this.config.streaming, debug: typeof this.config.debug === 'boolean' ? this.config.debug : false },
         !!this.config.debug
       );
+      
+      // Connect FileHandler to MessageHandler
+      if (this.fileHandler) {
+        this.messageHandler.setFileHandler(this.fileHandler);
+      }
     }
     
     // Load messages into the UI

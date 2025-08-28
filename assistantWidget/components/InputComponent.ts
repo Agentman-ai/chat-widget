@@ -144,7 +144,7 @@ export class InputComponent {
           <div class="chat-attachment-info">
             <div class="chat-attachment-name">${this.escapeHtml(attachment.filename)}</div>
           </div>
-          <button class="chat-attachment-remove" data-id="${attachment.file_id}" title="Remove attachment">×</button>
+          <button class="chat-attachment-remove" data-id="${attachment.id || attachment.file_id}" title="Remove attachment">×</button>
           ${progressHtml}
         </div>
       `;
@@ -154,6 +154,8 @@ export class InputComponent {
     const removeButtons = previewContainer.querySelectorAll('.chat-attachment-remove');
     removeButtons.forEach(button => {
       button.addEventListener('click', (e) => {
+        e.preventDefault();
+        e.stopPropagation();
         const fileId = (e.target as HTMLElement).getAttribute('data-id');
         if (fileId && this.boundAttachmentRemoveHandler) {
           this.boundAttachmentRemoveHandler(fileId);

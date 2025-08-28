@@ -52,6 +52,19 @@ export class MessageService {
     let content = '';
     let attachments: any[] = [];
     
+    // Check for attachment_metadata field (API response format)
+    if (msg.attachment_metadata && Array.isArray(msg.attachment_metadata)) {
+      this.logger.debug('Found attachment_metadata in message:', msg.attachment_metadata);
+      attachments = msg.attachment_metadata.map((meta: any) => ({
+        file_id: meta.file_id,
+        filename: meta.filename,
+        file_type: meta.file_type || (meta.content_type?.startsWith('image/') ? 'image' : 'document'),
+        mime_type: meta.content_type || meta.mime_type,
+        size_bytes: meta.size_bytes || meta.size || 0,
+        url: meta.url
+      }));
+    }
+    
     // Check if content is an array (multimodal message with attachments)
     if (Array.isArray(msg.content)) {
       // Process multimodal content
@@ -141,7 +154,8 @@ export class MessageService {
 
     const newMessages: Message[] = [];
 
-    for (const msg of candidateMessages) {
+    for (let i = 0; i < candidateMessages.length; i++) {
+      const msg = candidateMessages[i];
       // Skip tool messages - they should not be displayed in the UI
       if (msg.type === 'tool') {
         this.logger.debug('⏭️ Skipping tool message');
@@ -154,6 +168,15 @@ export class MessageService {
       // Extract content and attachments
       const { content, attachments } = this.extractMessageContent(msg);
       const trimmedContent = content.trim();
+      
+      // Debug log for messages with attachments
+      if (attachments.length > 0 || (msg.attachment_file_ids && msg.attachment_file_ids.length > 0)) {
+        this.logger.info(`📎 Message ${i} (${sender}) has attachments:`, {
+          attachmentCount: attachments.length,
+          attachmentFileIds: msg.attachment_file_ids,
+          attachments
+        });
+      }
 
       // Skip empty messages
       if (!trimmedContent && attachments.length === 0) {
@@ -222,7 +245,8 @@ export class MessageService {
     const candidateMessages = responseData.slice(currentCount);
     this.logger.info(`💬 Processing ${candidateMessages.length} new messages from initial response (sliced from index ${currentCount})`);
 
-    for (const msg of candidateMessages) {
+    for (let i = 0; i < candidateMessages.length; i++) {
+      const msg = candidateMessages[i];
       // Skip tool messages - they should not be displayed in the UI
       if (msg.type === 'tool') {
         this.logger.debug('⏭️ Skipping tool message in initial response');
@@ -238,6 +262,15 @@ export class MessageService {
       // Extract content and attachments
       const { content, attachments } = this.extractMessageContent(msg);
       const trimmedContent = content.trim();
+      
+      // Debug log for messages with attachments
+      if (attachments.length > 0 || (msg.attachment_file_ids && msg.attachment_file_ids.length > 0)) {
+        this.logger.info(`📎 Initial message ${i} (agent) has attachments:`, {
+          attachmentCount: attachments.length,
+          attachmentFileIds: msg.attachment_file_ids,
+          attachments
+        });
+      }
       
       if (trimmedContent) {
         this.logger.info(`➕ Adding welcome message to queue: "${trimmedContent.substring(0, 50)}..."`);

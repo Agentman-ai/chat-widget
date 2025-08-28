@@ -5,6 +5,15 @@ import { Logger } from '../utils/logger';
 import { createEvent } from '../types/events';
 
 /**
+ * Configuration options for LoadingManager
+ */
+export interface LoadingManagerConfig {
+  debug?: boolean;
+  defaultTimeout?: number;
+  allowContinueAfterTimeout?: boolean;
+}
+
+/**
  * LoadingManager - Manages loading states and indicators
  * 
  * This handler manages:
@@ -19,13 +28,26 @@ export class LoadingManager {
   private activeLoadingOperations: Set<string> = new Set();
   private loadingTimeouts: Map<string, number> = new Map();
   private loadingStartTimes: Map<string, number> = new Map();
+  private config: LoadingManagerConfig;
 
   constructor(
     private viewManager: ViewManager,
     private eventBus: EventBus,
-    debug: boolean = false
+    config: LoadingManagerConfig | boolean = {}
   ) {
-    this.logger = new Logger(debug, '[LoadingManager]');
+    // Handle backward compatibility where third param was just debug boolean
+    if (typeof config === 'boolean') {
+      this.config = { debug: config };
+    } else {
+      this.config = {
+        debug: false,
+        defaultTimeout: 30000,
+        allowContinueAfterTimeout: true,
+        ...config
+      };
+    }
+    
+    this.logger = new Logger(this.config.debug || false, '[LoadingManager]');
   }
 
   /**
@@ -37,10 +59,16 @@ export class LoadingManager {
       timeout?: number;
       message?: string;
       showIndicator?: boolean;
+      allowContinueAfterTimeout?: boolean;
     } = {}
   ): string {
     const operationId = `${operation}_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-    const { timeout = 30000, message, showIndicator = true } = options;
+    const { 
+      timeout = this.config.defaultTimeout || 30000, 
+      message, 
+      showIndicator = true,
+      allowContinueAfterTimeout = this.config.allowContinueAfterTimeout
+    } = options;
 
     this.logger.debug(`Starting loading operation: ${operation} (${operationId})`);
 
@@ -56,7 +84,7 @@ export class LoadingManager {
     // Set timeout if specified
     if (timeout > 0) {
       const timeoutId = window.setTimeout(() => {
-        this.handleLoadingTimeout(operationId, operation);
+        this.handleLoadingTimeout(operationId, operation, allowContinueAfterTimeout);
       }, timeout);
       this.loadingTimeouts.set(operationId, timeoutId);
     }
@@ -250,15 +278,43 @@ export class LoadingManager {
 
   /**
    * Handle loading timeout
+   * @param operationId - The operation ID
+   * @param operation - The type of operation
+   * @param allowContinue - Whether to allow the operation to continue after timeout
    */
-  private handleLoadingTimeout(operationId: string, operation: string): void {
-    this.logger.warn(`Loading timeout for operation: ${operationId}`);
-    
-    this.completeLoading(
-      operationId,
-      false,
-      new Error(`Loading timeout for ${operation}`)
-    );
+  private handleLoadingTimeout(
+    operationId: string, 
+    operation: string,
+    allowContinue: boolean = true
+  ): void {
+    if (allowContinue) {
+      // Only log warning, don't complete the loading operation
+      // This allows streaming to continue even after timeout
+      this.logger.warn(`Loading timeout reached for operation: ${operationId}, but allowing to continue`);
+      
+      // Remove the timeout but keep the operation active
+      this.loadingTimeouts.delete(operationId);
+      
+      // Emit timeout event but don't complete
+      this.eventBus.emit('loading:timeout', createEvent('loading:timeout', {
+        operationId,
+        operation,
+        allowedToContinue: true,
+        source: 'LoadingManager'
+      }));
+    } else {
+      // Complete the operation with timeout error
+      this.logger.error(`Loading timeout reached for operation: ${operationId}, terminating`);
+      this.completeLoading(operationId, false, new Error('Operation timed out'));
+      
+      // Emit timeout event
+      this.eventBus.emit('loading:timeout', createEvent('loading:timeout', {
+        operationId,
+        operation,
+        allowedToContinue: false,
+        source: 'LoadingManager'
+      }));
+    }
   }
 
   /**

@@ -1,5 +1,6 @@
 // MessageHandler.ts - Centralized message flow orchestration
 import type { Message, ChatState } from '../types/types';
+import type { IFileHandler } from '../types/FileTypes';
 import type { StateManager } from '../StateManager';
 import type { ViewManager } from '../components/ViewManager';
 import type { PersistenceManager } from '../PersistenceManager';
@@ -30,6 +31,7 @@ export class MessageHandler {
   private loadingManager: LoadingManager;
   private unifiedLoadingManager: UnifiedLoadingManager;
   private currentLoadingOperation: string | null = null;
+  private fileHandler?: IFileHandler; // Optional FileHandler reference
   
   constructor(
     private stateManager: StateManager,
@@ -53,6 +55,15 @@ export class MessageHandler {
 
   /**
    * Send a message through the complete flow
+   * @param message - The text message to send
+   * @param conversationId - ID of the current conversation
+   * @param config - Configuration including agent token and attachments
+   * @param config.agentToken - Authentication token for the agent
+   * @param config.clientMetadata - Optional metadata to include
+   * @param config.attachmentFileIds - Array of uploaded file IDs to attach
+   * @param config.attachmentUrls - Deprecated, use attachmentFileIds
+   * @returns Promise that resolves when message is sent
+   * @throws Error if API call fails or response format is invalid
    */
   public async sendMessage(
     message: string,
@@ -73,21 +84,45 @@ export class MessageHandler {
     this.isProcessingMessage = true;
 
     try {
-      // Create user message for the event, but only add it to view if there are no attachments
+      // Wait for any pending file uploads to complete
+      await this.waitForUploads();
+      
+      // Create user message
       const hasAttachments = (config.attachmentFileIds && config.attachmentFileIds.length > 0) || 
                              (config.attachmentUrls && config.attachmentUrls.length > 0);
-      const userMessage = this.messageService.createUserMessage(message);
+      
+      let userMessage;
       
       if (!hasAttachments) {
-        // No attachments - add user message locally for immediate feedback
+        // No attachments - simple user message
+        userMessage = this.messageService.createUserMessage(message);
         this.logger.debug('Creating user message without attachments:', userMessage);
-        await this.addMessageToView(userMessage);
       } else {
-        // Has attachments - skip local message, wait for API response
-        this.logger.debug('User message has attachments, waiting for API response to display');
-        this.logger.debug('Attachment file IDs being sent:', config.attachmentFileIds);
-        this.logger.debug('Attachment URLs being sent (deprecated):', config.attachmentUrls);
+        // Has attachments - create message with attachment metadata
+        // Get attachment data from FileHandler if available
+        let attachments: any[] = [];
+        if (this.fileHandler && this.fileHandler.getAttachments) {
+          const fileAttachments = this.fileHandler.getAttachments();
+          attachments = fileAttachments.map((attachment: any) => ({
+            file_id: attachment.file_id || attachment.id,
+            filename: attachment.filename,
+            file_type: attachment.file_type,
+            mime_type: attachment.mime_type,
+            size_bytes: attachment.size_bytes,
+            url: attachment.url // This will have the server URL after upload
+          }));
+        }
+        
+        userMessage = this.messageService.createUserMessage(message, attachments);
+        this.logger.debug('Creating user message with attachments:', {
+          message: userMessage,
+          attachmentCount: attachments.length,
+          attachmentFileIds: config.attachmentFileIds
+        });
       }
+      
+      // Always add user message locally for immediate feedback
+      await this.addMessageToView(userMessage);
       
       // Don't increment lastMessageCount here - we'll update it after API response
       this.logger.debug(`Current lastMessageCount: ${this.lastMessageCount} (not incrementing for user message)`);
@@ -178,14 +213,11 @@ export class MessageHandler {
         });
       }
 
-      // Complete loading operation
-      if (this.currentLoadingOperation) {
+      // Complete loading operation - don't complete here if streaming, let the streaming complete it
+      if (!streamingEnabled && this.currentLoadingOperation) {
         this.loadingManager.completeLoading(this.currentLoadingOperation, true);
         this.currentLoadingOperation = null;
-      }
-      
-      // In non-streaming mode, transition directly to NONE
-      if (!streamingEnabled) {
+        // In non-streaming mode, transition directly to NONE
         this.unifiedLoadingManager.transitionTo(LoadingType.NONE);
       }
 
@@ -233,7 +265,32 @@ export class MessageHandler {
   }
 
   /**
+   * Wait for file uploads to complete with timeout
+   * @param timeout - Maximum time to wait in milliseconds
+   * @returns Promise that resolves when uploads complete or timeout is reached
+   */
+  private async waitForUploads(timeout: number = 30000): Promise<void> {
+    if (!this.fileHandler || !this.fileHandler.isUploading()) {
+      return;
+    }
+
+    const startTime = Date.now();
+    
+    while (this.fileHandler.isUploading()) {
+      if (Date.now() - startTime > timeout) {
+        this.logger.warn('File upload timeout reached, proceeding with message send');
+        break;
+      }
+      
+      // Check every 100ms
+      await new Promise(resolve => setTimeout(resolve, 100));
+    }
+  }
+
+  /**
    * Process initial response (e.g., from agent initialization)
+   * @param responseData - Array of message data from API
+   * @returns Promise that resolves when messages are processed
    */
   public async handleInitialResponse(responseData: any[]): Promise<void> {
     const result = this.messageService.processInitialResponse(responseData, this.lastMessageCount);
@@ -250,6 +307,9 @@ export class MessageHandler {
 
   /**
    * Handle API response with messages
+   * @param responseData - Array of message data from API
+   * @param conversationId - ID of the current conversation
+   * @returns Promise that resolves when messages are processed
    */
   public async handleApiResponse(responseData: any[], conversationId: string): Promise<void> {
     const currentMessages = this.stateManager.getState().messages;
@@ -275,6 +335,8 @@ export class MessageHandler {
 
   /**
    * Add a message to the view and state
+   * @param message - Message object to add
+   * @returns Promise that resolves when message is added to UI
    */
   public async addMessageToView(message: Message): Promise<void> {
     // Add to state manager
@@ -445,7 +507,17 @@ export class MessageHandler {
   }
 
   /**
-   * Clean up resources
+   * Set the FileHandler (optional dependency)
+   * @param fileHandler - The file handler instance for managing attachments
+   * @description Allows late binding of FileHandler to avoid circular dependencies
+   */
+  public setFileHandler(fileHandler: IFileHandler): void {
+    this.fileHandler = fileHandler;
+  }
+
+  /**
+   * Clean up resources and cancel pending operations
+   * @description Cleans up timers, loading operations, and resets state
    */
   public destroy(): void {
     if (this.saveDebounceTimer) {

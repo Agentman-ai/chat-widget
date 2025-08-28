@@ -2,6 +2,7 @@
 import type { ViewManager } from '../components/ViewManager';
 import type { EventBus } from '../utils/EventBus';
 import type { ErrorHandler } from './ErrorHandler';
+import type { IFileHandler, Attachment, FileUploadResult } from '../types/FileTypes';
 import { LoadingManager } from './LoadingManager';
 import { Logger } from '../utils/logger';
 import { createEvent } from '../types/events';
@@ -17,13 +18,14 @@ import { FileSignatureValidator } from '../utils/FileSignatureValidator';
  * - File type and size validation
  * - Upload error handling and retry logic
  */
-export class FileHandler {
+export class FileHandler implements IFileHandler {
   private logger: Logger;
   private loadingManager: LoadingManager;
   private activeUploads: Map<string, AbortController> = new Map();
   private uploadProgress: Map<string, number> = new Map();
   private attachments: Map<string, File> = new Map();
   private uploadedFileIds: Map<string, string> = new Map(); // Maps temp IDs to server IDs
+  private previewUrls: Map<string, string> = new Map(); // Maps file IDs to preview URLs for images
   
   // Configuration
   private readonly MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
@@ -34,6 +36,9 @@ export class FileHandler {
     'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
   ];
   private supportedMimeTypes: string[] = [];
+  private fileCapabilities: any = null;
+  private supportedFileTypes: string[] = [];
+  private maxFileSize: number = 10 * 1024 * 1024; // 10MB default
   private getConversationId: (() => string | null) | null = null;
   private ensureConversation: (() => string) | null = null;
 
@@ -58,7 +63,7 @@ export class FileHandler {
   /**
    * Handle file selection from input
    */
-  public handleFileSelection(files: FileList): void {
+  public async handleFileSelection(files: FileList): Promise<void> {
     this.logger.debug(`Handling file selection: ${files.length} files`);
 
     // Emit file selected event
@@ -93,6 +98,16 @@ export class FileHandler {
       
       // Add to attachments
       this.attachments.set(fileId, fileToUpload);
+      
+      // Create preview URL for images
+      if (this.getFileTypeFromMimeType(fileToUpload.type) === 'image') {
+        try {
+          const previewUrl = URL.createObjectURL(fileToUpload);
+          this.previewUrls.set(fileId, previewUrl);
+        } catch (error) {
+          this.logger.warn('Failed to create image preview URL:', error);
+        }
+      }
       
       // Update UI preview
       this.updateAttachmentPreview();
@@ -203,7 +218,7 @@ export class FileHandler {
   /**
    * Upload file with progress tracking
    */
-  private async uploadFile(file: File, fileId: string): Promise<void> {
+  public async uploadFile(file: File, fileId: string): Promise<void> {
     this.logger.info(`uploadFile called for: ${file.name}, fileId: ${fileId}`);
     
     const abortController = new AbortController();
@@ -289,14 +304,31 @@ export class FileHandler {
       const result = await response.json();
       this.logger.debug(`File upload successful: ${file.name}`, result);
       
+      // Mark upload as complete with 100% progress
+      this.uploadProgress.set(fileId, 100);
+      
       // Extract the file_id and other metadata from response
       if (result.file_id) {
         // Store the server-assigned file ID for later use
         this.uploadedFileIds.set(fileId, result.file_id);
+        
+        // Update the preview URL with the actual server URL for images
+        if (result.url && result.file_type === 'image') {
+          // Clean up the blob URL
+          const oldUrl = this.previewUrls.get(fileId);
+          if (oldUrl && oldUrl.startsWith('blob:')) {
+            URL.revokeObjectURL(oldUrl);
+          }
+          // Store the server URL
+          this.previewUrls.set(fileId, result.url);
+        }
       }
 
       // Complete loading operation
       this.loadingManager.completeLoading(loadingId, true);
+
+      // Update the attachment preview to show the server URL
+      this.updateAttachmentPreview();
 
       // Emit upload complete event
       this.eventBus.emit('file:upload_complete', createEvent('file:upload_complete', {
@@ -445,6 +477,20 @@ export class FileHandler {
 
     // Remove from attachments
     this.attachments.delete(fileId);
+    
+    // Remove from uploadedFileIds
+    this.uploadedFileIds.delete(fileId);
+    
+    // Clean up preview URL if exists
+    const previewUrl = this.previewUrls.get(fileId);
+    if (previewUrl && previewUrl.startsWith('blob:')) {
+      try {
+        URL.revokeObjectURL(previewUrl);
+      } catch (error) {
+        this.logger.warn('Failed to revoke object URL:', error);
+      }
+    }
+    this.previewUrls.delete(fileId);
     this.uploadProgress.delete(fileId);
 
     // Update UI
@@ -460,19 +506,30 @@ export class FileHandler {
   /**
    * Get all current attachments
    */
-  public getAttachments(): Record<string, any>[] {
-    const attachments: Record<string, any>[] = [];
+  public getAttachments(): Attachment[] {
+    const attachments: Attachment[] = [];
     
     this.attachments.forEach((file, fileId) => {
-      attachments.push({
+      const fileType = this.getFileTypeFromMimeType(file.type);
+      // Use server file ID if available, otherwise use local ID
+      const serverFileId = this.uploadedFileIds.get(fileId);
+      const attachment: Attachment = {
         id: fileId,
+        file_id: serverFileId || fileId, // Use server ID when available
         filename: file.name,
-        file_type: this.getFileTypeFromMimeType(file.type),
+        file_type: fileType as Attachment['file_type'],
         size_bytes: file.size,
         mime_type: file.type,
         upload_progress: this.uploadProgress.get(fileId) || 0,
         upload_status: this.getAttachmentStatus(fileId)
-      });
+      };
+      
+      // Add preview URL for images (will be server URL after upload)
+      if (fileType === 'image' && this.previewUrls.has(fileId)) {
+        attachment.url = this.previewUrls.get(fileId);
+      }
+      
+      attachments.push(attachment);
     });
     
     return attachments;
@@ -525,6 +582,10 @@ export class FileHandler {
     this.activeUploads.clear();
     this.uploadProgress.clear();
     this.uploadedFileIds.clear();
+    
+    // Clean up preview URLs
+    this.previewUrls.forEach(url => URL.revokeObjectURL(url));
+    this.previewUrls.clear();
 
     // Update UI
     this.updateAttachmentPreview();
@@ -583,6 +644,10 @@ export class FileHandler {
    */
   private getAttachmentStatus(fileId: string): 'uploading' | 'completed' | 'error' {
     if (this.activeUploads.has(fileId)) return 'uploading';
+    
+    // Check if we have a successful upload (either has server ID or 100% progress)
+    if (this.uploadedFileIds.has(fileId)) return 'completed';
+    
     const progress = this.uploadProgress.get(fileId) || 0;
     return progress === 100 ? 'completed' : 'error';
   }
@@ -606,7 +671,8 @@ export class FileHandler {
    */
   private updateAttachmentPreview(): void {
     const attachments = this.getAttachments();
-    this.viewManager.updateAttachmentPreview(attachments);
+    // Cast to Record<string, unknown>[] for ViewManager compatibility
+    this.viewManager.updateAttachmentPreview(attachments as unknown as Record<string, unknown>[]);
   }
 
   /**
@@ -627,6 +693,66 @@ export class FileHandler {
   }
 
   /**
+   * Cancel an ongoing upload
+   * @param fileId - ID of the upload to cancel
+   */
+  public cancelUpload(fileId: string): void {
+    const controller = this.activeUploads.get(fileId);
+    if (controller) {
+      this.logger.debug(`Cancelling upload for file: ${fileId}`);
+      controller.abort();
+      this.activeUploads.delete(fileId);
+      this.uploadProgress.delete(fileId);
+      this.attachments.delete(fileId);
+      this.uploadedFileIds.delete(fileId);
+      
+      // Clean up preview URL if exists
+      const previewUrl = this.previewUrls.get(fileId);
+      if (previewUrl && previewUrl.startsWith('blob:')) {
+        try {
+          URL.revokeObjectURL(previewUrl);
+        } catch (error) {
+          this.logger.warn('Failed to revoke object URL:', error);
+        }
+      }
+      this.previewUrls.delete(fileId);
+      
+      // Emit cancellation event
+      this.eventBus.emit('file:upload_cancelled', createEvent('file:upload_cancelled', {
+        fileId,
+        source: 'FileHandler'
+      }));
+    }
+  }
+
+  /**
+   * Set agent capabilities for file handling
+   * @param capabilities - Agent capability configuration
+   */
+  public setAgentCapabilities(capabilities: any): void {
+    this.logger.debug('Setting agent capabilities:', capabilities);
+    
+    if (capabilities?.file_capabilities) {
+      this.fileCapabilities = capabilities.file_capabilities;
+      
+      // Extract supported file types
+      if (capabilities.file_capabilities.supported_types) {
+        this.supportedFileTypes = capabilities.file_capabilities.supported_types;
+      }
+      
+      // Extract max file size
+      if (capabilities.file_capabilities.max_file_size_bytes) {
+        this.maxFileSize = capabilities.file_capabilities.max_file_size_bytes;
+      }
+      
+      this.logger.info('Updated file capabilities:', {
+        supportedTypes: this.supportedFileTypes,
+        maxSize: this.maxFileSize
+      });
+    }
+  }
+
+  /**
    * Clean up resources
    */
   public destroy(): void {
@@ -634,6 +760,10 @@ export class FileHandler {
 
     // Cancel all uploads
     this.clearAllAttachments();
+    
+    // Clean up any remaining preview URLs
+    this.previewUrls.forEach(url => URL.revokeObjectURL(url));
+    this.previewUrls.clear();
 
     // Clean up loading manager
     this.loadingManager.destroy();

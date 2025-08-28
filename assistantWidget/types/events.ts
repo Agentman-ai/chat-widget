@@ -105,6 +105,12 @@ export interface LoadingEndedEvent extends BaseEvent {
   duration: number;
 }
 
+export interface LoadingTimeoutEvent extends BaseEvent {
+  operationId: string;
+  operation: string;
+  allowedToContinue: boolean;
+}
+
 // Unified loading state events
 export interface LoadingStateChangedEvent extends BaseEvent {
   previousState: 'none' | 'initial' | 'streaming';
@@ -141,6 +147,10 @@ export interface FileUploadCompletedEvent extends BaseEvent {
 }
 
 export interface AttachmentRemovedEvent extends BaseEvent {
+  fileId: string;
+}
+
+export interface FileUploadCancelledEvent extends BaseEvent {
   fileId: string;
 }
 
@@ -237,6 +247,7 @@ export interface EventTypeRegistry {
   // Loading states
   'loading:start': LoadingStartedEvent;
   'loading:end': LoadingEndedEvent;
+  'loading:timeout': LoadingTimeoutEvent;
   'loading:stateChanged': LoadingStateChangedEvent;
   'loading:hideInitial': LoadingHideInitialEvent;
   'loading:complete': LoadingCompleteEvent;
@@ -247,6 +258,7 @@ export interface EventTypeRegistry {
   'file:upload_progress': FileUploadProgressEvent;
   'file:upload_complete': FileUploadCompletedEvent;
   'file:attachment_removed': AttachmentRemovedEvent;
+  'file:upload_cancelled': FileUploadCancelledEvent;
 
   // Agent management
   'agent:initialized': AgentInitializedEvent;
@@ -497,6 +509,12 @@ export const EVENT_METADATA: Record<EventName, EventMetadata> = {
     description: 'All loading operations complete',
     examples: ['Message fully received', 'Stream ended']
   },
+  'loading:timeout': {
+    category: EventCategory.STATE_MANAGEMENT,
+    priority: EventPriority.HIGH,
+    description: 'Loading operation timed out',
+    examples: ['Message send timeout', 'File upload timeout']
+  },
   'file:selected': {
     category: EventCategory.FILE_HANDLING,
     priority: EventPriority.NORMAL,
@@ -526,6 +544,12 @@ export const EVENT_METADATA: Record<EventName, EventMetadata> = {
     priority: EventPriority.NORMAL,
     description: 'File attachment removed by user',
     examples: ['User clicked remove button']
+  },
+  'file:upload_cancelled': {
+    category: EventCategory.FILE_HANDLING,
+    priority: EventPriority.NORMAL,
+    description: 'File upload cancelled',
+    examples: ['User cancelled upload', 'Upload aborted due to error']
   },
   'agent:initialized': {
     category: EventCategory.AGENT_MANAGEMENT,
