@@ -129,9 +129,10 @@ export class MessageHandler {
       this.logger.debug(`Has attachments: ${hasAttachments}`);
 
       // Start loading operation and set initial loading state
+      // Use 2 minute timeout for streaming responses since backend can take a while
       this.currentLoadingOperation = this.loadingManager.startLoading('message_send', {
         message: 'Sending message...',
-        timeout: 30000
+        timeout: 120000  // 2 minutes
       });
       
       // Set unified loading state to INITIAL

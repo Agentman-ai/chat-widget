@@ -58,9 +58,9 @@ export const API_CONSTANTS = {
   CAPABILITIES_ENDPOINT: '/api/agent/capabilities',
   
   // Request timeouts
-  DEFAULT_TIMEOUT: 30000,
-  UPLOAD_TIMEOUT: 120000,
-  STREAM_TIMEOUT: 60000,
+  DEFAULT_TIMEOUT: 30000,   // 30 seconds for regular requests
+  UPLOAD_TIMEOUT: 120000,   // 2 minutes for file uploads
+  STREAM_TIMEOUT: 120000,   // 2 minutes for streaming responses
   
   // Retry configuration
   MAX_RETRIES: 3,

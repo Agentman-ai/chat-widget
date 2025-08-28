@@ -41,7 +41,7 @@ export class LoadingManager {
     } else {
       this.config = {
         debug: false,
-        defaultTimeout: 30000,
+        defaultTimeout: 120000,  // 2 minutes default for streaming operations
         allowContinueAfterTimeout: true,
         ...config
       };
@@ -64,7 +64,7 @@ export class LoadingManager {
   ): string {
     const operationId = `${operation}_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
     const { 
-      timeout = this.config.defaultTimeout || 30000, 
+      timeout = this.config.defaultTimeout || 120000, 
       message, 
       showIndicator = true,
       allowContinueAfterTimeout = this.config.allowContinueAfterTimeout
