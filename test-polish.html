@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Polish Test - Chat Widget</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 20px;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            background: #f3f4f6;
+        }
+        .test-section {
+            margin: 40px 0;
+            padding: 20px;
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+        }
+        h2 {
+            margin: 0 0 20px 0;
+            color: #1f2937;
+        }
+        .mobile-simulator {
+            width: 375px;
+            height: 667px;
+            margin: 20px auto;
+            border: 16px solid #333;
+            border-radius: 36px;
+            overflow: hidden;
+            position: relative;
+            background: white;
+        }
+        #mobile-container {
+            width: 100%;
+            height: 100%;
+            position: relative;
+        }
+        #desktop-container {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            z-index: 1000;
+        }
+    </style>
+</head>
+<body>
+    <div class="test-section">
+        <h2>Desktop View - Testing Disclaimer Alignment & Prompts</h2>
+        <div id="desktop-container"></div>
+    </div>
+
+    <div class="test-section">
+        <h2>Mobile View - Testing Prompt Scroll & First Button</h2>
+        <div class="mobile-simulator">
+            <div id="mobile-container"></div>
+        </div>
+    </div>
+
+    <script src="dist/index.js"></script>
+    <script>
+        const ChatWidget = window['@agentman/chat-widget'].ChatWidget;
+        
+        // Desktop widget with disclaimer and conversation
+        const desktopWidget = new ChatWidget({
+            apiUrl: 'https://studio-api.agentman.ai',
+            agentToken: '.eJyrVipJzUvMK4nPTFGyMjHTUUosKMjJTE4syczPQ4ilp0JVGBqa1wIAxoEQ6Q.Z32csg.xbR3NqyuNlDpt-Dafp1O2GpKw5U',
+            variant: 'corner',
+            containerId: 'desktop-container',
+            initiallyOpen: true,
+            title: 'Test Assistant',
+            disclaimer: {
+                enabled: true,
+                message: 'This is an AI assistant that can make mistakes.',
+                linkText: 'Learn more',
+                linkUrl: 'https://example.com/disclaimer'
+            },
+            messagePrompts: {
+                show: true,
+                welcome_message: 'How can I help you today?',
+                prompts: [
+                    'What can you help me with?',
+                    'Tell me about your features',
+                    'How do I get started?',
+                    'Show me an example'
+                ]
+            },
+            theme: {
+                backgroundColor: '#ffffff',
+                buttonColor: '#2563eb',
+                buttonTextColor: '#ffffff'
+            }
+        });
+        
+        // Mobile widget to test prompt scrolling
+        const mobileWidget = new ChatWidget({
+            apiUrl: 'https://studio-api.agentman.ai',
+            agentToken: '.eJyrVipJzUvMK4nPTFGyMjHTUUosKMjJTE4syczPQ4ilp0JVGBqa1wIAxoEQ6Q.Z32csg.xbR3NqyuNlDpt-Dafp1O2GpKw5U',
+            variant: 'inline',
+            containerId: 'mobile-container',
+            title: 'Mobile Test',
+            disclaimer: {
+                enabled: true,
+                message: 'AI responses may vary.',
+                linkText: 'Details',
+                linkUrl: '#'
+            },
+            messagePrompts: {
+                show: true,
+                welcome_message: 'Welcome!',
+                prompts: [
+                    'First prompt button',
+                    'Second prompt',
+                    'Third prompt',
+                    'Fourth prompt button'
+                ]
+            },
+            theme: {
+                backgroundColor: '#ffffff',
+                buttonColor: '#2563eb',
+                buttonTextColor: '#ffffff'
+            }
+        });
+        
+        // Simulate a conversation to test disclaimer alignment
+        setTimeout(() => {
+            // Manually trigger a message to see disclaimer positioning
+            console.log('Widget initialized. You can send a message to see the disclaimer alignment in conversation view.');
+        }, 1000);
+    </script>
+</body>
+</html>

@@ -235,7 +235,15 @@ export class ChatWidget {
         onFileSelect: this.handleFileSelect.bind(this),
         onAttachmentRemove: this.handleAttachmentRemove.bind(this),
         onViewTransition: this.handleViewTransition.bind(this),
-        onConversationsClick: this.handleConversationsClickFromWelcome.bind(this)
+        onConversationsClick: this.handleConversationsClickFromWelcome.bind(this),
+        hasConversations: () => {
+          // Check if persistence is enabled and there are conversations
+          if (this.persistenceManager) {
+            const conversations = this.persistenceManager.list();
+            return conversations.length > 0;
+          }
+          return false;
+        }
       }
     );
 

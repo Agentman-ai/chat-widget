@@ -4,7 +4,7 @@ import * as icons from '../assets/icons';
 import { UIUtils } from '../utils/UIUtils';
 import { MessageRenderer } from '../message-renderer/message-renderer';
 import { InputComponent } from './InputComponent';
-import { DisclaimerComponent } from './DisclaimerComponent';
+// DisclaimerComponent no longer needed - disclaimer is rendered directly
 import { MessageRenderer as IMessageRenderer } from '../renderers/MessageRenderer';
 import { StandardRenderer } from '../renderers/StandardRenderer';
 import { StreamingRenderer } from '../renderers/StreamingRenderer';
@@ -52,6 +52,9 @@ export class ConversationView {
   
   // Scroll manager for intelligent scrolling
   private scrollManager: ScrollManager;
+  
+  // Debounced disclaimer update timer
+  private disclaimerUpdateTimer: number | null = null;
 
   constructor(
     config: ChatConfig,
@@ -340,6 +343,9 @@ export class ConversationView {
     const contentElement = messageElement.querySelector('.am-message-content') as HTMLElement;
     await this.domRenderer.render(message, contentElement);
     
+    // Update disclaimer position after adding message
+    this.updateDisclaimerInMessages();
+    
     // Use scroll manager for intelligent scrolling
     this.scrollManager.scrollToBottom();
   }
@@ -351,8 +357,6 @@ private renderMessageAttachments(message: Message): string {
     if (!message.attachments || message.attachments.length === 0) {
       return '';
     }
-
-    console.log('[ConversationView] Rendering attachments for message:', message.sender, message.attachments);
 
     const attachmentsHtml = message.attachments.map(attachment => {
       const isImage = attachment.file_type === 'image' && attachment.url;
@@ -450,6 +454,9 @@ private renderMessageAttachments(message: Message): string {
         // Use renderer to update content efficiently
         this.domRenderer.update(message, contentElement);
         
+        // Update disclaimer position after updating message
+        this.updateDisclaimerInMessages();
+        
         // Handle scrolling for streaming updates
         this.scrollManager.handleStreamingUpdate();
       }
@@ -481,6 +488,12 @@ private renderMessageAttachments(message: Message): string {
       const messages = messagesContainer.querySelectorAll('.am-message');
       messages.forEach(msg => msg.remove());
       
+      // Also remove disclaimer
+      const disclaimer = messagesContainer.querySelector('.am-disclaimer-message');
+      if (disclaimer) {
+        disclaimer.remove();
+      }
+      
       // Reset scroll manager state
       this.scrollManager.reset();
     }
@@ -492,6 +505,13 @@ private renderMessageAttachments(message: Message): string {
   public destroy(): void {
     this.removeEventListeners();
     this.cachedElements.clear();
+    
+    // Clear any pending disclaimer update timer
+    if (this.disclaimerUpdateTimer !== null) {
+      window.clearTimeout(this.disclaimerUpdateTimer);
+      this.disclaimerUpdateTimer = null;
+    }
+    
     this.inputComponent?.destroy();
     this.domRenderer.cleanup();
     this.scrollManager.destroy();
@@ -542,6 +562,7 @@ private renderMessageAttachments(message: Message): string {
               <!-- Expand button (static) -->
               <button class="am-chat-expand am-chat-header-button desktop-only" 
                       title="Expand chat"
+                      aria-label="Expand chat window"
                       style="background: none;
                              border: none;
                              padding: 6px;
@@ -558,6 +579,7 @@ private renderMessageAttachments(message: Message): string {
               <!-- Minimize button (static) -->
               <button class="am-chat-minimize am-chat-header-button" 
                       title="Minimize chat"
+                      aria-label="Minimize chat window"
                       style="background: none;
                              border: none;
                              padding: 6px;
@@ -583,6 +605,8 @@ private renderMessageAttachments(message: Message): string {
   private generateMessagesArea(): string {
     return `
       <div class="am-chat-messages" 
+           role="log"
+           aria-label="Chat messages"
            style="flex: 1 1 auto;
                   overflow-y: auto;
                   overflow-x: hidden;
@@ -645,18 +669,9 @@ private renderMessageAttachments(message: Message): string {
   }
 
   /**
-   * Generate branding HTML - includes disclaimer if configured
+   * Generate branding HTML - no longer includes disclaimer
    */
   private generateBranding(): string {
-    // Create disclaimer component for inline display
-    const disclaimerComponent = new DisclaimerComponent(
-      this.config.disclaimer as any,
-      { variant: 'inline' }
-    );
-    
-    const disclaimerElement = disclaimerComponent.render();
-    const disclaimerHtml = disclaimerElement ? disclaimerElement.outerHTML : '';
-    
     return `
       <div class="am-chat-branding" style="text-align: left;
                                            font-size: 10px;
@@ -665,11 +680,73 @@ private renderMessageAttachments(message: Message): string {
                                            background: white;
                                            flex: 0 0 auto;
                                            display: flex;
+                                           justify-content: center;
                                            align-items: center;">
         <span>Powered by <a href="https://agentman.ai" target="_blank" style="color: var(--chat-text-color, #334155); text-decoration: underline;">Agentman</a></span>
-        ${disclaimerHtml}
       </div>
     `;
+  }
+
+  /**
+   * Update or add disclaimer after messages (debounced)
+   */
+  private updateDisclaimerInMessages(): void {
+    // Clear existing timer
+    if (this.disclaimerUpdateTimer !== null) {
+      window.clearTimeout(this.disclaimerUpdateTimer);
+    }
+    
+    // Debounce the update by 100ms to prevent excessive DOM manipulation
+    this.disclaimerUpdateTimer = window.setTimeout(() => {
+      this.performDisclaimerUpdate();
+    }, 100);
+  }
+
+  /**
+   * Perform the actual disclaimer update
+   */
+  private performDisclaimerUpdate(): void {
+    const messagesContainer = this.getMessagesContainer();
+    if (!messagesContainer) return;
+    
+    // Remove existing disclaimer if present
+    const existingDisclaimer = messagesContainer.querySelector('.am-disclaimer-message');
+    if (existingDisclaimer) {
+      existingDisclaimer.remove();
+    }
+    
+    // Add disclaimer if configured
+    if (this.config.disclaimer?.enabled && this.config.disclaimer?.message) {
+      // Create a simple div for the disclaimer text
+      const disclaimerElement = document.createElement('div');
+      disclaimerElement.className = 'am-disclaimer-message';
+      
+      // Build the disclaimer content
+      let disclaimerHtml = `<span>${this.escapeHtml(this.config.disclaimer.message)}</span>`;
+      
+      // Add link if provided
+      if (this.config.disclaimer.linkText && this.config.disclaimer.linkUrl) {
+        disclaimerHtml += ` <a href="${this.escapeHtml(this.config.disclaimer.linkUrl)}" 
+                               target="_blank" 
+                               rel="noopener noreferrer"
+                               style="color: #9ca3af; text-decoration: underline;">
+                               ${this.escapeHtml(this.config.disclaimer.linkText)}
+                            </a>`;
+      }
+      
+      disclaimerElement.innerHTML = disclaimerHtml;
+      
+      // Style the disclaimer as plain text, aligned with messages
+      disclaimerElement.style.cssText = `
+        margin: 8px 0 16px 0;
+        padding: 0;
+        font-size: 12px;
+        color: #9ca3af;
+        line-height: 1.5;
+      `;
+      
+      messagesContainer.appendChild(disclaimerElement);
+    }
   }
 
   /**

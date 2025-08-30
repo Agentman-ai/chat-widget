@@ -46,6 +46,7 @@ export class ViewManager {
     onAttachmentRemove?: (fileId: string) => void;
     onViewTransition?: (from: string, to: string) => void;
     onConversationsClick?: () => void;
+    hasConversations?: () => boolean;
   };
 
   constructor(
@@ -64,6 +65,7 @@ export class ViewManager {
       onAttachmentRemove?: (fileId: string) => void;
       onViewTransition?: (from: string, to: string) => void;
       onConversationsClick?: () => void;
+      hasConversations?: () => boolean;
     }
   ) {
     this.config = config;
@@ -192,7 +194,8 @@ export class ViewManager {
             onToggle: this.eventHandlers.onToggle,
             onAttachmentClick: this.eventHandlers.onAttachmentClick,
             onFileSelect: this.eventHandlers.onFileSelect,
-            onAttachmentRemove: this.eventHandlers.onAttachmentRemove
+            onAttachmentRemove: this.eventHandlers.onAttachmentRemove,
+            hasConversations: this.eventHandlers.hasConversations
           }
         );
       }
@@ -376,7 +379,8 @@ export class ViewManager {
         onToggle: this.eventHandlers.onToggle,
         onAttachmentClick: this.eventHandlers.onAttachmentClick,
         onFileSelect: this.eventHandlers.onFileSelect,
-        onAttachmentRemove: this.eventHandlers.onAttachmentRemove
+        onAttachmentRemove: this.eventHandlers.onAttachmentRemove,
+        hasConversations: this.eventHandlers.hasConversations
       }
     );
 

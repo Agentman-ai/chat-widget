@@ -29,9 +29,21 @@ export interface SendMessageResponse {
 
 export class APIClient {
   private logger: Logger;
+  private currentRequestController: AbortController | null = null;
 
   constructor(private config: APIConfig) {
     this.logger = new Logger(config.debug || false, '[APIClient]');
+  }
+
+  /**
+   * Cancel any ongoing request
+   */
+  cancelCurrentRequest(): void {
+    if (this.currentRequestController) {
+      this.currentRequestController.abort();
+      this.currentRequestController = null;
+      this.logger.debug('🚫 Cancelled ongoing request');
+    }
   }
 
   /**
@@ -39,6 +51,9 @@ export class APIClient {
    */
   async initializeChat(conversationId: string, clientMetadata?: ClientMetadata): Promise<ChatInitResponse> {
     this.logger.debug('🚀 Initializing chat with API', { conversationId });
+
+    // Cancel any existing request
+    this.cancelCurrentRequest();
 
     try {
       const requestBody: any = {
@@ -56,12 +71,16 @@ export class APIClient {
         requestBody.client_metadata = clientMetadata;
       }
 
+      // Create new AbortController for this request
+      this.currentRequestController = new AbortController();
+
       const response = await fetch(this.config.apiUrl, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify(requestBody),
+        signal: this.currentRequestController.signal,
       });
 
       if (!response.ok) {
@@ -85,6 +104,9 @@ export class APIClient {
     } catch (error) {
       this.logger.error('Failed to initialize chat:', error);
       throw error;
+    } finally {
+      // Clear the request controller after completion
+      this.currentRequestController = null;
     }
   }
 
@@ -97,13 +119,20 @@ export class APIClient {
       messageCount: request.messages.length 
     });
 
+    // Cancel any existing request
+    this.cancelCurrentRequest();
+
     try {
+      // Create new AbortController for this request
+      this.currentRequestController = new AbortController();
+
       const response = await fetch(this.config.apiUrl, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify(request),
+        signal: this.currentRequestController.signal,
       });
 
       if (!response.ok) {
@@ -127,6 +156,9 @@ export class APIClient {
     } catch (error) {
       this.logger.error('Failed to send message:', error);
       throw error;
+    } finally {
+      // Clear the request controller after completion
+      this.currentRequestController = null;
     }
   }
 
@@ -136,7 +168,13 @@ export class APIClient {
   async fetchAgentCapabilities(websiteName: string): Promise<AgentMetadata | null> {
     this.logger.debug('🔍 Fetching agent capabilities');
 
+    // Cancel any existing request (though this shouldn't typically conflict)
+    this.cancelCurrentRequest();
+
     try {
+      // Create new AbortController for this request
+      this.currentRequestController = new AbortController();
+      
       const url = `${API_CONSTANTS.CAPABILITIES_ENDPOINT}?website_name=${encodeURIComponent(websiteName)}`;
       
       const response = await fetch(url, {
@@ -144,6 +182,7 @@ export class APIClient {
         headers: {
           'Accept': 'application/json',
         },
+        signal: this.currentRequestController.signal,
       });
 
       if (!response.ok) {
@@ -161,6 +200,9 @@ export class APIClient {
     } catch (error) {
       this.logger.error('Failed to fetch agent capabilities:', error);
       return null;
+    } finally {
+      // Clear the request controller after completion
+      this.currentRequestController = null;
     }
   }
 

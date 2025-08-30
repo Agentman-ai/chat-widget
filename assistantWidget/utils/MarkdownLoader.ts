@@ -104,12 +104,10 @@ export class MarkdownLoader {
       // Try each CDN URL until one succeeds
       for (let i = 0; i < cdnUrls.length; i++) {
         const url = cdnUrls[i];
-        console.log(`Attempting to load marked.js from: ${url}`);
         
         const success = await this.tryLoadFromUrl(url, timeout);
         if (success) {
           this.isLoaded = true;
-          console.log(`Successfully loaded marked.js from: ${url}`);
           return true;
         }
         

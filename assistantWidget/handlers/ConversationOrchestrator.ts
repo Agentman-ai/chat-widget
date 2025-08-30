@@ -61,15 +61,22 @@ export class ConversationOrchestrator {
     // Clear any existing messages first
     this.messageHandler.clearMessages();
     
-    // Create new conversation in persistence manager if enabled
-    if (this.persistenceManager && !conversationId) {
-      
-      // Create a new conversation and get its ID
-      this.currentConversationId = this.persistenceManager.create('New chat');
-      this.logger.debug('Created new conversation in persistence:', this.currentConversationId);
+    // Only create conversation in persistence when there's an initial message
+    if (initialMessage) {
+      // Create new conversation in persistence manager if enabled
+      if (this.persistenceManager && !conversationId) {
+        // Create a new conversation and get its ID
+        this.currentConversationId = this.persistenceManager.create('New chat');
+        this.logger.debug('Created new conversation in persistence:', this.currentConversationId);
+      } else {
+        // Use provided ID or generate one (for non-persisted conversations)
+        this.currentConversationId = conversationId || this.generateConversationId();
+      }
     } else {
-      // Use provided ID or generate one (for non-persisted conversations)
-      this.currentConversationId = conversationId || this.generateConversationId();
+      // For new chat without initial message, just clear the current ID
+      // The conversation will be created when the first message is sent
+      this.currentConversationId = null;
+      this.logger.debug('Cleared conversation ID, will create on first message');
     }
     
     this.conversationStartTime = Date.now();
@@ -92,12 +99,14 @@ export class ConversationOrchestrator {
       await this.viewManager.transitionToWelcome();
     }
 
-    // Emit conversation started event
-    this.eventBus.emit('conversation:started', createEvent('conversation:started', {
-      conversationId: this.currentConversationId,
-      hasInitialMessage: !!initialMessage,
-      source: 'ConversationOrchestrator'
-    }));
+    // Emit conversation started event only if we have a conversation ID
+    if (this.currentConversationId) {
+      this.eventBus.emit('conversation:started', createEvent('conversation:started', {
+        conversationId: this.currentConversationId,
+        hasInitialMessage: !!initialMessage,
+        source: 'ConversationOrchestrator'
+      }));
+    }
   }
 
   /**
@@ -111,10 +120,21 @@ export class ConversationOrchestrator {
     message: string,
     attachments?: string[]
   ): Promise<void> {
-    // Start a new conversation if none exists
+    // Create a new conversation if none exists yet
     if (!this.currentConversationId) {
-      await this.startNewConversation(undefined, message);
-      return; // startNewConversation will handle sending the message
+      // This happens when user clicks "New Chat" and then sends a message
+      if (this.persistenceManager) {
+        this.currentConversationId = this.persistenceManager.create('New chat');
+        this.logger.debug('Created new conversation on first message:', this.currentConversationId);
+      } else {
+        this.currentConversationId = this.generateConversationId();
+      }
+      
+      // Update state to indicate conversation has started
+      const state = this.stateManager.getState();
+      state.hasStartedConversation = true;
+      state.currentView = 'conversation';
+      this.stateManager.updateState(state);
     }
 
     this.logger.debug('Sending message', { 

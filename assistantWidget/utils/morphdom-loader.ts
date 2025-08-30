@@ -48,7 +48,6 @@ export async function loadMorphdom(debug?: boolean): Promise<any> {
 async function loadMorphdomFromCDN(logger: Logger): Promise<any> {
   for (const url of MORPHDOM_CDN_URLS) {
     try {
-      logger.debug(`Attempting to load morphdom from: ${url}`);
       
       // Check if morphdom is already available (e.g., from another widget instance)
       if (typeof window !== 'undefined' && (window as any).morphdom) {
@@ -70,7 +69,6 @@ async function loadMorphdomFromCDN(logger: Logger): Promise<any> {
       
       // Check if morphdom is now available
       if (typeof window !== 'undefined' && (window as any).morphdom) {
-        logger.info(`Successfully loaded morphdom from: ${url}`);
         return (window as any).morphdom;
       }
       

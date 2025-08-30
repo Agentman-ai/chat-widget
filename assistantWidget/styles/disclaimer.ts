@@ -48,7 +48,9 @@ export const disclaimerStyles = `
   /* Welcome screen specific styling */
   .am-disclaimer--welcome {
     max-width: 400px;
-    margin: 12px auto;
+    margin: 4px auto 0 auto; /* Tighter top margin */
+    font-size: 10px; /* Consistent small size */
+    line-height: 1.3;
   }
 
   /* Inline variant - for branding sections */

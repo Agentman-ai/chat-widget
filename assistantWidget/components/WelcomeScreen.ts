@@ -2,7 +2,7 @@
 import type { ChatConfig, ChatTheme, ChatAssets } from '../types/types';
 import * as icons from '../assets/icons';
 import { InputComponent } from './InputComponent';
-import { DisclaimerComponent } from './DisclaimerComponent';
+// DisclaimerComponent no longer needed - disclaimer is rendered directly in bottom section
 
 /**
  * WelcomeScreen Component - Claude-style minimalist welcome interface
@@ -28,12 +28,15 @@ export class WelcomeScreen {
   private boundAttachmentClickHandler?: () => void;
   private boundFileSelectHandler?: (files: FileList) => void;
   private boundAttachmentRemoveHandler?: (fileId: string) => void;
+  private boundHasConversationsHandler?: () => boolean;
+  
+  // Store bound handlers for proper cleanup
+  private boundPromptHandlers = new Map<Element, EventListener>();
   
   // Input component
   private inputComponent: InputComponent | null = null;
   
   // Disclaimer component
-  private disclaimerComponent: DisclaimerComponent | null = null;
 
   constructor(
     config: ChatConfig,
@@ -48,6 +51,7 @@ export class WelcomeScreen {
       onAttachmentClick?: () => void;
       onFileSelect?: (files: FileList) => void;
       onAttachmentRemove?: (fileId: string) => void;
+      hasConversations?: () => boolean;
     }
   ) {
     this.config = config;
@@ -63,6 +67,7 @@ export class WelcomeScreen {
     this.boundAttachmentClickHandler = eventHandlers.onAttachmentClick;
     this.boundFileSelectHandler = eventHandlers.onFileSelect;
     this.boundAttachmentRemoveHandler = eventHandlers.onAttachmentRemove;
+    this.boundHasConversationsHandler = eventHandlers.hasConversations;
   }
 
   /**
@@ -76,7 +81,6 @@ export class WelcomeScreen {
     this.attachEventListeners();
     this.applyTheme();
     this.createInputComponent();
-    this.createDisclaimerComponent();
 
     return this.element;
   }
@@ -155,7 +159,6 @@ export class WelcomeScreen {
   public destroy(): void {
     this.removeEventListeners();
     this.inputComponent?.destroy();
-    this.disclaimerComponent?.destroy();
     if (this.element) {
       this.element.remove();
       this.element = null;
@@ -167,11 +170,13 @@ export class WelcomeScreen {
    */
   private generateTemplate(): string {
     return `
-      <div class="am-welcome-container">
-        ${this.generateMinimizeButton()}
+      ${this.generateMinimizeButton()}
+      <div class="am-welcome-container" role="main" aria-label="Chat interface">
         ${this.generateHeader()}
-        ${this.generateInputSection()}
-        ${this.generatePrompts()}
+        <div class="am-welcome-interaction-group">
+          ${this.generateInputSection()}
+          ${this.generatePrompts()}
+        </div>
         ${this.generateBottomSection()}
       </div>
     `;
@@ -185,7 +190,7 @@ export class WelcomeScreen {
     if (!this.boundToggleHandler || this.config.variant === 'inline') return '';
     
     return `
-      <button class="am-welcome-minimize" title="Close">
+      <button class="am-welcome-minimize" title="Close" aria-label="Close chat widget">
         ${icons.close2}
       </button>
     `;
@@ -200,10 +205,10 @@ export class WelcomeScreen {
     
     return `
       <div class="am-welcome-header">
-        <div class="am-welcome-logo">
+        <div class="am-welcome-logo" aria-hidden="true">
           ${logo}
         </div>
-        <h1 class="am-welcome-title">${this.escapeHtml(title)}</h1>
+        <h1 class="am-welcome-title" role="heading" aria-level="1">${this.escapeHtml(title)}</h1>
       </div>
     `;
   }
@@ -217,7 +222,6 @@ export class WelcomeScreen {
     return `
       <div class="am-welcome-input-section">
         <div class="am-welcome-message">${this.escapeHtml(welcomeMessage)}</div>
-        <div class="am-disclaimer-placeholder"></div>
         <div class="am-welcome-input-placeholder"></div>
       </div>
     `;
@@ -247,6 +251,7 @@ export class WelcomeScreen {
             class="am-welcome-prompt-btn" 
             data-prompt="${this.escapeHtml(prompt || '')}"
             title="${this.escapeHtml(prompt || '')}"
+            aria-label="Send message: ${this.escapeHtml(prompt || '')}"
           >
             ${this.escapeHtml(prompt || '')}
           </button>
@@ -259,18 +264,38 @@ export class WelcomeScreen {
    * Generate bottom section with conversations link and branding
    */
   private generateBottomSection(): string {
-    const showConversations = this.config.persistence?.enabled && this.boundConversationsClickHandler;
+    // Only show conversations button if persistence is enabled, handler exists, and there are conversations
+    const hasConversations = this.boundHasConversationsHandler ? this.boundHasConversationsHandler() : false;
+    const showConversations = this.config.persistence?.enabled && this.boundConversationsClickHandler && hasConversations;
+    
+    // Build disclaimer HTML if configured
+    let disclaimerHtml = '';
+    if (this.config.disclaimer?.enabled && this.config.disclaimer?.message) {
+      disclaimerHtml = `<div class="am-welcome-disclaimer" style="font-size: 11px; color: #9ca3af; margin-top: 4px;">`;
+      disclaimerHtml += `<span>${this.escapeHtml(this.config.disclaimer.message)}</span>`;
+      
+      if (this.config.disclaimer.linkText && this.config.disclaimer.linkUrl) {
+        disclaimerHtml += ` <a href="${this.escapeHtml(this.config.disclaimer.linkUrl)}" 
+                               target="_blank" 
+                               rel="noopener noreferrer"
+                               style="color: #9ca3af; text-decoration: underline;">
+                               ${this.escapeHtml(this.config.disclaimer.linkText)}
+                            </a>`;
+      }
+      disclaimerHtml += '</div>';
+    }
     
     return `
       <div class="am-welcome-bottom">
         ${showConversations ? `
-          <button class="am-welcome-conversations-link" title="View previous conversations">
+          <button class="am-welcome-conversations-link" title="View previous conversations" aria-label="View previous conversations">
             ${icons.chatHistory}
             <span>Previous conversations</span>
           </button>
         ` : ''}
         <div class="am-welcome-branding">
           Powered by <a href="https://agentman.ai" target="_blank" rel="noopener noreferrer">Agentman.ai</a>
+          ${disclaimerHtml}
         </div>
       </div>
     `;
@@ -310,29 +335,6 @@ export class WelcomeScreen {
     placeholder.appendChild(inputElement);
   }
 
-  /**
-   * Create and mount the disclaimer component
-   */
-  private createDisclaimerComponent(): void {
-    if (!this.element) return;
-    
-    const placeholder = this.element.querySelector('.am-disclaimer-placeholder');
-    if (!placeholder) return;
-    
-    // Create disclaimer component
-    this.disclaimerComponent = new DisclaimerComponent(
-      this.config.disclaimer as any,
-      {
-        variant: 'standalone',
-        className: 'am-disclaimer--welcome'
-      }
-    );
-    
-    const disclaimerElement = this.disclaimerComponent.render();
-    if (disclaimerElement) {
-      placeholder.appendChild(disclaimerElement);
-    }
-  }
 
   /**
    * Attach event listeners
@@ -346,10 +348,12 @@ export class WelcomeScreen {
       minimizeButton.addEventListener('click', this.boundToggleHandler);
     }
 
-    // Prompt buttons
+    // Prompt buttons - store bound handlers for proper cleanup
     const promptButtons = this.element.querySelectorAll('.am-welcome-prompt-btn');
     promptButtons.forEach(button => {
-      button.addEventListener('click', this.handlePromptClick.bind(this));
+      const boundHandler = this.handlePromptClick.bind(this);
+      this.boundPromptHandlers.set(button, boundHandler);
+      button.addEventListener('click', boundHandler);
     });
     
     // Conversations button
@@ -371,10 +375,11 @@ export class WelcomeScreen {
       minimizeButton.removeEventListener('click', this.boundToggleHandler);
     }
 
-    const promptButtons = this.element.querySelectorAll('.am-welcome-prompt-btn');
-    promptButtons.forEach(button => {
-      button.removeEventListener('click', this.handlePromptClick.bind(this));
+    // Remove prompt button listeners using stored handlers
+    this.boundPromptHandlers.forEach((handler, button) => {
+      button.removeEventListener('click', handler);
     });
+    this.boundPromptHandlers.clear();
     
     // Remove conversations button listener
     const conversationsButton = this.element.querySelector('.am-welcome-conversations-link');

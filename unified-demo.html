@@ -176,6 +176,10 @@
         <label for="prompt3">Prompt 3</label>
         <input type="text" id="prompt3" value="Help me get started.">
     </div>
+    <div class="form-group">
+        <label for="prompt4">Prompt 4</label>
+        <input type="text" id="prompt4" value="Tell me a joke.">
+    </div>
 </div>
 
                     <div class="form-column">
@@ -241,7 +245,7 @@
                         
                         <div class="form-group">
                             <label>
-                                <input type="checkbox" id="disclaimerEnabled"> Show AI Disclaimer
+                                <input type="checkbox" id="disclaimerEnabled" checked> Show AI Disclaimer
                             </label>
                         </div>
                         
@@ -751,6 +755,8 @@
             const prompt1 = document.getElementById('prompt1')?.value || '';
             const prompt2 = document.getElementById('prompt2')?.value || '';
             const prompt3 = document.getElementById('prompt3')?.value || '';
+            const prompt4 = document.getElementById('prompt4')?.value || '';
+            
 
             return {
                 apiUrl: document.getElementById('apiUrl').value,
@@ -772,7 +778,8 @@
                     prompts: [
                         document.getElementById('prompt1').value,
                         document.getElementById('prompt2').value,
-                        document.getElementById('prompt3').value
+                        document.getElementById('prompt3').value,
+                        document.getElementById('prompt4').value
                     ]
                 },
                 

@@ -42,8 +42,10 @@ export const inputStyles = `
 
   .am-input-container:focus-within {
     border-color: var(--chat-button-color, #2563eb) !important;
-    box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+    box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1), 0 4px 20px rgba(37, 99, 235, 0.15);
     border-radius: 12px !important;
+    transform: translateY(-2px);
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   }
   
   .am-input-container:focus-within::before {
@@ -64,7 +66,7 @@ export const inputStyles = `
 
   .am-input-textarea {
     width: 100%;
-    padding: 10px 12px;
+    padding: 14px 12px 10px 12px;
     /* Transparent with white fallback for safety */
     background: transparent;
     background-color: rgba(255, 255, 255, 0);
@@ -81,6 +83,16 @@ export const inputStyles = `
     box-sizing: border-box;
     position: relative;
     z-index: 1;
+    transition: padding 0.2s ease;
+  }
+  
+  /* Animated placeholder effect */
+  .am-input-textarea::placeholder {
+    transition: opacity 0.3s ease, transform 0.3s ease;
+  }
+  
+  .am-input-textarea:focus::placeholder {
+    opacity: 0.5;
   }
   
   /* Override Shopify's focus-visible styles */
