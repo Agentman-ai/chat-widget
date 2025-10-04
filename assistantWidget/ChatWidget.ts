@@ -210,9 +210,17 @@ export class ChatWidget {
     this.element = document.createElement('div');
     this.element.className = `am-chat-widget am-chat-widget--${this.config.variant}`;
     this.element.setAttribute('data-container', this.containerId);
-    
+
+    // Set position attribute for CSS selectors (floating prompts, etc.)
+    if (this.config.position) {
+      this.element.setAttribute('data-position', this.config.position);
+    }
+
     // Apply theme CSS variables to widget element
     this.applyThemeToWidget();
+
+    // Apply position CSS variables to widget element
+    this.applyPositionToWidget();
 
     // Create main container for views
     const mainContainer = document.createElement('div');
@@ -356,6 +364,8 @@ export class ChatWidget {
           this.floatingPromptsTimeout = null;
         }
         this.hideFloatingPrompts();
+        // Reset dismissal when user manually opens widget - shows engagement
+        this.resetFloatingPromptsDismissal();
         // Focus input when opening widget
         setTimeout(() => {
           this.viewManager?.focusInput();
@@ -416,17 +426,23 @@ export class ChatWidget {
    */
   private async emitSendEvent(): Promise<void> {
     const message = this.viewManager.getInputValue();
-    if (!message) return;
 
-    this.logger.warn('📤 EMIT SEND EVENT CALLED:', { 
-      message: message.substring(0, 30) + '...', 
+    // Check if there are any uploaded attachments
+    const hasAttachments = (this.fileHandler?.getUploadedFileIds().length || 0) > 0;
+
+    // Require either a message or attachments to proceed
+    if (!message && !hasAttachments) return;
+
+    this.logger.warn('📤 EMIT SEND EVENT CALLED:', {
+      message: message ? message.substring(0, 30) + '...' : '(attachment only)',
+      hasAttachments,
       source: this.viewManager.getCurrentView(),
       stack: new Error().stack?.split('\n').slice(1, 3).join('\n')
     });
 
     // Emit user input event
     this.eventBus.emit('user:input', createEvent('user:input', {
-      message,
+      message: message || '', // Allow empty message if there are attachments
       source: this.viewManager.getCurrentView(),
       isFirstMessage: !this.state.hasStartedConversation
     }));
@@ -748,7 +764,7 @@ export class ChatWidget {
    */
   private applyThemeToWidget(): void {
     if (!this.element) return;
-    
+
     Object.entries(this.theme).forEach(([key, value]) => {
       if (value) {
         // Inline camelToKebab conversion to ensure it's not tree-shaken
@@ -757,6 +773,65 @@ export class ChatWidget {
         this.element!.style.setProperty(cssVarName, value);
       }
     });
+  }
+
+  /**
+   * Apply position CSS variables to the widget element
+   */
+  private applyPositionToWidget(): void {
+    if (!this.element || !this.config.position) return;
+
+    const position = this.config.position;
+
+    // Clear all position variables first
+    this.element.style.removeProperty('--chat-bottom');
+    this.element.style.removeProperty('--chat-top');
+    this.element.style.removeProperty('--chat-left');
+    this.element.style.removeProperty('--chat-right');
+    this.element.style.removeProperty('--chat-container-bottom');
+    this.element.style.removeProperty('--chat-container-top');
+    this.element.style.removeProperty('--chat-container-left');
+    this.element.style.removeProperty('--chat-container-right');
+    this.element.style.removeProperty('--chat-toggle-bottom');
+    this.element.style.removeProperty('--chat-toggle-top');
+    this.element.style.removeProperty('--chat-toggle-left');
+    this.element.style.removeProperty('--chat-toggle-right');
+
+    // Set position variables based on position config
+    switch (position) {
+      case 'bottom-right':
+        this.element.style.setProperty('--chat-bottom', '12px');
+        this.element.style.setProperty('--chat-right', '12px');
+        this.element.style.setProperty('--chat-container-bottom', '20px');
+        this.element.style.setProperty('--chat-container-right', '20px');
+        this.element.style.setProperty('--chat-toggle-bottom', '12px');
+        this.element.style.setProperty('--chat-toggle-right', '12px');
+        break;
+      case 'bottom-left':
+        this.element.style.setProperty('--chat-bottom', '12px');
+        this.element.style.setProperty('--chat-left', '12px');
+        this.element.style.setProperty('--chat-container-bottom', '20px');
+        this.element.style.setProperty('--chat-container-left', '20px');
+        this.element.style.setProperty('--chat-toggle-bottom', '12px');
+        this.element.style.setProperty('--chat-toggle-left', '12px');
+        break;
+      case 'top-right':
+        this.element.style.setProperty('--chat-top', '12px');
+        this.element.style.setProperty('--chat-right', '12px');
+        this.element.style.setProperty('--chat-container-top', '20px');
+        this.element.style.setProperty('--chat-container-right', '20px');
+        this.element.style.setProperty('--chat-toggle-top', '12px');
+        this.element.style.setProperty('--chat-toggle-right', '12px');
+        break;
+      case 'top-left':
+        this.element.style.setProperty('--chat-top', '12px');
+        this.element.style.setProperty('--chat-left', '12px');
+        this.element.style.setProperty('--chat-container-top', '20px');
+        this.element.style.setProperty('--chat-container-left', '20px');
+        this.element.style.setProperty('--chat-toggle-top', '12px');
+        this.element.style.setProperty('--chat-toggle-left', '12px');
+        break;
+    }
   }
 
   /**
@@ -1382,10 +1457,57 @@ export class ChatWidget {
   }
 
   /**
+   * Check if floating prompts have been dismissed by user
+   */
+  private areFloatingPromptsDismissed(): boolean {
+    try {
+      const storageKey = `${this.containerId}_floating_prompts_dismissed`;
+      const dismissed = localStorage.getItem(storageKey);
+      return dismissed === 'true';
+    } catch (e) {
+      this.logger.debug('Error checking floating prompts dismissal:', e);
+      return false;
+    }
+  }
+
+  /**
+   * Mark floating prompts as dismissed
+   */
+  private dismissFloatingPrompts(): void {
+    try {
+      const storageKey = `${this.containerId}_floating_prompts_dismissed`;
+      localStorage.setItem(storageKey, 'true');
+      this.logger.debug('Floating prompts dismissed and saved to localStorage');
+    } catch (e) {
+      this.logger.debug('Error saving floating prompts dismissal:', e);
+    }
+  }
+
+  /**
+   * Reset floating prompts dismissal (allow them to show again)
+   * Called when user manually opens widget, showing re-engagement
+   */
+  private resetFloatingPromptsDismissal(): void {
+    try {
+      const storageKey = `${this.containerId}_floating_prompts_dismissed`;
+      localStorage.removeItem(storageKey);
+      this.logger.debug('Floating prompts dismissal reset');
+    } catch (e) {
+      this.logger.debug('Error resetting floating prompts dismissal:', e);
+    }
+  }
+
+  /**
    * Show floating prompts when widget is closed
    */
   private showFloatingPrompts(): void {
     if (this.config.variant !== 'corner' || !this.config.messagePrompts?.show) {
+      return;
+    }
+
+    // Check if user has previously dismissed floating prompts
+    if (this.areFloatingPromptsDismissed()) {
+      this.logger.debug('Floating prompts previously dismissed, not showing');
       return;
     }
 
@@ -1405,6 +1527,11 @@ export class ChatWidget {
     
     floatingPrompts.innerHTML = `
       <div class="am-chat-floating-welcome-message">
+        <button class="am-chat-floating-welcome-close" aria-label="Close" title="Close">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
+            <path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/>
+          </svg>
+        </button>
         <div class="am-chat-floating-welcome-header">
           <div class="am-chat-floating-welcome-avatar">
             <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
@@ -1416,7 +1543,7 @@ export class ChatWidget {
       </div>
       <div class="am-chat-floating-message-prompts">
         ${prompts.map(prompt => `
-          <button class="am-chat-floating-message-prompt" 
+          <button class="am-chat-floating-message-prompt"
                   data-prompt="${this.escapeHtml(prompt || '')}"
                   title="${this.escapeHtml(prompt || '')}">
             ${this.escapeHtml(prompt || '')}
@@ -1445,6 +1572,21 @@ export class ChatWidget {
           }
         });
       });
+
+      // Attach close button event listener
+      const closeButton = floatingPrompts.querySelector('.am-chat-floating-welcome-close');
+      if (closeButton) {
+        closeButton.addEventListener('click', () => {
+          this.hideFloatingPrompts();
+          // Mark as dismissed in localStorage
+          this.dismissFloatingPrompts();
+          // Clear the timeout so prompts don't reappear
+          if (this.floatingPromptsTimeout) {
+            clearTimeout(this.floatingPromptsTimeout);
+            this.floatingPromptsTimeout = null;
+          }
+        });
+      }
     }
   }
 

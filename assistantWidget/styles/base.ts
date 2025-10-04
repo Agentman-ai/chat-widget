@@ -499,8 +499,6 @@ export const baseStyles = `
 
   .am-chat-toggle {
     position: fixed;
-    bottom: 20px;
-    right: 20px;
     border: none;
     border-radius: 100px;
     padding: 0;

@@ -81,10 +81,10 @@
         // Message prompts
         'messagePrompts.show': extractDataAttribute('show-prompts', true, v => v === 'true'),
         'messagePrompts.welcome_message': extractDataAttribute('welcome-message', 'How can I help you today?'),
-        'messagePrompts.prompt1': extractDataAttribute('prompt-1', 'Track my order'),
-        'messagePrompts.prompt2': extractDataAttribute('prompt-2', 'Product information'),
-        'messagePrompts.prompt3': extractDataAttribute('prompt-3', 'Return policy'),
-        'messagePrompts.prompt4': extractDataAttribute('prompt-4', 'Other questions'),
+        'messagePrompts.prompt1': extractDataAttribute('prompt-1', ''),
+        'messagePrompts.prompt2': extractDataAttribute('prompt-2', ''),
+        'messagePrompts.prompt3': extractDataAttribute('prompt-3', ''),
+        'messagePrompts.prompt4': extractDataAttribute('prompt-4', ''),
         
         // Persistence settings
         'persistence.enabled': extractDataAttribute('persistence-enabled', true, v => v === 'true'),
@@ -97,22 +97,24 @@
     // Helper function to apply configuration overrides using dot notation
     function applyConfigOverrides(config, overrides) {
         const result = { ...config };
-        
+
         // Ensure nested objects exist
         if (!result.theme) result.theme = {};
         if (!result.messagePrompts) result.messagePrompts = {};
         if (!result.persistence) result.persistence = {};
-        
+
         for (const [key, value] of Object.entries(overrides)) {
             if (value !== null && value !== undefined) {
                 if (key.includes('.')) {
                     // Handle nested properties (e.g., 'theme.backgroundColor')
                     const [parent, child] = key.split('.');
                     if (parent === 'messagePrompts' && child.startsWith('prompt')) {
-                        // Handle prompt array specially
-                        if (!result.messagePrompts.prompts) result.messagePrompts.prompts = [];
-                        const promptIndex = parseInt(child.replace('prompt', '')) - 1;
-                        result.messagePrompts.prompts[promptIndex] = value;
+                        // Handle prompt array specially - only add non-empty prompts
+                        if (value && value.trim() !== '') {
+                            if (!result.messagePrompts.prompts) result.messagePrompts.prompts = [];
+                            const promptIndex = parseInt(child.replace('prompt', '')) - 1;
+                            result.messagePrompts.prompts[promptIndex] = value;
+                        }
                     } else {
                         if (!result[parent]) result[parent] = {};
                         // For disclaimer, skip empty string values for linkText and linkUrl
@@ -127,7 +129,12 @@
                 }
             }
         }
-        
+
+        // Filter out undefined/null entries from prompts array and compact it
+        if (result.messagePrompts && result.messagePrompts.prompts) {
+            result.messagePrompts.prompts = result.messagePrompts.prompts.filter(p => p && p.trim() !== '');
+        }
+
         // Clean up disclaimer object if not enabled
         if (result.disclaimer && !result.disclaimer.enabled) {
             delete result.disclaimer;
@@ -136,7 +143,7 @@
             if (!result.disclaimer.linkText) delete result.disclaimer.linkText;
             if (!result.disclaimer.linkUrl) delete result.disclaimer.linkUrl;
         }
-        
+
         return result;
     }
     

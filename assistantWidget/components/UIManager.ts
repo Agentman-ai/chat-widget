@@ -654,11 +654,27 @@ export class UIManager {
   private handlePromptClick(e: Event): void {
     const button = e.target as HTMLButtonElement;
     const prompt = button.getAttribute('data-prompt');
-    
+
     if (prompt && this.boundPromptClickHandler) {
+      // Clear input to prevent double processing
+      this.clearChatInput();
+
       this.boundPromptClickHandler(prompt);
-      
+
       // Message prompts disabled - no need to hide
+    }
+  }
+
+  /**
+   * Clear chat input field
+   * Centralized method for clearing input with proper event dispatching
+   */
+  private clearChatInput(): void {
+    const input = this.element?.querySelector('.am-chat-input') as HTMLTextAreaElement;
+    if (input) {
+      input.value = '';
+      // Dispatch input event to notify any listeners of the change
+      input.dispatchEvent(new Event('input', { bubbles: true }));
     }
   }
 

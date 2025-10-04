@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Position Test - Chat Widget</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      padding: 20px;
+      background: #f5f5f5;
+    }
+    .controls {
+      background: white;
+      padding: 20px;
+      border-radius: 8px;
+      margin-bottom: 20px;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    }
+    button {
+      padding: 10px 20px;
+      margin: 5px;
+      border: none;
+      background: #2563eb;
+      color: white;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 14px;
+    }
+    button:hover {
+      background: #1e40af;
+    }
+    .current-position {
+      margin-top: 10px;
+      padding: 10px;
+      background: #e0e7ff;
+      border-radius: 4px;
+      font-weight: bold;
+    }
+  </style>
+</head>
+<body>
+  <div class="controls">
+    <h2>Widget Position Test</h2>
+    <p>Click a button to test each position:</p>
+    <button onclick="setPosition('bottom-right')">Bottom Right (Default)</button>
+    <button onclick="setPosition('bottom-left')">Bottom Left</button>
+    <button onclick="setPosition('top-right')">Top Right</button>
+    <button onclick="setPosition('top-left')">Top Left</button>
+    <div class="current-position" id="currentPosition">Current: bottom-right</div>
+  </div>
+
+  <script src="./dist/index.js"></script>
+  <script>
+    let widget;
+
+    function createWidget(position) {
+      // Destroy existing widget if any
+      if (widget) {
+        widget.destroy();
+      }
+
+      // Create new widget with specified position
+      widget = new AgentmanChatWidget.ChatWidget({
+        agentToken: 'test-token',
+        apiUrl: 'https://studio-api.agentman.ai',
+        containerId: 'agentman-chat-test',
+        variant: 'corner',
+        position: position,
+        title: `Position Test: ${position}`,
+        theme: {
+          buttonColor: '#2563eb',
+          buttonTextColor: '#ffffff'
+        },
+        messagePrompts: {
+          show: true,
+          welcome_message: `Widget positioned at ${position}`,
+          prompts: ['Test prompt 1', 'Test prompt 2', 'Test prompt 3']
+        },
+        floatingPromptsEnabled: true,
+        floatingPromptsDelay: 2000
+      });
+
+      document.getElementById('currentPosition').textContent = `Current: ${position}`;
+    }
+
+    function setPosition(position) {
+      createWidget(position);
+    }
+
+    // Initialize with default position
+    createWidget('bottom-right');
+  </script>
+</body>
+</html>

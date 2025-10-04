@@ -134,13 +134,18 @@ export class StreamingClient {
             
             if (data === '[DONE]') {
               this.logger.debug('Received DONE signal');
-              if (currentMessage && accumulatedContent) {
-                // Finalize the message
-                currentMessage.content = accumulatedContent;
-                (currentMessage as any).isStreaming = false;
-                callbacks.onMessage?.(currentMessage as Message);
+              try {
+                if (currentMessage && accumulatedContent) {
+                  // Finalize the message
+                  currentMessage.content = accumulatedContent;
+                  currentMessage.isStreaming = false;
+                  callbacks.onMessage?.(currentMessage as Message);
+                }
+              } catch (error) {
+                this.logger.error('Error finalizing message on DONE signal:', error);
+              } finally {
+                callbacks.onComplete?.();
               }
-              callbacks.onComplete?.();
               return;
             }
             
@@ -157,27 +162,40 @@ export class StreamingClient {
                 
                 // Process assistant messages
                 if (eventData.role === 'assistant' && eventData.content) {
-                  if (!currentMessage || currentMessage.id !== eventData.id) {
-                    // Create new message
-                    currentMessage = {
-                      id: eventData.id,
-                      sender: 'agent',
-                      content: '',
-                      timestamp: new Date().toISOString()
-                    };
-                    accumulatedContent = ''; // Reset accumulator for new message
+                  try {
+                    if (!currentMessage || currentMessage.id !== eventData.id) {
+                      // Finalize previous message if it exists
+                      if (currentMessage && accumulatedContent) {
+                        currentMessage.content = accumulatedContent;
+                        currentMessage.isStreaming = false;
+                        callbacks.onMessage?.(currentMessage as Message);
+                      }
+
+                      // Create new message
+                      currentMessage = {
+                        id: eventData.id,
+                        sender: 'agent',
+                        content: '',
+                        timestamp: new Date().toISOString(),
+                        isStreaming: true
+                      };
+                      accumulatedContent = ''; // Reset accumulator for new message
+                    }
+
+                    // Accumulate content
+                    accumulatedContent += eventData.content;
+                    if (currentMessage) {
+                      currentMessage.content = accumulatedContent;
+                      currentMessage.isStreaming = true;
+                    }
+
+                    // Notify callbacks
+                    callbacks.onChunk?.(eventData.content, eventData.id);
+                    callbacks.onMessage?.(currentMessage as Message);
+                  } catch (error) {
+                    this.logger.error('Error processing assistant message:', error);
+                    // Continue processing other messages even if one fails
                   }
-                  
-                  // Accumulate content
-                  accumulatedContent += eventData.content;
-                  if (currentMessage) {
-                    currentMessage.content = accumulatedContent;
-                    (currentMessage as any).isStreaming = true;
-                  }
-                  
-                  // Notify callbacks
-                  callbacks.onChunk?.(eventData.content, eventData.id);
-                  callbacks.onMessage?.(currentMessage as Message);
                 }
                 
                 // Process tool messages (only in debug mode)
@@ -186,18 +204,18 @@ export class StreamingClient {
                     const toolMessage: Message = {
                       id: eventData.id,
                       sender: 'agent',
-                      content: typeof eventData.content === 'string' 
-                        ? eventData.content 
+                      content: typeof eventData.content === 'string'
+                        ? eventData.content
                         : JSON.stringify(eventData.content, null, 2),
                       timestamp: new Date().toISOString(),
-                      type: 'tool' as any
+                      type: 'tool'
                     };
                     callbacks.onMessage?.(toolMessage);
                   } else {
                     this.logger.debug('Skipping tool message (debug mode disabled)');
                   }
                 }
-                
+
                 // Process system messages (only in debug mode)
                 if (eventData.role === 'system' && eventData.metadata?.debug) {
                   const systemMessage: Message = {
@@ -205,18 +223,22 @@ export class StreamingClient {
                     sender: 'agent',
                     content: eventData.content,
                     timestamp: new Date().toISOString(),
-                    type: 'system' as any
+                    type: 'system'
                   };
                   callbacks.onMessage?.(systemMessage);
                 }
               } else if (eventData.type === 'done') {
                 // Stream complete
-                if (currentMessage) {
-                  currentMessage.content = accumulatedContent;
-                  (currentMessage as any).isStreaming = false;
-                  callbacks.onMessage?.(currentMessage as Message);
+                try {
+                  if (currentMessage) {
+                    currentMessage.content = accumulatedContent;
+                    currentMessage.isStreaming = false;
+                    callbacks.onMessage?.(currentMessage as Message);
+                  }
+                  this.logger.debug('Stream done event', eventData);
+                } catch (error) {
+                  this.logger.error('Error finalizing message on done event:', error);
                 }
-                this.logger.debug('Stream done event', eventData);
               } else if (eventData.type === 'error') {
                 // Handle error
                 const error = new Error(eventData.message || 'Stream error');
