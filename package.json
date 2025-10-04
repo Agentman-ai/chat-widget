@@ -1,6 +1,6 @@
 {
   "name": "@agentman/chat-widget",
-  "version": "5.12.0",
+  "version": "5.12.1",
   "description": "Agentman Chat Widget for easy integration with web applications",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
