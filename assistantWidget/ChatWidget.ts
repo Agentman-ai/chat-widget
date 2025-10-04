@@ -1515,16 +1515,16 @@ export class ChatWidget {
     const existingPrompts = document.querySelector('.am-chat-floating-prompts-container');
     if (existingPrompts) return;
 
-    const prompts = this.config.messagePrompts.prompts.filter(p => p && p.trim());
-    if (prompts.length === 0) return;
+    // Filter non-empty prompts
+    const prompts = this.config.messagePrompts.prompts?.filter(p => p && p.trim()) || [];
 
     // Create floating prompts container
     const floatingPrompts = document.createElement('div');
     floatingPrompts.className = 'am-chat-floating-prompts-container';
-    
+
     // Add welcome message
     const welcomeMessage = this.config.messagePrompts.welcome_message || 'How can I help you today?';
-    
+
     floatingPrompts.innerHTML = `
       <div class="am-chat-floating-welcome-message">
         <button class="am-chat-floating-welcome-close" aria-label="Close" title="Close">
@@ -1541,15 +1541,17 @@ export class ChatWidget {
           <div class="am-chat-floating-welcome-text">${this.escapeHtml(welcomeMessage)}</div>
         </div>
       </div>
-      <div class="am-chat-floating-message-prompts">
-        ${prompts.map(prompt => `
-          <button class="am-chat-floating-message-prompt"
-                  data-prompt="${this.escapeHtml(prompt || '')}"
-                  title="${this.escapeHtml(prompt || '')}">
-            ${this.escapeHtml(prompt || '')}
-          </button>
-        `).join('')}
-      </div>
+      ${prompts.length > 0 ? `
+        <div class="am-chat-floating-message-prompts">
+          ${prompts.map(prompt => `
+            <button class="am-chat-floating-message-prompt"
+                    data-prompt="${this.escapeHtml(prompt || '')}"
+                    title="${this.escapeHtml(prompt || '')}">
+              ${this.escapeHtml(prompt || '')}
+            </button>
+          `).join('')}
+        </div>
+      ` : ''}
     `;
 
     // Insert before toggle button

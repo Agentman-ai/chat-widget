@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Welcome Message Only Test - Chat Widget</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      padding: 20px;
+      background: #f5f5f5;
+    }
+    .controls {
+      background: white;
+      padding: 20px;
+      border-radius: 8px;
+      margin-bottom: 20px;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    }
+    button {
+      padding: 10px 20px;
+      margin: 5px;
+      border: none;
+      background: #2563eb;
+      color: white;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 14px;
+    }
+    button:hover {
+      background: #1e40af;
+    }
+    .info {
+      margin-top: 10px;
+      padding: 10px;
+      background: #e0e7ff;
+      border-radius: 4px;
+    }
+  </style>
+</head>
+<body>
+  <div class="controls">
+    <h2>Welcome Message Configuration Tests</h2>
+    <p>Test different configurations of the floating welcome message:</p>
+
+    <button onclick="testWelcomeOnly()">1. Welcome Message Only (No Prompts)</button>
+    <button onclick="testWelcomeWithPrompts()">2. Welcome Message + Prompts</button>
+    <button onclick="testPromptsOnly()">3. Default Welcome + Prompts</button>
+    <button onclick="testDisabled()">4. Disabled (messagePrompts.show = false)</button>
+
+    <div class="info" id="currentConfig">Current: Not initialized</div>
+  </div>
+
+  <script src="./dist/index.js"></script>
+  <script>
+    let widget;
+
+    function destroyWidget() {
+      if (widget) {
+        widget.destroy();
+      }
+    }
+
+    function testWelcomeOnly() {
+      destroyWidget();
+
+      widget = new AgentmanChatWidget.ChatWidget({
+        agentToken: 'test-token',
+        apiUrl: 'https://studio-api.agentman.ai',
+        containerId: 'agentman-chat-test',
+        variant: 'corner',
+        position: 'bottom-right',
+        title: 'Welcome Message Only Test',
+        messagePrompts: {
+          show: true,
+          welcome_message: 'Welcome! Click the button below to start chatting with me.',
+          prompts: [] // Empty array - no prompts
+        },
+        floatingPromptsEnabled: true,
+        floatingPromptsDelay: 2000
+      });
+
+      document.getElementById('currentConfig').innerHTML = `
+        <strong>Test 1: Welcome Message Only</strong><br>
+        - show: true<br>
+        - welcome_message: "Welcome! Click the button below..."<br>
+        - prompts: [] (empty)<br>
+        <em>Expected: Shows welcome bubble with message and close button, NO prompt buttons</em>
+      `;
+    }
+
+    function testWelcomeWithPrompts() {
+      destroyWidget();
+
+      widget = new AgentmanChatWidget.ChatWidget({
+        agentToken: 'test-token',
+        apiUrl: 'https://studio-api.agentman.ai',
+        containerId: 'agentman-chat-test',
+        variant: 'corner',
+        position: 'bottom-right',
+        title: 'Welcome + Prompts Test',
+        messagePrompts: {
+          show: true,
+          welcome_message: 'How can I help you today?',
+          prompts: ['Question 1', 'Question 2', 'Question 3']
+        },
+        floatingPromptsEnabled: true,
+        floatingPromptsDelay: 2000
+      });
+
+      document.getElementById('currentConfig').innerHTML = `
+        <strong>Test 2: Welcome Message + Prompts</strong><br>
+        - show: true<br>
+        - welcome_message: "How can I help you today?"<br>
+        - prompts: ['Question 1', 'Question 2', 'Question 3']<br>
+        <em>Expected: Shows welcome bubble with message AND prompt buttons below</em>
+      `;
+    }
+
+    function testPromptsOnly() {
+      destroyWidget();
+
+      widget = new AgentmanChatWidget.ChatWidget({
+        agentToken: 'test-token',
+        apiUrl: 'https://studio-api.agentman.ai',
+        containerId: 'agentman-chat-test',
+        variant: 'corner',
+        position: 'bottom-right',
+        title: 'Prompts Only Test',
+        messagePrompts: {
+          show: true,
+          // No welcome_message specified - uses default
+          prompts: ['Track my order', 'Product info', 'Return policy']
+        },
+        floatingPromptsEnabled: true,
+        floatingPromptsDelay: 2000
+      });
+
+      document.getElementById('currentConfig').innerHTML = `
+        <strong>Test 3: Default Welcome + Prompts</strong><br>
+        - show: true<br>
+        - welcome_message: (default: "How can I help you today?")<br>
+        - prompts: ['Track my order', 'Product info', 'Return policy']<br>
+        <em>Expected: Shows default welcome message with prompt buttons</em>
+      `;
+    }
+
+    function testDisabled() {
+      destroyWidget();
+
+      widget = new AgentmanChatWidget.ChatWidget({
+        agentToken: 'test-token',
+        apiUrl: 'https://studio-api.agentman.ai',
+        containerId: 'agentman-chat-test',
+        variant: 'corner',
+        position: 'bottom-right',
+        title: 'Disabled Test',
+        messagePrompts: {
+          show: false, // Disabled
+          welcome_message: 'This should not show',
+          prompts: ['Should not show']
+        },
+        floatingPromptsEnabled: true,
+        floatingPromptsDelay: 2000
+      });
+
+      document.getElementById('currentConfig').innerHTML = `
+        <strong>Test 4: Disabled</strong><br>
+        - show: false<br>
+        - welcome_message: "This should not show"<br>
+        - prompts: ['Should not show']<br>
+        <em>Expected: NO floating prompts appear at all</em>
+      `;
+    }
+
+    // Auto-start with welcome message only
+    testWelcomeOnly();
+  </script>
+</body>
+</html>
