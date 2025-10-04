@@ -147,12 +147,15 @@ export class ConversationOrchestrator {
       // Ensure we're in conversation view
       if (this.viewManager.getCurrentView() === 'welcome') {
         await this.viewManager.transitionToConversation();
-        
+
         // Mark conversation as started
         const state = this.stateManager.getState();
         state.hasStartedConversation = true;
         state.currentView = 'conversation';
         this.stateManager.updateState(state);
+
+        // Wait for DOM to be ready after transition
+        await this.waitForDOMReady();
       }
 
       // Check for file uploads in progress
@@ -540,6 +543,22 @@ export class ConversationOrchestrator {
    */
   private generateConversationId(): string {
     return `conv_${Date.now()}_${Math.random().toString(36).substring(2, 11)}`;
+  }
+
+  /**
+   * Wait for DOM to be ready after view transitions
+   * Uses requestAnimationFrame for proper synchronization with browser paint cycle
+   * @returns Promise that resolves when DOM is ready
+   */
+  private async waitForDOMReady(): Promise<void> {
+    return new Promise((resolve) => {
+      // Use double requestAnimationFrame to ensure DOM updates are complete
+      requestAnimationFrame(() => {
+        requestAnimationFrame(() => {
+          resolve();
+        });
+      });
+    });
   }
 
   /**

@@ -787,8 +787,11 @@ private renderMessageAttachments(message: Message): string {
   private handlePromptClick(e: Event): void {
     const button = e.target as HTMLButtonElement;
     const prompt = button.getAttribute('data-prompt');
-    
+
     if (prompt && this.boundPromptClickHandler) {
+      // Clear input to prevent double processing
+      this.inputComponent?.clearInput();
+
       this.boundPromptClickHandler(prompt);
     }
   }

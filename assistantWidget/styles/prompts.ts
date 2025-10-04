@@ -98,17 +98,23 @@ export const promptStyles = `
     right: auto;
     left: 20px;
   }
-  
+
   .am-chat-widget--corner[data-position="top-right"] .am-chat-floating-prompts-container {
     bottom: auto;
     top: 80px;
   }
-  
+
   .am-chat-widget--corner[data-position="top-left"] .am-chat-floating-prompts-container {
     bottom: auto;
     top: 80px;
     right: auto;
     left: 20px;
+  }
+
+  /* Left-align prompts when widget is on the left */
+  .am-chat-widget--corner[data-position="bottom-left"] .am-chat-floating-message-prompts,
+  .am-chat-widget--corner[data-position="top-left"] .am-chat-floating-message-prompts {
+    align-items: flex-start;
   }
 
   /* Welcome message bubble */
@@ -120,6 +126,7 @@ export const promptStyles = `
     box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
     border: 1px solid #e5e7eb;
     font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+    position: relative;
   }
 
   .am-chat-floating-welcome-header {
@@ -150,6 +157,36 @@ export const promptStyles = `
     font-size: 14px;
     color: #111827;
     line-height: 1.4;
+    flex: 1;
+    padding-right: 28px;
+  }
+
+  .am-chat-floating-welcome-close {
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    background: #f3f4f6;
+    border: none;
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #6b7280;
+    transition: all 0.2s ease;
+    padding: 0;
+  }
+
+  .am-chat-floating-welcome-close:hover {
+    background-color: #e5e7eb;
+    color: #111827;
+  }
+
+  .am-chat-floating-welcome-close svg {
+    width: 14px;
+    height: 14px;
   }
 
   /* Floating prompt buttons container */

@@ -3,15 +3,19 @@ export const variantStyles = {
     corner: `
       .am-chat-widget--corner {
         position: fixed;
-        bottom: var(--chat-bottom, 12px);
-        right: var(--chat-right, 12px);
+        bottom: var(--chat-bottom);
+        top: var(--chat-top);
+        left: var(--chat-left);
+        right: var(--chat-right);
         z-index: var(--chat-z-index, 999999);
       }
-  
+
       .am-chat-widget--corner .am-chat-container {
         position: fixed;
-        bottom: var(--chat-container-bottom, 20px);
-        right: var(--chat-container-right, 20px);
+        bottom: var(--chat-container-bottom);
+        top: var(--chat-container-top);
+        left: var(--chat-container-left);
+        right: var(--chat-container-right);
         width: var(--chat-container-width, 480px);
         height: var(--chat-container-height, 600px);
         z-index: var(--chat-z-index, 999999);
@@ -19,8 +23,10 @@ export const variantStyles = {
 
       .am-chat-widget--corner .am-chat-toggle {
         position: fixed !important;
-        bottom: var(--chat-toggle-bottom, 12px) !important;
-        right: var(--chat-toggle-right, 12px) !important;
+        bottom: var(--chat-toggle-bottom) !important;
+        top: var(--chat-toggle-top) !important;
+        left: var(--chat-toggle-left) !important;
+        right: var(--chat-toggle-right) !important;
         padding: 0 !important;
         border: none !important;
         background: var(--chat-toggle-background-color, var(--chat-header-background-color, #2563eb)) !important;

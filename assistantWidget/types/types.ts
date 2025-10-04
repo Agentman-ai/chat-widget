@@ -154,9 +154,10 @@ export interface Message {
   sender: 'user' | 'agent';
   content: string;
   timestamp: string;
-  type: 'text' | 'html' | 'custom' | 'svg';
+  type?: 'text' | 'html' | 'custom' | 'svg' | 'tool' | 'system';
   data?: any;
   attachments?: FileAttachment[];
+  isStreaming?: boolean;
 }
 
 export interface ChatState {
