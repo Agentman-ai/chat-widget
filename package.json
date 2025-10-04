@@ -27,7 +27,7 @@
     "release:patch": "npm version patch",
     "release:minor": "npm version minor",
     "release:major": "npm version major",
-    "postversion": "git push && git push --tags",
+    "postversion": "echo 'Version bumped. Run git push && git push --tags manually when ready'",
     "version": "npm run build",
     "preversion": "echo 'Skipping lint check'"
   },
