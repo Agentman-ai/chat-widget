@@ -10,7 +10,7 @@ export class ConfigManager {
     backgroundColor: '#ffffff',
     
     // Buttons
-    buttonColor: '#2563eb',
+    buttonColor: '#f43f5e', // Rose-500 for testing
     buttonTextColor: '#ffffff',
     
     // Messages (No Bubbles - Text Only)
@@ -18,9 +18,9 @@ export class ConfigManager {
     userForegroundColor: '#2563eb',
     
     // Toggle Button (Including agentmanLogo)
-    toggleBackgroundColor: '#2563eb',
+    toggleBackgroundColor: '#f43f5e', // Rose-500 for testing
     toggleTextColor: '#ffffff',
-    toggleIconColor: '#2563eb'
+    toggleIconColor: '#ffffff'
   };
 
   private static readonly defaultAssets: ChatAssets = {

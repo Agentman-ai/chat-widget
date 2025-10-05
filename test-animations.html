@@ -1,0 +1,335 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Welcome Card Animation Tester</title>
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      padding: 20px;
+      background: #f5f5f5;
+    }
+    .controls {
+      background: white;
+      padding: 24px;
+      border-radius: 12px;
+      margin-bottom: 20px;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+      max-width: 800px;
+    }
+    h1 {
+      margin: 0 0 16px 0;
+      font-size: 24px;
+      font-weight: 600;
+    }
+    .instructions {
+      background: #f0f9ff;
+      padding: 16px;
+      border-radius: 8px;
+      margin-bottom: 20px;
+      border-left: 4px solid #2563eb;
+    }
+    .instructions p {
+      margin: 0 0 8px 0;
+    }
+    .instructions p:last-child {
+      margin: 0;
+    }
+    .animation-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 12px;
+      margin-bottom: 20px;
+    }
+    .animation-btn {
+      padding: 16px 20px;
+      border: 2px solid #e5e7eb;
+      background: white;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 14px;
+      font-weight: 500;
+      transition: all 0.2s ease;
+      text-align: left;
+    }
+    .animation-btn:hover {
+      border-color: #2563eb;
+      background: #f0f9ff;
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(37, 99, 235, 0.15);
+    }
+    .animation-btn.active {
+      border-color: #2563eb;
+      background: #2563eb;
+      color: white;
+    }
+    .animation-btn strong {
+      display: block;
+      margin-bottom: 4px;
+      font-size: 15px;
+    }
+    .animation-btn small {
+      display: block;
+      opacity: 0.7;
+      font-size: 12px;
+    }
+    .test-controls {
+      display: flex;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+    .test-btn {
+      padding: 12px 24px;
+      border: none;
+      background: #2563eb;
+      color: white;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 14px;
+      font-weight: 600;
+      transition: all 0.2s ease;
+    }
+    .test-btn:hover {
+      background: #1d4ed8;
+      transform: translateY(-1px);
+    }
+    .test-btn:active {
+      transform: translateY(0);
+    }
+    .test-btn.secondary {
+      background: #6b7280;
+    }
+    .test-btn.secondary:hover {
+      background: #4b5563;
+    }
+    .current-animation {
+      margin-top: 16px;
+      padding: 12px;
+      background: #f9fafb;
+      border-radius: 6px;
+      font-size: 14px;
+    }
+    .current-animation strong {
+      color: #2563eb;
+    }
+  </style>
+</head>
+<body>
+  <div class="controls">
+    <h1>🎨 Welcome Card Animation Tester</h1>
+
+    <div class="instructions">
+      <p><strong>How to test:</strong></p>
+      <p>1. Click an animation style below to select it</p>
+      <p>2. Click "Test Animation" to see the card appear with that animation</p>
+      <p>3. Click "Dismiss Card" to hide it and test another style</p>
+      <p>4. Try viewing each animation multiple times to see if it becomes grating</p>
+    </div>
+
+    <div class="animation-grid">
+      <button class="animation-btn" data-animation="gentleFadeIn" data-duration="0.4s" data-easing="ease-out">
+        <strong>1. Gentle Fade</strong>
+        <small>Apple-style - Most subtle</small>
+      </button>
+
+      <button class="animation-btn" data-animation="softScale" data-duration="0.3s" data-easing="cubic-bezier(0.4, 0, 0.2, 1)">
+        <strong>2. Soft Scale</strong>
+        <small>Google Material-style</small>
+      </button>
+
+      <button class="animation-btn" data-animation="blurFade" data-duration="0.5s" data-easing="ease-out">
+        <strong>3. Blur Fade</strong>
+        <small>macOS-style - Sophisticated</small>
+      </button>
+
+      <button class="animation-btn" data-animation="naturalSpring" data-duration="0.5s" data-easing="cubic-bezier(0.34, 1.26, 0.64, 1)">
+        <strong>4. Natural Spring</strong>
+        <small>Vercel/Linear-style</small>
+      </button>
+
+      <button class="animation-btn" data-animation="minimalSlide" data-duration="0.25s" data-easing="ease-out">
+        <strong>5. Minimal Slide</strong>
+        <small>Stripe-style - Conservative</small>
+      </button>
+
+      <button class="animation-btn" data-animation="magneticSlideIn" data-duration="0.6s" data-easing="cubic-bezier(0.34, 1.56, 0.64, 1)">
+        <strong>OLD Default</strong>
+        <small>Bouncy - Can feel grating</small>
+      </button>
+
+      <button class="animation-btn active" data-animation="spinIn" data-duration="0.8s" data-easing="ease-out">
+        <strong>TEST: Spin</strong>
+        <small>Extreme test - spins 180°</small>
+      </button>
+
+      <button class="animation-btn" data-animation="slideFromRight" data-duration="0.5s" data-easing="ease-out">
+        <strong>TEST: Slide Right</strong>
+        <small>Extreme test - horizontal</small>
+      </button>
+    </div>
+
+    <div class="test-controls">
+      <button class="test-btn" onclick="testAnimation()">✨ Test Animation</button>
+      <button class="test-btn secondary" onclick="dismissCard()">✕ Dismiss Card</button>
+      <button class="test-btn secondary" onclick="testMultiple()">🔄 Test 3 Times (Repeat)</button>
+    </div>
+
+    <div class="current-animation">
+      Currently selected: <strong id="current-name">TEST: Spin - Extreme test - spins 180°</strong>
+    </div>
+  </div>
+
+  <script src="./dist/index.js?v=rose-test-8-slow"></script>
+  <script>
+    let widget;
+    // Default matches what's currently set in prompts.ts (line 286)
+    let currentAnimation = 'spinIn';
+    let currentDuration = '0.8s';
+    let currentEasing = 'ease-out';
+
+    // Handle animation selection
+    document.querySelectorAll('.animation-btn').forEach(btn => {
+      btn.addEventListener('click', function() {
+        document.querySelectorAll('.animation-btn').forEach(b => b.classList.remove('active'));
+        this.classList.add('active');
+
+        currentAnimation = this.dataset.animation;
+        currentDuration = this.dataset.duration;
+        currentEasing = this.dataset.easing;
+
+        document.getElementById('current-name').textContent = this.querySelector('strong').textContent + ' - ' + this.querySelector('small').textContent;
+
+        // Update CSS dynamically
+        updateAnimation();
+      });
+    });
+
+    function updateAnimation() {
+      // Inject custom style to override animation with maximum specificity
+      let styleId = 'animation-override';
+      let existingStyle = document.getElementById(styleId);
+      if (existingStyle) {
+        existingStyle.remove();
+      }
+
+      const style = document.createElement('style');
+      style.id = styleId;
+      // Use multiple selectors and !important to ensure override
+      style.textContent = `
+        .am-chat-floating-welcome-card,
+        div.am-chat-floating-welcome-card,
+        body .am-chat-floating-welcome-card {
+          animation: ${currentAnimation} ${currentDuration} ${currentEasing} !important;
+          animation-fill-mode: both !important;
+        }
+      `;
+      document.head.appendChild(style);
+
+      console.log('Updated animation to:', currentAnimation, currentDuration, currentEasing);
+    }
+
+    function initializeWidget() {
+      if (widget) {
+        widget.destroy();
+      }
+
+      widget = new AgentmanChatWidget.ChatWidget({
+        agentToken: 'test-token',
+        apiUrl: 'https://studio-api.agentman.ai',
+        containerId: 'agentman-chat-test',
+        variant: 'corner',
+        position: 'bottom-right',
+        title: 'Animation Test',
+        messagePrompts: {
+          show: true,
+          welcome_message: 'Watch the animation as this card appears!',
+          prompts: [] // No prompts to trigger welcome card
+        },
+        floatingPromptsEnabled: true,
+        floatingPromptsDelay: 100 // Show immediately
+      });
+
+      updateAnimation();
+    }
+
+    function testAnimation() {
+      console.log('Testing animation:', currentAnimation);
+      dismissCard();
+
+      // Small delay to ensure DOM is clean before recreating
+      setTimeout(() => {
+        // Ensure animation override is in place
+        updateAnimation();
+        // Then initialize widget
+        initializeWidget();
+      }, 400);
+    }
+
+    function dismissCard() {
+      const card = document.querySelector('.am-chat-floating-welcome-card');
+      if (card) {
+        console.log('Removing existing card');
+        card.remove();
+      }
+
+      // Destroy widget completely
+      if (widget) {
+        try {
+          widget.destroy();
+          widget = null;
+        } catch (e) {
+          console.error('Error destroying widget:', e);
+        }
+      }
+
+      // Reset floating prompts dismissal in localStorage
+      try {
+        localStorage.removeItem('agentman-floating-prompts-dismissed');
+        localStorage.removeItem('agentman-floating-prompts-dismissed-test-token');
+      } catch (e) {
+        console.error('Error resetting localStorage:', e);
+      }
+    }
+
+    function testMultiple() {
+      console.log('Testing animation 3 times:', currentAnimation);
+      dismissCard();
+
+      let count = 0;
+      const interval = setInterval(() => {
+        if (count >= 3) {
+          clearInterval(interval);
+          console.log('Completed 3 test cycles');
+          return;
+        }
+
+        console.log('Test cycle', count + 1, 'of 3');
+        testAnimation();
+        count++;
+      }, 2500); // Slightly longer delay between cycles
+    }
+
+    // Initialize on load
+    window.addEventListener('load', () => {
+      console.log('Page loaded, initializing with animation:', currentAnimation);
+
+      // Apply animation override immediately
+      updateAnimation();
+
+      // Initialize widget after short delay
+      setTimeout(() => {
+        initializeWidget();
+      }, 600);
+    });
+
+    // Also expose functions to window for debugging
+    window.testAnimationDebug = {
+      current: () => console.log('Current animation:', currentAnimation, currentDuration, currentEasing),
+      test: testAnimation,
+      dismiss: dismissCard,
+      updateAnim: updateAnimation
+    };
+  </script>
+</body>
+</html>

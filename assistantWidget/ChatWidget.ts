@@ -18,6 +18,7 @@ import { ConversationOrchestrator } from './handlers/ConversationOrchestrator';
 import type { UserInputEvent, PromptClickEvent, ViewTransitionEvent } from './types/events';
 import { createEvent } from './types/events';
 import { MarkdownLoader } from './utils/MarkdownLoader';
+import * as icons from './assets/icons';
 
 /**
  * ChatWidget - Refactored component-based chat widget with welcome screen
@@ -1498,6 +1499,26 @@ export class ChatWidget {
   }
 
   /**
+   * Hide toggle button (when welcome card is showing)
+   */
+  private hideToggleButton(): void {
+    const toggleButton = this.viewManager?.getToggleButton();
+    if (toggleButton) {
+      toggleButton.style.setProperty('display', 'none', 'important');
+    }
+  }
+
+  /**
+   * Show toggle button (when welcome card is dismissed)
+   */
+  private showToggleButton(): void {
+    const toggleButton = this.viewManager?.getToggleButton();
+    if (toggleButton) {
+      toggleButton.style.removeProperty('display');
+    }
+  }
+
+  /**
    * Show floating prompts when widget is closed
    */
   private showFloatingPrompts(): void {
@@ -1513,10 +1534,17 @@ export class ChatWidget {
 
     // Check if floating prompts already exist
     const existingPrompts = document.querySelector('.am-chat-floating-prompts-container');
-    if (existingPrompts) return;
+    const existingCard = document.querySelector('.am-chat-floating-welcome-card');
+    if (existingPrompts || existingCard) return;
 
     // Filter non-empty prompts
     const prompts = this.config.messagePrompts.prompts?.filter(p => p && p.trim()) || [];
+
+    // If no prompts, show welcome card instead of prompt bubbles
+    if (prompts.length === 0) {
+      this.showWelcomeCard();
+      return;
+    }
 
     // Create floating prompts container
     const floatingPrompts = document.createElement('div');
@@ -1600,6 +1628,168 @@ export class ChatWidget {
     if (floatingPrompts) {
       floatingPrompts.remove();
     }
+  }
+
+  /**
+   * Show welcome card (when no prompts are defined)
+   */
+  private showWelcomeCard(): void {
+    const toggleButton = this.viewManager?.getToggleButton();
+    if (!toggleButton) {
+      this.logger.error('Toggle button not found, cannot show welcome card');
+      return;
+    }
+
+    const card = document.createElement('div');
+    card.className = 'am-chat-floating-welcome-card';
+
+    const welcomeMessage = this.config.messagePrompts?.welcome_message || 'How can I help you today?';
+
+    card.innerHTML = `
+      <!-- Enhanced background animation -->
+      <div class="am-chat-welcome-card-background">
+        <div class="am-chat-welcome-card-bg-circle"></div>
+        <div class="am-chat-welcome-card-bg-circle"></div>
+        <div class="am-chat-welcome-card-bg-circle"></div>
+      </div>
+
+      <!-- Modernized close button (direct child of card) -->
+      <button class="am-chat-welcome-card-close" aria-label="Close" title="Close">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <line x1="18" y1="6" x2="6" y2="18"></line>
+          <line x1="6" y1="6" x2="18" y2="18"></line>
+        </svg>
+      </button>
+
+      <!-- Content with stagger animation -->
+      <div class="am-chat-welcome-card-content">
+        <!-- Enhanced welcome message -->
+        <div class="am-chat-welcome-card-message">
+          ${this.escapeHtml(welcomeMessage)}
+        </div>
+
+        <!-- Toggle button with magnetic effect -->
+        <div class="am-chat-welcome-card-toggle-container"></div>
+
+        <!-- Subtle footer -->
+        <div class="am-chat-welcome-card-footer">
+          Powered by Agentman
+        </div>
+      </div>
+    `;
+
+    // Event listeners
+    const closeBtn = card.querySelector('.am-chat-welcome-card-close');
+    closeBtn?.addEventListener('click', () => this.dismissWelcomeCard(card, false));
+
+    // Apply theme CSS variables to card so it can access toggle colors
+    Object.entries(this.theme).forEach(([key, value]) => {
+      if (value) {
+        const kebabKey = key.replace(/([a-z0-9]|(?=[A-Z]))([A-Z])/g, '$1-$2').toLowerCase();
+        const cssVarName = `--chat-${kebabKey}`;
+        card.style.setProperty(cssVarName, value);
+      }
+    });
+
+    // Insert into DOM
+    document.body.appendChild(card);
+
+    // Move the actual toggle button into the card as the CTA
+    const toggleContainer = card.querySelector('.am-chat-welcome-card-toggle-container');
+    const originalParent = toggleButton.parentElement;
+    if (toggleContainer && originalParent) {
+      // Store original parent for later restoration
+      (card as any)._originalToggleParent = originalParent;
+
+      // Store original click handler
+      const originalOnClick = toggleButton.onclick;
+
+      // Move toggle button into card
+      toggleContainer.appendChild(toggleButton);
+      toggleButton.style.removeProperty('display');
+      toggleButton.style.position = 'relative';
+      toggleButton.style.transform = 'none';
+
+      // Override click handler to dismiss card and open widget
+      toggleButton.onclick = (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        this.dismissWelcomeCard(card, true);
+      };
+
+      // Store original handler for restoration
+      (card as any)._originalToggleOnClick = originalOnClick;
+    }
+
+    this.logger.debug('Welcome card shown with toggle button as CTA');
+  }
+
+  /**
+   * Dismiss welcome card with collapse animation
+   */
+  private dismissWelcomeCard(card: HTMLElement, openWidget: boolean = false): void {
+    const toggleButton = this.viewManager?.getToggleButton();
+    if (!toggleButton) {
+      card.remove();
+      return;
+    }
+
+    // Get the original parent before starting animation
+    const originalParent = (card as any)._originalToggleParent;
+
+    // Get toggle button's current position (inside card)
+    const toggleRect = toggleButton.getBoundingClientRect();
+
+    // Hide the toggle button during animation
+    toggleButton.style.opacity = '0';
+
+    const cardRect = card.getBoundingClientRect();
+
+    // Calculate transform - card collapses to where toggle button currently is (inside card)
+    const deltaX = toggleRect.left + (toggleRect.width / 2) - (cardRect.left + (cardRect.width / 2));
+    const deltaY = toggleRect.top + (toggleRect.height / 2) - (cardRect.top + (cardRect.height / 2));
+    const scale = Math.min(toggleRect.width / cardRect.width, toggleRect.height / cardRect.height);
+
+    // Animate collapse
+    const animation = card.animate([
+      {
+        transform: 'translate(0, 0) scale(1)',
+        opacity: 1,
+        borderRadius: '20px'
+      },
+      {
+        transform: `translate(${deltaX}px, ${deltaY}px) scale(${scale})`,
+        opacity: 0,
+        borderRadius: '100px'
+      }
+    ], {
+      duration: 400,
+      easing: 'cubic-bezier(0.4, 0, 0.2, 1)'
+    });
+
+    animation.onfinish = () => {
+      // Restore toggle button to its original location
+      if (originalParent) {
+        originalParent.appendChild(toggleButton);
+        toggleButton.style.removeProperty('position');
+        toggleButton.style.removeProperty('transform');
+        toggleButton.style.removeProperty('opacity');
+
+        // Restore original click handler
+        const originalOnClick = (card as any)._originalToggleOnClick;
+        if (originalOnClick !== undefined) {
+          toggleButton.onclick = originalOnClick;
+        }
+      }
+
+      card.remove();
+      this.dismissFloatingPrompts();
+
+      if (openWidget) {
+        // User clicked toggle button - open the widget
+        setTimeout(() => this.emitToggleEvent(), 150);
+      }
+    };
   }
 
   /**
