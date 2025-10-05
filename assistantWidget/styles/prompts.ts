@@ -255,8 +255,7 @@ export const promptStyles = `
 
   .am-chat-floating-welcome-card {
     position: fixed;
-    bottom: 20px;
-    right: 20px;
+    /* Position (bottom/top/left/right) and transform-origin set dynamically via JavaScript */
     background: linear-gradient(135deg,
       rgba(255, 255, 255, 0.95) 0%,
       rgba(255, 255, 255, 0.85) 100%);
@@ -274,7 +273,6 @@ export const promptStyles = `
     text-align: center;
     z-index: 1000;
     overflow: hidden;
-    transform-origin: bottom right;
     /* CHANGE THIS LINE TO TEST DIFFERENT ANIMATIONS:
        - gentleFadeIn (smooth slide up from 40px)
        - softScale (grows from 85% - NO sliding)
@@ -283,7 +281,7 @@ export const promptStyles = `
        - minimalSlide (barely moves - 4px only)
        - magneticSlideIn (old bouncy version)
     */
-    animation: spinIn 0.8s ease-out;
+    animation: blurFade 0.5s ease-out;
     transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   }
 

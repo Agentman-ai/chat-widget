@@ -215,3 +215,13 @@ export interface ClientMetadata {
   is_authenticated?: boolean;
   custom_tags?: Record<string, any>;
 }
+
+/**
+ * Welcome card state stored in WeakMap
+ */
+export interface WelcomeCardState {
+  originalToggleParent: HTMLElement;
+  originalToggleOnClick: ((this: GlobalEventHandlers, ev: PointerEvent) => any) | null;
+  closeButtonHandler: (e: Event) => void;
+  keyboardHandler: (e: KeyboardEvent) => void;
+}

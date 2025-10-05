@@ -19,6 +19,7 @@ import type { UserInputEvent, PromptClickEvent, ViewTransitionEvent } from './ty
 import { createEvent } from './types/events';
 import { MarkdownLoader } from './utils/MarkdownLoader';
 import * as icons from './assets/icons';
+import type { WelcomeCardState } from './types/types';
 
 /**
  * ChatWidget - Refactored component-based chat widget with welcome screen
@@ -81,6 +82,10 @@ export class ChatWidget {
   private resizeTimeout: number | null = null;
   private saveDebounceTimer: number | null = null;
 
+  // Welcome card state
+  private welcomeCardStateMap = new WeakMap<HTMLElement, WelcomeCardState>();
+  private isWelcomeCardAnimating: boolean = false;
+  private activeWelcomeCard: HTMLElement | null = null;
 
   constructor(config: ChatConfig & { containerId: string }) {
     // Initialize logger first
@@ -877,6 +882,11 @@ export class ChatWidget {
     // Hide floating prompts
     this.hideFloatingPrompts();
 
+    // Cleanup welcome card if active
+    if (this.activeWelcomeCard) {
+      this.cleanupWelcomeCard(this.activeWelcomeCard);
+    }
+
     // Emit widget destroyed event
     this.eventBus.emit('widget:destroyed', createEvent('widget:destroyed', {
       reason: 'programmatic',
@@ -1499,26 +1509,6 @@ export class ChatWidget {
   }
 
   /**
-   * Hide toggle button (when welcome card is showing)
-   */
-  private hideToggleButton(): void {
-    const toggleButton = this.viewManager?.getToggleButton();
-    if (toggleButton) {
-      toggleButton.style.setProperty('display', 'none', 'important');
-    }
-  }
-
-  /**
-   * Show toggle button (when welcome card is dismissed)
-   */
-  private showToggleButton(): void {
-    const toggleButton = this.viewManager?.getToggleButton();
-    if (toggleButton) {
-      toggleButton.style.removeProperty('display');
-    }
-  }
-
-  /**
    * Show floating prompts when widget is closed
    */
   private showFloatingPrompts(): void {
@@ -1634,6 +1624,11 @@ export class ChatWidget {
    * Show welcome card (when no prompts are defined)
    */
   private showWelcomeCard(): void {
+    // Cleanup any existing card first
+    if (this.activeWelcomeCard) {
+      this.cleanupWelcomeCard(this.activeWelcomeCard);
+    }
+
     const toggleButton = this.viewManager?.getToggleButton();
     if (!toggleButton) {
       this.logger.error('Toggle button not found, cannot show welcome card');
@@ -1642,6 +1637,12 @@ export class ChatWidget {
 
     const card = document.createElement('div');
     card.className = 'am-chat-floating-welcome-card';
+
+    // Add ARIA attributes for accessibility
+    card.setAttribute('role', 'dialog');
+    card.setAttribute('aria-label', 'Welcome message');
+    card.setAttribute('aria-modal', 'false');
+    card.setAttribute('tabindex', '-1');
 
     const welcomeMessage = this.config.messagePrompts?.welcome_message || 'How can I help you today?';
 
@@ -1654,7 +1655,7 @@ export class ChatWidget {
       </div>
 
       <!-- Modernized close button (direct child of card) -->
-      <button class="am-chat-welcome-card-close" aria-label="Close" title="Close">
+      <button class="am-chat-welcome-card-close" aria-label="Close welcome message" title="Close">
         <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
           <line x1="18" y1="6" x2="6" y2="18"></line>
           <line x1="6" y1="6" x2="18" y2="18"></line>
@@ -1678,9 +1679,23 @@ export class ChatWidget {
       </div>
     `;
 
+    // Create event handlers that will be stored in WeakMap
+    const closeButtonHandler = (e: Event) => {
+      e.preventDefault();
+      this.dismissWelcomeCard(card, false);
+    };
+
+    const keyboardHandler = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        e.preventDefault();
+        this.dismissWelcomeCard(card, false);
+      }
+    };
+
     // Event listeners
     const closeBtn = card.querySelector('.am-chat-welcome-card-close');
-    closeBtn?.addEventListener('click', () => this.dismissWelcomeCard(card, false));
+    closeBtn?.addEventListener('click', closeButtonHandler);
+    card.addEventListener('keydown', keyboardHandler);
 
     // Apply theme CSS variables to card so it can access toggle colors
     Object.entries(this.theme).forEach(([key, value]) => {
@@ -1691,18 +1706,29 @@ export class ChatWidget {
       }
     });
 
+    // Position-aware placement
+    this.applyWelcomeCardPosition(card);
+
     // Insert into DOM
     document.body.appendChild(card);
+
+    // Check viewport boundaries
+    this.ensureCardInViewport(card);
 
     // Move the actual toggle button into the card as the CTA
     const toggleContainer = card.querySelector('.am-chat-welcome-card-toggle-container');
     const originalParent = toggleButton.parentElement;
     if (toggleContainer && originalParent) {
-      // Store original parent for later restoration
-      (card as any)._originalToggleParent = originalParent;
-
       // Store original click handler
       const originalOnClick = toggleButton.onclick;
+
+      // Store state in WeakMap (proper TypeScript typing)
+      this.welcomeCardStateMap.set(card, {
+        originalToggleParent: originalParent,
+        originalToggleOnClick: originalOnClick,
+        closeButtonHandler,
+        keyboardHandler
+      });
 
       // Move toggle button into card
       toggleContainer.appendChild(toggleButton);
@@ -1716,26 +1742,133 @@ export class ChatWidget {
         e.stopPropagation();
         this.dismissWelcomeCard(card, true);
       };
-
-      // Store original handler for restoration
-      (card as any)._originalToggleOnClick = originalOnClick;
     }
 
+    // Track active card
+    this.activeWelcomeCard = card;
+
+    // Focus the card for keyboard navigation
+    card.focus();
+
     this.logger.debug('Welcome card shown with toggle button as CTA');
+  }
+
+  /**
+   * Apply position-aware card placement based on widget position config
+   */
+  private applyWelcomeCardPosition(card: HTMLElement): void {
+    const position = this.config.position || 'bottom-right';
+
+    // Remove any existing position styles
+    card.style.removeProperty('top');
+    card.style.removeProperty('bottom');
+    card.style.removeProperty('left');
+    card.style.removeProperty('right');
+
+    switch (position) {
+      case 'bottom-right':
+        card.style.bottom = '20px';
+        card.style.right = '20px';
+        card.style.transformOrigin = 'bottom right';
+        break;
+      case 'bottom-left':
+        card.style.bottom = '20px';
+        card.style.left = '20px';
+        card.style.transformOrigin = 'bottom left';
+        break;
+      case 'top-right':
+        card.style.top = '20px';
+        card.style.right = '20px';
+        card.style.transformOrigin = 'top right';
+        break;
+      case 'top-left':
+        card.style.top = '20px';
+        card.style.left = '20px';
+        card.style.transformOrigin = 'top left';
+        break;
+    }
+  }
+
+  /**
+   * Ensure card stays within viewport boundaries
+   */
+  private ensureCardInViewport(card: HTMLElement): void {
+    const rect = card.getBoundingClientRect();
+    const viewport = {
+      width: window.innerWidth,
+      height: window.innerHeight
+    };
+
+    // Check right boundary
+    if (rect.right > viewport.width) {
+      card.style.right = '10px';
+      card.style.removeProperty('left');
+    }
+
+    // Check bottom boundary
+    if (rect.bottom > viewport.height) {
+      card.style.bottom = '10px';
+      card.style.removeProperty('top');
+    }
+
+    // Check left boundary
+    if (rect.left < 0) {
+      card.style.left = '10px';
+      card.style.removeProperty('right');
+    }
+
+    // Check top boundary
+    if (rect.top < 0) {
+      card.style.top = '10px';
+      card.style.removeProperty('bottom');
+    }
   }
 
   /**
    * Dismiss welcome card with collapse animation
    */
   private dismissWelcomeCard(card: HTMLElement, openWidget: boolean = false): void {
+    // Prevent double-click during animation (race condition protection)
+    if (this.isWelcomeCardAnimating) {
+      return;
+    }
+    this.isWelcomeCardAnimating = true;
+
     const toggleButton = this.viewManager?.getToggleButton();
     if (!toggleButton) {
-      card.remove();
+      this.cleanupWelcomeCard(card);
+      this.isWelcomeCardAnimating = false;
       return;
     }
 
-    // Get the original parent before starting animation
-    const originalParent = (card as any)._originalToggleParent;
+    // Get state from WeakMap (proper TypeScript typing)
+    const cardState = this.welcomeCardStateMap.get(card);
+    if (!cardState) {
+      this.logger.warn('Welcome card state not found in WeakMap');
+      this.cleanupWelcomeCard(card);
+      this.isWelcomeCardAnimating = false;
+      return;
+    }
+
+    // Check for reduced motion preference (accessibility)
+    const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+    if (prefersReducedMotion) {
+      // Simple fade out for accessibility
+      card.style.opacity = '0';
+      card.style.transition = 'opacity 0.2s ease-out';
+
+      setTimeout(() => {
+        this.restoreToggleButton(toggleButton, cardState);
+        this.cleanupWelcomeCard(card);
+        this.isWelcomeCardAnimating = false;
+
+        if (openWidget) {
+          setTimeout(() => this.emitToggleEvent(), 150);
+        }
+      }, 200);
+      return;
+    }
 
     // Get toggle button's current position (inside card)
     const toggleRect = toggleButton.getBoundingClientRect();
@@ -1768,28 +1901,65 @@ export class ChatWidget {
     });
 
     animation.onfinish = () => {
-      // Restore toggle button to its original location
-      if (originalParent) {
-        originalParent.appendChild(toggleButton);
-        toggleButton.style.removeProperty('position');
-        toggleButton.style.removeProperty('transform');
-        toggleButton.style.removeProperty('opacity');
-
-        // Restore original click handler
-        const originalOnClick = (card as any)._originalToggleOnClick;
-        if (originalOnClick !== undefined) {
-          toggleButton.onclick = originalOnClick;
-        }
-      }
-
-      card.remove();
-      this.dismissFloatingPrompts();
+      this.restoreToggleButton(toggleButton, cardState);
+      this.cleanupWelcomeCard(card);
+      this.isWelcomeCardAnimating = false;
 
       if (openWidget) {
         // User clicked toggle button - open the widget
         setTimeout(() => this.emitToggleEvent(), 150);
       }
     };
+  }
+
+  /**
+   * Restore toggle button to its original location
+   */
+  private restoreToggleButton(toggleButton: HTMLElement, cardState: WelcomeCardState): void {
+    const { originalToggleParent, originalToggleOnClick } = cardState;
+
+    if (originalToggleParent) {
+      originalToggleParent.appendChild(toggleButton);
+      toggleButton.style.removeProperty('position');
+      toggleButton.style.removeProperty('transform');
+      toggleButton.style.removeProperty('opacity');
+
+      // Restore original click handler
+      if (originalToggleOnClick !== undefined) {
+        toggleButton.onclick = originalToggleOnClick;
+      }
+    }
+  }
+
+  /**
+   * Cleanup welcome card and remove event listeners
+   */
+  private cleanupWelcomeCard(card: HTMLElement): void {
+    // Get state from WeakMap to remove event listeners
+    const cardState = this.welcomeCardStateMap.get(card);
+
+    if (cardState) {
+      // Remove event listeners
+      const closeBtn = card.querySelector('.am-chat-welcome-card-close');
+      if (closeBtn) {
+        closeBtn.removeEventListener('click', cardState.closeButtonHandler);
+      }
+      card.removeEventListener('keydown', cardState.keyboardHandler);
+
+      // Remove from WeakMap (will be garbage collected)
+      this.welcomeCardStateMap.delete(card);
+    }
+
+    // Remove from DOM
+    card.remove();
+
+    // Dismiss any floating prompts
+    this.dismissFloatingPrompts();
+
+    // Clear active card reference
+    if (this.activeWelcomeCard === card) {
+      this.activeWelcomeCard = null;
+    }
   }
 
   /**
