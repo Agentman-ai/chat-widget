@@ -239,7 +239,7 @@ export interface ClientMetadata {
  */
 export interface WelcomeCardState {
   originalToggleParent: HTMLElement;
-  originalToggleOnClick: ((this: GlobalEventHandlers, ev: PointerEvent) => any) | null;
+  originalToggleOnClick: ((this: GlobalEventHandlers, ev: MouseEvent) => any) | null;
   closeButtonHandler: (e: Event) => void;
   keyboardHandler: (e: KeyboardEvent) => void;
 }
