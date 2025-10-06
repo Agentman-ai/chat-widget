@@ -153,14 +153,23 @@ jobs:
       - name: Update package files
         if: inputs.dry_run == false
         run: |
+          VERSION="v${{ steps.version.outputs.new_version }}"
+
           # Commit version bump
           git add package.json package-lock.json
-          git commit -m "chore: release v${{ steps.version.outputs.new_version }}"
-          
+          git commit -m "chore: release $VERSION"
+
+          # Check if tag already exists
+          if git rev-parse "$VERSION" >/dev/null 2>&1; then
+            echo "⚠️ Tag $VERSION already exists, deleting old tag"
+            git tag -d "$VERSION" || true
+            git push origin ":refs/tags/$VERSION" || true
+          fi
+
           # Create and push tag
-          git tag -a "v${{ steps.version.outputs.new_version }}" -m "Release v${{ steps.version.outputs.new_version }}"
+          git tag -a "$VERSION" -m "Release $VERSION"
           git push origin main
-          git push origin "v${{ steps.version.outputs.new_version }}"
+          git push origin "$VERSION"
 
   build-and-test:
     name: Build and Test

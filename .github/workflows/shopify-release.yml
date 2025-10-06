@@ -384,11 +384,18 @@ jobs:
         run: |
           VERSION="${{ needs.prepare-shopify-release.outputs.new_version }}"
           TAG_NAME="shopify-v$VERSION"
-          
+
+          # Check if tag already exists
+          if git rev-parse "$TAG_NAME" >/dev/null 2>&1; then
+            echo "⚠️ Tag $TAG_NAME already exists, deleting old tag"
+            git tag -d "$TAG_NAME" || true
+            git push origin ":refs/tags/$TAG_NAME" || true
+          fi
+
           # Create and push tag
           git tag -a "$TAG_NAME" -m "Shopify Widget Release v$VERSION"
           git push origin "$TAG_NAME"
-          
+
           echo "✅ Created tag: $TAG_NAME"
 
       - name: Generate release notes
