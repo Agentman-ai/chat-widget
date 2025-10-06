@@ -158,6 +158,7 @@
   <div class="header">
     <h1>🎨 AgentClosedView API</h1>
     <p>Test the new simplified configuration with <code>agentClosedView</code></p>
+    <p style="margin-top: 8px; font-size: 14px;">Four modes: toggle-only • floating-prompts • welcome-card+prompts • welcome-card-only</p>
   </div>
 
   <div class="controls">
@@ -193,10 +194,10 @@
           </div>
         </div>
 
-        <!-- Mode 3: welcome-card -->
+        <!-- Mode 3: welcome-card with prompts -->
         <div class="test-card">
           <div class="mode-badge">welcome-card</div>
-          <h3>Glassmorphic Card</h3>
+          <h3>Card + Prompts</h3>
           <div class="code"><span class="key">agentClosedView:</span> <span class="string">'welcome-card'</span></div>
           <button class="test-btn" onclick="testNewWelcomeCard()">Test</button>
           <div class="expected">
@@ -204,6 +205,20 @@
             ✓ Welcome card with blur<br>
             ✓ Prompts inside card<br>
             ✓ Modern glassmorphism
+          </div>
+        </div>
+
+        <!-- Mode 4: welcome-card without prompts -->
+        <div class="test-card">
+          <div class="mode-badge">welcome-card</div>
+          <h3>Card Only (No Prompts)</h3>
+          <div class="code"><span class="key">agentClosedView:</span> <span class="string">'welcome-card'</span><br><span class="key">prompts:</span> <span class="string">[]</span></div>
+          <button class="test-btn" onclick="testNewWelcomeCardNoPrompts()">Test</button>
+          <div class="expected">
+            <strong>Expected:</strong>
+            ✓ Welcome card only<br>
+            ✓ No prompts section<br>
+            ✓ Just message + toggle
           </div>
         </div>
       </div>
@@ -317,12 +332,23 @@
     }
 
     function testNewWelcomeCard() {
-      console.log('NEW API: agentClosedView = welcome-card');
+      console.log('NEW API: agentClosedView = welcome-card (with prompts)');
       initWidget({
         agentClosedView: 'welcome-card',
         messagePrompts: {
           welcome_message: 'Welcome! How can I help?',
           prompts: ['What can you do?', 'Tell me about features', 'Get started']
+        }
+      });
+    }
+
+    function testNewWelcomeCardNoPrompts() {
+      console.log('NEW API: agentClosedView = welcome-card (no prompts)');
+      initWidget({
+        agentClosedView: 'welcome-card',
+        messagePrompts: {
+          welcome_message: 'Welcome! Click below to start chatting.',
+          prompts: [] // No prompts - just bare welcome card
         }
       });
     }
