@@ -4,6 +4,8 @@
 
 This document explains how to configure Google Cloud Storage (GCS) for public CDN access to deploy the Shopify widget v5.
 
+**Version Note**: The Shopify integration uses independent versioning (v5.x) separate from the core library (v2.3.x).
+
 ## Current Setup
 
 - **Bucket**: `chatwidget-shopify-storage-for-cdn`
@@ -252,10 +254,12 @@ curl -s https://storage.googleapis.com/chatwidget-shopify-storage-for-cdn/shopif
 Expected output:
 ```json
 {
-  "version": "5.2.0",
+  "version": "5.x.x",
   "updated": "2025-01-05T12:00:00Z"
 }
 ```
+
+**Note**: Shopify widget version (5.x.x) is independent from core library version (2.3.x)
 
 ### Check Version in Widget
 
@@ -265,7 +269,7 @@ curl -s https://storage.googleapis.com/chatwidget-shopify-storage-for-cdn/shopif
 
 Expected output:
 ```javascript
-const SCRIPT_VERSION = '5.2.0';
+const SCRIPT_VERSION = '5.x.x';
 ```
 
 ## Troubleshooting
