@@ -33,10 +33,11 @@ echo -e "${YELLOW}Creating build directory...${NC}"
 rm -rf "$BUILD_DIR"
 mkdir -p "$BUILD_DIR/cdn/shopify/v1"
 mkdir -p "$BUILD_DIR/cdn/shopify/v2"
+mkdir -p "$BUILD_DIR/cdn/shopify/v5"
 mkdir -p "$BUILD_DIR/cdn/shopify/config-tool"
 mkdir -p "$BUILD_DIR/cdn/shopify/docs"
 
-# Build widget script for v2 (v1 is frozen)
+# Build widget script for v2 (legacy)
 echo -e "${YELLOW}Building widget script for v2...${NC}"
 cat > "$BUILD_DIR/cdn/shopify/v2/widget.js" << EOF
 /**
@@ -52,12 +53,34 @@ cat "$SCRIPT_DIR/script-service/index.js" >> "$BUILD_DIR/cdn/shopify/v2/widget.j
 # Create minified version (simple copy for now)
 cp "$BUILD_DIR/cdn/shopify/v2/widget.js" "$BUILD_DIR/cdn/shopify/v2/widget.min.js"
 
+# Build widget script for v5 (latest - with security and accessibility improvements)
+echo -e "${YELLOW}Building widget script for v5...${NC}"
+cat > "$BUILD_DIR/cdn/shopify/v5/widget.js" << EOF
+/**
+ * Agentman Shopify Widget
+ * Version: $VERSION
+ * Build Date: $BUILD_DATE
+ * CDN: https://cdn.agentman.ai/shopify/v5/widget.js
+ *
+ * Major Version 5 Updates:
+ * - XSS vulnerability fixes with DOM API usage
+ * - Comprehensive keyboard navigation (Arrow keys, Home/End, Enter/Space)
+ * - Full ARIA attributes for accessibility
+ * - Improved TypeScript type safety
+ */
+
+EOF
+cat "$SCRIPT_DIR/script-service/index.js" >> "$BUILD_DIR/cdn/shopify/v5/widget.js"
+
+# Create minified version for v5
+cp "$BUILD_DIR/cdn/shopify/v5/widget.js" "$BUILD_DIR/cdn/shopify/v5/widget.min.js"
+
 # Create v1 placeholder files with warning
 echo -e "${YELLOW}Creating v1 placeholder (frozen version)...${NC}"
 cat > "$BUILD_DIR/cdn/shopify/v1/DO_NOT_DEPLOY.txt" << EOF
 WARNING: v1 is frozen!
 The v1 directory contains the old non-refactored version and should not be modified.
-All new deployments should go to v2.
+All new deployments should go to v2 or v5.
 EOF
 
 # Copy core widget from parent dist
@@ -217,10 +240,15 @@ EOF
 
 echo -e "\n${GREEN}✅ Build completed successfully!${NC}"
 echo -e "${GREEN}📁 Output directory: $BUILD_DIR${NC}"
-echo -e "\n${YELLOW}⚠️  IMPORTANT: Only deploy the v2 directory!${NC}"
+echo -e "\n${YELLOW}⚠️  IMPORTANT: Deploy v5 for new installations, v2 for legacy support!${NC}"
 echo -e "${YELLOW}    v1 is frozen and contains the old non-refactored version.${NC}"
 echo -e "\n${BLUE}Next Steps:${NC}"
 echo "1. Test locally: cd $BUILD_DIR && node test-server.js"
-echo "2. Deploy ONLY v2 to your CDN (see DEPLOYMENT.md)"
-echo "3. Update script URLs in documentation to use v2"
+echo "2. Deploy v5 (recommended) or v2 (legacy) to your CDN (see DEPLOYMENT.md)"
+echo "3. Update script URLs in documentation to use v5"
+echo ""
+echo -e "${BLUE}Version Info:${NC}"
+echo "  v1: Frozen (old non-refactored version)"
+echo "  v2: Legacy (refactored but no v5 security fixes)"
+echo "  v5: Latest (security + accessibility improvements) ⭐"
 echo ""

@@ -23,12 +23,13 @@ on:
         default: false
         type: boolean
       deploy_version:
-        description: 'Deploy to version (v2 only - v1 is frozen)'
+        description: 'Deploy to version (v2/v5 - v1 is frozen)'
         required: true
-        default: 'v2'
+        default: 'v5'
         type: choice
         options:
           - v2
+          - v5
   workflow_call:
     inputs:
       release_type:
@@ -47,9 +48,9 @@ on:
         default: false
         type: boolean
       deploy_version:
-        description: 'Deploy to version (v2 only - v1 is frozen)'
+        description: 'Deploy to version (v2/v5 - v1 is frozen)'
         required: true
-        default: 'v2'
+        default: 'v5'
         type: string
 
 permissions:
@@ -207,20 +208,21 @@ jobs:
             exit 1
           fi
           
-          # Verify build output (we now build directly to v2)
-          if [ ! -f "dist/cdn/shopify/v2/widget.js" ]; then
-            echo "❌ Shopify widget build failed!"
-            exit 1
-          fi
-          
-          # Add safety check to prevent v1 overwrite
+          # Verify build output based on deploy version
           DEPLOY_VERSION="${{ inputs.deploy_version }}"
-          if [ "$DEPLOY_VERSION" != "v2" ]; then
-            echo "❌ Error: Only v2 deployments are allowed. v1 is frozen."
+
+          if [ ! -f "dist/cdn/shopify/${DEPLOY_VERSION}/widget.js" ]; then
+            echo "❌ Shopify widget build failed for ${DEPLOY_VERSION}!"
             exit 1
           fi
-          
-          echo "✅ Shopify widget v$VERSION built successfully for v2"
+
+          # Add safety check to prevent v1 overwrite
+          if [ "$DEPLOY_VERSION" = "v1" ]; then
+            echo "❌ Error: v1 deployments are not allowed. v1 is frozen."
+            exit 1
+          fi
+
+          echo "✅ Shopify widget v$VERSION built successfully for ${DEPLOY_VERSION}"
 
       - name: Test widget locally
         run: |
@@ -290,18 +292,18 @@ jobs:
           VERSION="${{ needs.prepare-shopify-release.outputs.new_version }}"
           BUCKET="gs://chatwidget-shopify-storage-for-cdn"
           DEPLOY_VERSION="${{ inputs.deploy_version }}"
-          
-          # Safety check - only allow v2 deployments
-          if [ "$DEPLOY_VERSION" != "v2" ]; then
-            echo "❌ Error: Only v2 deployments are allowed. v1 is frozen to preserve the old version."
+
+          # Safety check - prevent v1 deployments
+          if [ "$DEPLOY_VERSION" = "v1" ]; then
+            echo "❌ Error: v1 deployments are not allowed. v1 is frozen to preserve the old version."
             exit 1
           fi
-          
-          echo "🚀 Deploying Shopify widget v$VERSION to GCS (v2 only)..."
-          
-          # Deploy widget files - only v2 directory
-          echo "📦 Uploading widget files to v2..."
-          gsutil -m cp -r dist/cdn/shopify/v2/* $BUCKET/shopify/v2/
+
+          echo "🚀 Deploying Shopify widget v$VERSION to GCS (${DEPLOY_VERSION})..."
+
+          # Deploy widget files to specified version directory
+          echo "📦 Uploading widget files to ${DEPLOY_VERSION}..."
+          gsutil -m cp -r dist/cdn/shopify/${DEPLOY_VERSION}/* $BUCKET/shopify/${DEPLOY_VERSION}/
           gsutil -m cp -r dist/cdn/core/* $BUCKET/core/
           gsutil -m cp -r dist/cdn/shopify/config-tool/* $BUCKET/shopify/config-tool/
           
