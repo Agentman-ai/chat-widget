@@ -227,19 +227,7 @@
           </div>
         </div>
 
-        <!-- Legacy 2: showWelcomeCard = true -->
-        <div class="test-card">
-          <h3>Legacy: showWelcomeCard</h3>
-          <div class="code">
-            <span class="key">showWelcomeCard:</span> <span class="string">true</span>
-          </div>
-          <button class="test-btn" onclick="testLegacyWelcomeCard()">Test</button>
-          <div class="legacy-note">
-            ⚠️ Deprecated - Use <code>agentClosedView: 'welcome-card'</code> instead
-          </div>
-        </div>
-
-        <!-- Legacy 3: Default behavior -->
+        <!-- Legacy 2: Default behavior -->
         <div class="test-card">
           <h3>Legacy: Default</h3>
           <div class="code">
@@ -346,18 +334,6 @@
         messagePrompts: {
           show: false,
           welcome_message: 'Hello!',
-          prompts: ['Q1', 'Q2', 'Q3']
-        }
-      });
-    }
-
-    function testLegacyWelcomeCard() {
-      console.log('LEGACY: showWelcomeCard = true');
-      initWidget({
-        showWelcomeCard: true,
-        messagePrompts: {
-          show: true,
-          welcome_message: 'Welcome!',
           prompts: ['Q1', 'Q2', 'Q3']
         }
       });

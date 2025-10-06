@@ -130,20 +130,12 @@ export interface ChatConfig {
     linkUrl?: string;
   };
   /**
-   * @deprecated Use agentClosedView instead for clearer intent
-   * Enable welcome card display (default: false)
-   * - If true: Shows welcome card with or without prompts
-   * - If false and no prompts: No card or prompts shown
-   * - If false and has prompts: Shows traditional floating prompt bubbles
-   */
-  showWelcomeCard?: boolean;
-  /**
    * AgentClosedView mode - How to display the widget when closed
    * - 'toggle-only': Just the chat button, no prompts shown externally
    * - 'floating-prompts': Traditional floating bubbles with prompts
    * - 'welcome-card': Glassmorphic card with prompts inside
    *
-   * If not specified, falls back to legacy showWelcomeCard and messagePrompts.show logic
+   * If not specified, falls back to legacy messagePrompts.show logic
    */
   agentClosedView?: ClosedViewMode;
 }

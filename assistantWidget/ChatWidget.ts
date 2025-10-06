@@ -1510,25 +1510,20 @@ export class ChatWidget {
 
   /**
    * Determine the AgentClosedView mode based on config (with backward compatibility)
-   * Priority: agentClosedView > showWelcomeCard > messagePrompts.show > default
+   * Priority: agentClosedView > messagePrompts.show > default
    */
   private getClosedViewMode(): ClosedViewMode {
-    // 1. New explicit mode (highest priority)
+    // 1. Explicit mode (highest priority)
     if (this.config.agentClosedView) {
       return this.config.agentClosedView;
     }
 
-    // 2. Legacy showWelcomeCard
-    if (this.config.showWelcomeCard === true) {
-      return 'welcome-card';
-    }
-
-    // 3. Legacy messagePrompts.show
+    // 2. Legacy messagePrompts.show
     if (this.config.messagePrompts?.show === false) {
       return 'toggle-only';
     }
 
-    // 4. Default based on prompts (legacy behavior)
+    // 3. Default based on prompts (legacy behavior)
     const prompts = this.config.messagePrompts?.prompts?.filter((p): p is string => !!p && p.trim().length > 0) || [];
     if (prompts.length > 0) {
       return 'floating-prompts'; // Default legacy behavior
