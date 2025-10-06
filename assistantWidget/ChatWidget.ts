@@ -1704,13 +1704,15 @@ export class ChatWidget {
     // Create event handlers that will be stored in WeakMap
     const closeButtonHandler = (e: Event) => {
       e.preventDefault();
-      this.dismissWelcomeCard(card, false);
+      // User explicitly closed the card - mark prompts as dismissed
+      this.dismissWelcomeCard(card, false, true);
     };
 
     const keyboardHandler = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
         e.preventDefault();
-        this.dismissWelcomeCard(card, false);
+        // User explicitly dismissed via Escape - mark prompts as dismissed
+        this.dismissWelcomeCard(card, false, true);
       }
     };
 
@@ -1861,8 +1863,11 @@ export class ChatWidget {
 
   /**
    * Dismiss welcome card with collapse animation
+   * @param card The welcome card element to dismiss
+   * @param openWidget Whether to open the widget after dismissing (default: false)
+   * @param shouldDismissPrompts Whether to mark prompts as dismissed in localStorage (default: false)
    */
-  private dismissWelcomeCard(card: HTMLElement, openWidget: boolean = false): void {
+  private dismissWelcomeCard(card: HTMLElement, openWidget: boolean = false, shouldDismissPrompts: boolean = false): void {
     // Prevent double-click during animation (race condition protection)
     if (this.isWelcomeCardAnimating) {
       return;
@@ -1871,7 +1876,7 @@ export class ChatWidget {
 
     const toggleButton = this.viewManager?.getToggleButton();
     if (!toggleButton) {
-      this.cleanupWelcomeCard(card);
+      this.cleanupWelcomeCard(card, shouldDismissPrompts);
       this.isWelcomeCardAnimating = false;
       return;
     }
@@ -1880,7 +1885,7 @@ export class ChatWidget {
     const cardState = this.welcomeCardStateMap.get(card);
     if (!cardState) {
       this.logger.warn('Welcome card state not found in WeakMap');
-      this.cleanupWelcomeCard(card);
+      this.cleanupWelcomeCard(card, shouldDismissPrompts);
       this.isWelcomeCardAnimating = false;
       return;
     }
@@ -1895,7 +1900,7 @@ export class ChatWidget {
 
       setTimeout(() => {
         this.restoreToggleButton(toggleButton, cardState);
-        this.cleanupWelcomeCard(card);
+        this.cleanupWelcomeCard(card, shouldDismissPrompts);
         this.isWelcomeCardAnimating = false;
 
         if (openWidget) {
@@ -1937,7 +1942,7 @@ export class ChatWidget {
 
     animation.onfinish = () => {
       this.restoreToggleButton(toggleButton, cardState);
-      this.cleanupWelcomeCard(card);
+      this.cleanupWelcomeCard(card, shouldDismissPrompts);
       this.isWelcomeCardAnimating = false;
 
       if (openWidget) {
@@ -1968,8 +1973,9 @@ export class ChatWidget {
 
   /**
    * Cleanup welcome card and remove event listeners
+   * @param shouldDismiss Whether to mark prompts as dismissed in localStorage (default: false)
    */
-  private cleanupWelcomeCard(card: HTMLElement): void {
+  private cleanupWelcomeCard(card: HTMLElement, shouldDismiss: boolean = false): void {
     // Get state from WeakMap to remove event listeners
     const cardState = this.welcomeCardStateMap.get(card);
 
@@ -1988,8 +1994,10 @@ export class ChatWidget {
     // Remove from DOM
     card.remove();
 
-    // Dismiss any floating prompts
-    this.dismissFloatingPrompts();
+    // Only dismiss floating prompts if explicitly requested (e.g., user clicked close button)
+    if (shouldDismiss) {
+      this.dismissFloatingPrompts();
+    }
 
     // Clear active card reference
     if (this.activeWelcomeCard === card) {
