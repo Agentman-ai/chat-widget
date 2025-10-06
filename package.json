@@ -1,6 +1,6 @@
 {
   "name": "@agentman/chat-widget",
-  "version": "2.3.0",
+  "version": "2.4.0",
   "description": "Agentman Chat Widget for easy integration with web applications",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
@@ -27,7 +27,7 @@
     "release:patch": "npm version patch",
     "release:minor": "npm version minor",
     "release:major": "npm version major",
-    "postversion": "echo 'Version bumped. Run git push && git push --tags manually when ready'",
+    "postversion": "git push && git push --tags",
     "version": "npm run build",
     "preversion": "echo 'Skipping lint check'"
   },
