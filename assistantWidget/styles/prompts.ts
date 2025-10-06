@@ -637,6 +637,78 @@ export const promptStyles = `
     }
   }
 
+  /* Prompts container inside welcome card */
+  .am-chat-welcome-card-prompts {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin-bottom: 20px;
+    padding: 0 16px;
+    width: 100%;
+  }
+
+  /* Individual prompt buttons inside welcome card */
+  .am-chat-welcome-card-prompt {
+    background: linear-gradient(135deg,
+      rgba(255, 255, 255, 0.9) 0%,
+      rgba(255, 255, 255, 0.7) 100%);
+    backdrop-filter: blur(10px);
+    color: #374151;
+    border: 1px solid rgba(0, 0, 0, 0.08);
+    border-radius: 12px;
+    padding: 12px 16px;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    text-align: left;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    line-height: 1.4;
+    box-shadow:
+      0 2px 8px rgba(0, 0, 0, 0.04),
+      inset 0 1px 0 rgba(255, 255, 255, 0.5);
+    font-family: inherit;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .am-chat-welcome-card-prompt:hover {
+    background: var(--chat-button-color, #2563eb);
+    color: var(--chat-button-text-color, #ffffff);
+    transform: translateY(-2px) scale(1.02);
+    box-shadow:
+      0 6px 16px rgba(0, 0, 0, 0.12),
+      inset 0 1px 0 rgba(255, 255, 255, 0.2);
+    border-color: rgba(0, 0, 0, 0.12);
+  }
+
+  .am-chat-welcome-card-prompt:active {
+    transform: translateY(0) scale(0.98);
+    box-shadow:
+      0 2px 6px rgba(0, 0, 0, 0.08),
+      inset 0 1px 0 rgba(255, 255, 255, 0.2);
+  }
+
+  /* Shimmer effect on prompt buttons */
+  .am-chat-welcome-card-prompt::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(
+      90deg,
+      transparent,
+      rgba(255, 255, 255, 0.3),
+      transparent
+    );
+    transition: left 0.5s ease;
+  }
+
+  .am-chat-welcome-card-prompt:hover::before {
+    left: 100%;
+  }
+
   /* Enhanced toggle button container with magnetic effect */
   .am-chat-welcome-card-toggle-container {
     display: flex;

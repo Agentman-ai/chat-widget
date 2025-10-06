@@ -120,6 +120,13 @@ export interface ChatConfig {
     /** Optional link URL */
     linkUrl?: string;
   };
+  /**
+   * Enable welcome card display (default: false)
+   * - If true: Shows welcome card with or without prompts
+   * - If false and no prompts: No card or prompts shown
+   * - If false and has prompts: Shows traditional floating prompt bubbles
+   */
+  showWelcomeCard?: boolean;
 }
 
 export interface DebugConfig {

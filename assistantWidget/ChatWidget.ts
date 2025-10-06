@@ -1528,11 +1528,19 @@ export class ChatWidget {
     if (existingPrompts || existingCard) return;
 
     // Filter non-empty prompts
-    const prompts = this.config.messagePrompts.prompts?.filter(p => p && p.trim()) || [];
+    const prompts = (this.config.messagePrompts.prompts?.filter((p): p is string => !!p && p.trim().length > 0) || []) as string[];
 
-    // If no prompts, show welcome card instead of prompt bubbles
+    // Decision logic based on showWelcomeCard config
+    if (this.config.showWelcomeCard) {
+      // User explicitly wants welcome card - show it with or without prompts
+      this.showWelcomeCard(prompts);
+      return;
+    }
+
+    // showWelcomeCard is false or undefined
     if (prompts.length === 0) {
-      this.showWelcomeCard();
+      // No prompts and no welcome card requested - show nothing
+      this.logger.debug('No prompts defined and welcome card disabled, showing nothing');
       return;
     }
 
@@ -1621,9 +1629,10 @@ export class ChatWidget {
   }
 
   /**
-   * Show welcome card (when no prompts are defined)
+   * Show welcome card (with optional prompts)
+   * @param prompts Optional array of prompt strings to display in the card
    */
-  private showWelcomeCard(): void {
+  private showWelcomeCard(prompts: string[] = []): void {
     // Cleanup any existing card first
     if (this.activeWelcomeCard) {
       this.cleanupWelcomeCard(this.activeWelcomeCard);
@@ -1645,6 +1654,17 @@ export class ChatWidget {
     card.setAttribute('tabindex', '-1');
 
     const welcomeMessage = this.config.messagePrompts?.welcome_message || 'How can I help you today?';
+
+    // Build prompts HTML if provided
+    const promptsHTML = prompts.length > 0 ? `
+      <div class="am-chat-welcome-card-prompts">
+        ${prompts.map((prompt, index) => `
+          <button class="am-chat-welcome-card-prompt" data-prompt-index="${index}">
+            ${this.escapeHtml(prompt)}
+          </button>
+        `).join('')}
+      </div>
+    ` : '';
 
     card.innerHTML = `
       <!-- Enhanced background animation -->
@@ -1668,6 +1688,8 @@ export class ChatWidget {
         <div class="am-chat-welcome-card-message">
           ${this.escapeHtml(welcomeMessage)}
         </div>
+
+        ${promptsHTML}
 
         <!-- Toggle button with magnetic effect -->
         <div class="am-chat-welcome-card-toggle-container"></div>
@@ -1696,6 +1718,19 @@ export class ChatWidget {
     const closeBtn = card.querySelector('.am-chat-welcome-card-close');
     closeBtn?.addEventListener('click', closeButtonHandler);
     card.addEventListener('keydown', keyboardHandler);
+
+    // Add event handlers for prompt buttons
+    if (prompts.length > 0) {
+      const promptButtons = card.querySelectorAll('.am-chat-welcome-card-prompt');
+      promptButtons.forEach((button, index) => {
+        button.addEventListener('click', () => {
+          const prompt = prompts[index];
+          this.dismissWelcomeCard(card, false);
+          // Emit prompt click event to be handled by the event bus
+          this.eventBus.emit('user:prompt_click', { prompt });
+        });
+      });
+    }
 
     // Apply theme CSS variables to card so it can access toggle colors
     Object.entries(this.theme).forEach(([key, value]) => {

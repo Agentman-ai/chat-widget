@@ -1,0 +1,299 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Welcome Card Config Test</title>
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      padding: 20px;
+      background: #f5f5f5;
+    }
+    .controls {
+      background: white;
+      padding: 24px;
+      border-radius: 12px;
+      margin-bottom: 20px;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+      max-width: 900px;
+    }
+    h1 {
+      margin: 0 0 16px 0;
+      font-size: 24px;
+      font-weight: 600;
+    }
+    .test-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 16px;
+      margin-top: 20px;
+    }
+    .test-card {
+      background: #f9fafb;
+      border: 2px solid #e5e7eb;
+      border-radius: 12px;
+      padding: 16px;
+    }
+    .test-card h3 {
+      margin: 0 0 8px 0;
+      font-size: 16px;
+      font-weight: 600;
+      color: #1f2937;
+    }
+    .test-card p {
+      margin: 0 0 12px 0;
+      font-size: 13px;
+      color: #6b7280;
+      line-height: 1.5;
+    }
+    .test-btn {
+      width: 100%;
+      padding: 10px 16px;
+      border: none;
+      background: #2563eb;
+      color: white;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 14px;
+      font-weight: 600;
+      transition: all 0.2s ease;
+    }
+    .test-btn:hover {
+      background: #1d4ed8;
+      transform: translateY(-1px);
+    }
+    .test-btn:active {
+      transform: translateY(0);
+    }
+    .reset-btn {
+      background: #dc2626;
+    }
+    .reset-btn:hover {
+      background: #b91c1c;
+    }
+    .expected {
+      margin-top: 12px;
+      padding: 8px;
+      background: #ecfdf5;
+      border-left: 3px solid #10b981;
+      font-size: 12px;
+      color: #065f46;
+      font-weight: 500;
+    }
+  </style>
+</head>
+<body>
+  <div class="controls">
+    <h1>🎨 Welcome Card Configuration Test</h1>
+    <p>Test all combinations of the <code>showWelcomeCard</code> config option and message prompts.</p>
+
+    <div class="test-grid">
+      <!-- Test 1: showWelcomeCard: true WITH prompts -->
+      <div class="test-card">
+        <h3>Test 1: Card + Prompts</h3>
+        <p><code>showWelcomeCard: true</code><br>Prompts defined: <strong>Yes</strong></p>
+        <button class="test-btn" onclick="test1()">Test</button>
+        <div class="expected">
+          ✓ Shows welcome card<br>
+          ✓ Prompts appear INSIDE the card
+        </div>
+      </div>
+
+      <!-- Test 2: showWelcomeCard: true WITHOUT prompts -->
+      <div class="test-card">
+        <h3>Test 2: Card Only</h3>
+        <p><code>showWelcomeCard: true</code><br>Prompts defined: <strong>No</strong></p>
+        <button class="test-btn" onclick="test2()">Test</button>
+        <div class="expected">
+          ✓ Shows welcome card<br>
+          ✓ No prompts (none defined)
+        </div>
+      </div>
+
+      <!-- Test 3: showWelcomeCard: false WITH prompts -->
+      <div class="test-card">
+        <h3>Test 3: Floating Prompts</h3>
+        <p><code>showWelcomeCard: false</code><br>Prompts defined: <strong>Yes</strong></p>
+        <button class="test-btn" onclick="test3()">Test</button>
+        <div class="expected">
+          ✓ Traditional floating prompt bubbles<br>
+          ✓ No welcome card
+        </div>
+      </div>
+
+      <!-- Test 4: showWelcomeCard: false WITHOUT prompts -->
+      <div class="test-card">
+        <h3>Test 4: Nothing</h3>
+        <p><code>showWelcomeCard: false</code><br>Prompts defined: <strong>No</strong></p>
+        <button class="test-btn" onclick="test4()">Test</button>
+        <div class="expected">
+          ✓ No welcome card<br>
+          ✓ No prompts<br>
+          ✓ Nothing shown
+        </div>
+      </div>
+
+      <!-- Test 5: undefined (default behavior) WITH prompts -->
+      <div class="test-card">
+        <h3>Test 5: Undefined + Prompts</h3>
+        <p><code>showWelcomeCard: undefined</code><br>Prompts defined: <strong>Yes</strong></p>
+        <button class="test-btn" onclick="test5()">Test</button>
+        <div class="expected">
+          ✓ Traditional floating prompt bubbles<br>
+          ✓ (Same as false + prompts)
+        </div>
+      </div>
+
+      <!-- Test 6: undefined (default behavior) WITHOUT prompts -->
+      <div class="test-card">
+        <h3>Test 6: Undefined + No Prompts</h3>
+        <p><code>showWelcomeCard: undefined</code><br>Prompts defined: <strong>No</strong></p>
+        <button class="test-btn" onclick="test6()">Test</button>
+        <div class="expected">
+          ✓ No welcome card<br>
+          ✓ No prompts<br>
+          ✓ Nothing shown
+        </div>
+      </div>
+    </div>
+
+    <div style="margin-top: 24px; text-align: center;">
+      <button class="test-btn reset-btn" onclick="cleanup()" style="max-width: 300px;">
+        🗑️ Clean Up / Reset
+      </button>
+    </div>
+  </div>
+
+  <script src="./dist/index.js"></script>
+  <script>
+    let currentWidget = null;
+
+    function cleanup() {
+      // Remove any existing cards or prompts
+      const card = document.querySelector('.am-chat-floating-welcome-card');
+      const prompts = document.querySelector('.am-chat-floating-prompts-container');
+      if (card) card.remove();
+      if (prompts) prompts.remove();
+
+      // Destroy widget
+      if (currentWidget) {
+        try {
+          currentWidget.destroy();
+        } catch (e) {
+          console.error('Error destroying widget:', e);
+        }
+        currentWidget = null;
+      }
+
+      // Reset localStorage
+      try {
+        localStorage.removeItem('agentman-floating-prompts-dismissed');
+        Object.keys(localStorage).forEach(key => {
+          if (key.startsWith('agentman-floating-prompts-dismissed-')) {
+            localStorage.removeItem(key);
+          }
+        });
+      } catch (e) {
+        console.error('Error resetting localStorage:', e);
+      }
+
+      console.log('✓ Cleaned up');
+    }
+
+    function initWidget(config) {
+      cleanup();
+
+      setTimeout(() => {
+        currentWidget = new AgentmanChatWidget.ChatWidget({
+          agentToken: 'test-token-' + Date.now(),
+          apiUrl: 'https://studio-api.agentman.ai',
+          containerId: 'agentman-chat-test',
+          variant: 'corner',
+          position: 'bottom-right',
+          title: 'Config Test',
+          ...config
+        });
+      }, 300);
+    }
+
+    // Test 1: showWelcomeCard: true WITH prompts
+    function test1() {
+      console.log('Test 1: showWelcomeCard: true + prompts defined');
+      initWidget({
+        showWelcomeCard: true,
+        messagePrompts: {
+          show: true,
+          welcome_message: 'How can I help you today?',
+          prompts: ['What can you do?', 'Tell me about your features', 'Get started']
+        }
+      });
+    }
+
+    // Test 2: showWelcomeCard: true WITHOUT prompts
+    function test2() {
+      console.log('Test 2: showWelcomeCard: true + no prompts');
+      initWidget({
+        showWelcomeCard: true,
+        messagePrompts: {
+          show: true,
+          welcome_message: 'Welcome! Click the button below to start chatting.',
+          prompts: []
+        }
+      });
+    }
+
+    // Test 3: showWelcomeCard: false WITH prompts
+    function test3() {
+      console.log('Test 3: showWelcomeCard: false + prompts defined');
+      initWidget({
+        showWelcomeCard: false,
+        messagePrompts: {
+          show: true,
+          welcome_message: 'Choose a prompt below:',
+          prompts: ['What can you do?', 'Tell me about your features', 'Get started']
+        }
+      });
+    }
+
+    // Test 4: showWelcomeCard: false WITHOUT prompts
+    function test4() {
+      console.log('Test 4: showWelcomeCard: false + no prompts');
+      initWidget({
+        showWelcomeCard: false,
+        messagePrompts: {
+          show: true,
+          welcome_message: 'Hello!',
+          prompts: []
+        }
+      });
+    }
+
+    // Test 5: undefined WITH prompts
+    function test5() {
+      console.log('Test 5: showWelcomeCard: undefined + prompts defined');
+      initWidget({
+        // showWelcomeCard not specified (undefined)
+        messagePrompts: {
+          show: true,
+          welcome_message: 'Choose a prompt below:',
+          prompts: ['What can you do?', 'Tell me about your features', 'Get started']
+        }
+      });
+    }
+
+    // Test 6: undefined WITHOUT prompts
+    function test6() {
+      console.log('Test 6: showWelcomeCard: undefined + no prompts');
+      initWidget({
+        // showWelcomeCard not specified (undefined)
+        messagePrompts: {
+          show: true,
+          welcome_message: 'Hello!',
+          prompts: []
+        }
+      });
+    }
+  </script>
+</body>
+</html>
