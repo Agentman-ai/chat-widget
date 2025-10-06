@@ -1583,41 +1583,64 @@ export class ChatWidget {
         break; // Continue to render floating prompts below
     }
 
-    // Create floating prompts container
+    // Create floating prompts container using DOM APIs
     const floatingPrompts = document.createElement('div');
     floatingPrompts.className = 'am-chat-floating-prompts-container';
 
-    // Add welcome message
-    const welcomeMessage = this.config.messagePrompts?.welcome_message || 'How can I help you today?';
+    // Create welcome message container
+    const welcomeMessageContainer = document.createElement('div');
+    welcomeMessageContainer.className = 'am-chat-floating-welcome-message';
 
-    floatingPrompts.innerHTML = `
-      <div class="am-chat-floating-welcome-message">
-        <button class="am-chat-floating-welcome-close" aria-label="Close" title="Close">
-          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
-            <path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/>
-          </svg>
-        </button>
-        <div class="am-chat-floating-welcome-header">
-          <div class="am-chat-floating-welcome-avatar">
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
-              <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 3c1.66 0 3 1.34 3 3s-1.34 3-3 3-3-1.34-3-3 1.34-3 3-3zm0 14.2c-2.5 0-4.71-1.28-6-3.22.03-1.99 4-3.08 6-3.08 1.99 0 5.97 1.09 6 3.08-1.29 1.94-3.5 3.22-6 3.22z" fill="currentColor"/>
-            </svg>
-          </div>
-          <div class="am-chat-floating-welcome-text">${this.escapeHtml(welcomeMessage)}</div>
-        </div>
-      </div>
-      ${prompts.length > 0 ? `
-        <div class="am-chat-floating-message-prompts">
-          ${prompts.map(prompt => `
-            <button class="am-chat-floating-message-prompt"
-                    data-prompt="${this.escapeHtml(prompt || '')}"
-                    title="${this.escapeHtml(prompt || '')}">
-              ${this.escapeHtml(prompt || '')}
-            </button>
-          `).join('')}
-        </div>
-      ` : ''}
-    `;
+    // Create close button
+    const closeBtn = document.createElement('button');
+    closeBtn.className = 'am-chat-floating-welcome-close';
+    closeBtn.setAttribute('aria-label', 'Close');
+    closeBtn.setAttribute('title', 'Close');
+    closeBtn.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
+      <path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/>
+    </svg>`;
+
+    // Create welcome header
+    const welcomeHeader = document.createElement('div');
+    welcomeHeader.className = 'am-chat-floating-welcome-header';
+
+    // Create avatar
+    const avatar = document.createElement('div');
+    avatar.className = 'am-chat-floating-welcome-avatar';
+    avatar.innerHTML = `<svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+      <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 3c1.66 0 3 1.34 3 3s-1.34 3-3 3-3-1.34-3-3 1.34-3 3-3zm0 14.2c-2.5 0-4.71-1.28-6-3.22.03-1.99 4-3.08 6-3.08 1.99 0 5.97 1.09 6 3.08-1.29 1.94-3.5 3.22-6 3.22z" fill="currentColor"/>
+    </svg>`;
+
+    // Create welcome text
+    const welcomeMessage = this.config.messagePrompts?.welcome_message || 'How can I help you today?';
+    const welcomeText = document.createElement('div');
+    welcomeText.className = 'am-chat-floating-welcome-text';
+    welcomeText.textContent = welcomeMessage; // Safe text content
+
+    welcomeHeader.appendChild(avatar);
+    welcomeHeader.appendChild(welcomeText);
+
+    welcomeMessageContainer.appendChild(closeBtn);
+    welcomeMessageContainer.appendChild(welcomeHeader);
+
+    floatingPrompts.appendChild(welcomeMessageContainer);
+
+    // Create prompts if provided
+    if (prompts.length > 0) {
+      const promptsContainer = document.createElement('div');
+      promptsContainer.className = 'am-chat-floating-message-prompts';
+
+      prompts.forEach(prompt => {
+        const button = document.createElement('button');
+        button.className = 'am-chat-floating-message-prompt';
+        button.setAttribute('data-prompt', prompt || '');
+        button.setAttribute('title', prompt || '');
+        button.textContent = prompt || ''; // Safe text content
+        promptsContainer.appendChild(button);
+      });
+
+      floatingPrompts.appendChild(promptsContainer);
+    }
 
     // Insert before toggle button
     const toggleButton = this.viewManager?.getToggleButton();
@@ -1694,51 +1717,75 @@ export class ChatWidget {
 
     const welcomeMessage = this.config.messagePrompts?.welcome_message || 'How can I help you today?';
 
-    // Build prompts HTML if provided
-    const promptsHTML = prompts.length > 0 ? `
-      <div class="am-chat-welcome-card-prompts">
-        ${prompts.map((prompt, index) => `
-          <button class="am-chat-welcome-card-prompt" data-prompt-index="${index}">
-            ${this.escapeHtml(prompt)}
-          </button>
-        `).join('')}
-      </div>
-    ` : '';
+    // Build card structure using DOM APIs (safer than innerHTML)
+    const background = document.createElement('div');
+    background.className = 'am-chat-welcome-card-background';
+    for (let i = 0; i < 3; i++) {
+      const circle = document.createElement('div');
+      circle.className = 'am-chat-welcome-card-bg-circle';
+      background.appendChild(circle);
+    }
 
-    card.innerHTML = `
-      <!-- Enhanced background animation -->
-      <div class="am-chat-welcome-card-background">
-        <div class="am-chat-welcome-card-bg-circle"></div>
-        <div class="am-chat-welcome-card-bg-circle"></div>
-        <div class="am-chat-welcome-card-bg-circle"></div>
-      </div>
+    // Create close button with SVG
+    const closeButton = document.createElement('button');
+    closeButton.className = 'am-chat-welcome-card-close';
+    closeButton.setAttribute('aria-label', 'Close welcome message');
+    closeButton.setAttribute('title', 'Close');
+    closeButton.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <line x1="18" y1="6" x2="6" y2="18"></line>
+      <line x1="6" y1="6" x2="18" y2="18"></line>
+    </svg>`;
 
-      <!-- Modernized close button (direct child of card) -->
-      <button class="am-chat-welcome-card-close" aria-label="Close welcome message" title="Close">
-        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <line x1="18" y1="6" x2="6" y2="18"></line>
-          <line x1="6" y1="6" x2="18" y2="18"></line>
-        </svg>
-      </button>
+    // Create content container
+    const content = document.createElement('div');
+    content.className = 'am-chat-welcome-card-content';
 
-      <!-- Content with stagger animation -->
-      <div class="am-chat-welcome-card-content">
-        <!-- Enhanced welcome message -->
-        <div class="am-chat-welcome-card-message">
-          ${this.escapeHtml(welcomeMessage)}
-        </div>
+    // Create welcome message
+    const messageDiv = document.createElement('div');
+    messageDiv.className = 'am-chat-welcome-card-message';
+    messageDiv.textContent = welcomeMessage; // Safe text content
 
-        ${promptsHTML}
+    content.appendChild(messageDiv);
 
-        <!-- Toggle button with magnetic effect -->
-        <div class="am-chat-welcome-card-toggle-container"></div>
+    // Create prompts if provided
+    if (prompts.length > 0) {
+      const promptsContainer = document.createElement('div');
+      promptsContainer.className = 'am-chat-welcome-card-prompts';
+      promptsContainer.setAttribute('role', 'listbox');
+      promptsContainer.setAttribute('aria-label', 'Quick prompts');
 
-        <!-- Subtle footer -->
-        <div class="am-chat-welcome-card-footer">
-          Powered by Agentman
-        </div>
-      </div>
-    `;
+      prompts.forEach((prompt, index) => {
+        const button = document.createElement('button');
+        button.className = 'am-chat-welcome-card-prompt';
+        button.setAttribute('role', 'option');
+        button.setAttribute('aria-selected', 'false');
+        button.setAttribute('data-prompt-index', String(index));
+        button.setAttribute('aria-posinset', String(index + 1));
+        button.setAttribute('aria-setsize', String(prompts.length));
+        button.tabIndex = index === 0 ? 0 : -1; // First prompt is focusable
+        button.textContent = prompt; // Safe text content
+        promptsContainer.appendChild(button);
+      });
+
+      content.appendChild(promptsContainer);
+    }
+
+    // Create toggle button container
+    const toggleButtonContainer = document.createElement('div');
+    toggleButtonContainer.className = 'am-chat-welcome-card-toggle-container';
+
+    // Create footer
+    const footer = document.createElement('div');
+    footer.className = 'am-chat-welcome-card-footer';
+    footer.textContent = 'Powered by Agentman';
+
+    content.appendChild(toggleButtonContainer);
+    content.appendChild(footer);
+
+    // Assemble card
+    card.appendChild(background);
+    card.appendChild(closeButton);
+    card.appendChild(content);
 
     // Create event handlers that will be stored in WeakMap
     const closeButtonHandler = (e: Event) => {
@@ -1760,15 +1807,70 @@ export class ChatWidget {
     closeBtn?.addEventListener('click', closeButtonHandler);
     card.addEventListener('keydown', keyboardHandler);
 
-    // Add event handlers for prompt buttons
+    // Add event handlers for prompt buttons with keyboard navigation
     if (prompts.length > 0) {
-      const promptButtons = card.querySelectorAll('.am-chat-welcome-card-prompt');
+      const promptButtons = Array.from(card.querySelectorAll<HTMLButtonElement>('.am-chat-welcome-card-prompt'));
+
+      // Keyboard navigation handler for prompts
+      const handlePromptKeyboard = (e: KeyboardEvent, currentIndex: number) => {
+        let targetIndex = currentIndex;
+
+        switch (e.key) {
+          case 'ArrowDown':
+          case 'Down':
+            e.preventDefault();
+            targetIndex = (currentIndex + 1) % promptButtons.length;
+            break;
+          case 'ArrowUp':
+          case 'Up':
+            e.preventDefault();
+            targetIndex = (currentIndex - 1 + promptButtons.length) % promptButtons.length;
+            break;
+          case 'Home':
+            e.preventDefault();
+            targetIndex = 0;
+            break;
+          case 'End':
+            e.preventDefault();
+            targetIndex = promptButtons.length - 1;
+            break;
+          case 'Enter':
+          case ' ':
+            e.preventDefault();
+            const prompt = prompts[currentIndex];
+            this.dismissWelcomeCard(card, false);
+            this.eventBus.emit('user:prompt_click', { prompt });
+            return;
+          default:
+            return;
+        }
+
+        // Move focus to target button
+        promptButtons[currentIndex].tabIndex = -1;
+        promptButtons[currentIndex].setAttribute('aria-selected', 'false');
+        promptButtons[targetIndex].tabIndex = 0;
+        promptButtons[targetIndex].setAttribute('aria-selected', 'true');
+        promptButtons[targetIndex].focus();
+      };
+
       promptButtons.forEach((button, index) => {
+        // Click handler
         button.addEventListener('click', () => {
           const prompt = prompts[index];
           this.dismissWelcomeCard(card, false);
-          // Emit prompt click event to be handled by the event bus
           this.eventBus.emit('user:prompt_click', { prompt });
+        });
+
+        // Keyboard navigation
+        button.addEventListener('keydown', (e) => handlePromptKeyboard(e, index));
+
+        // Focus handler to update aria-selected
+        button.addEventListener('focus', () => {
+          button.setAttribute('aria-selected', 'true');
+        });
+
+        button.addEventListener('blur', () => {
+          button.setAttribute('aria-selected', 'false');
         });
       });
     }
@@ -1795,8 +1897,8 @@ export class ChatWidget {
     const toggleContainer = card.querySelector('.am-chat-welcome-card-toggle-container');
     const originalParent = toggleButton.parentElement;
     if (toggleContainer && originalParent) {
-      // Store original click handler
-      const originalOnClick = toggleButton.onclick;
+      // Store original click handler with proper typing
+      const originalOnClick = toggleButton.onclick as ((this: GlobalEventHandlers, ev: MouseEvent) => any) | null;
 
       // Store state in WeakMap (proper TypeScript typing)
       this.welcomeCardStateMap.set(card, {
@@ -1813,7 +1915,7 @@ export class ChatWidget {
       toggleButton.style.transform = 'none';
 
       // Override click handler to dismiss card and open widget
-      toggleButton.onclick = (e) => {
+      toggleButton.onclick = (e: MouseEvent) => {
         e.preventDefault();
         e.stopPropagation();
         this.dismissWelcomeCard(card, true);
