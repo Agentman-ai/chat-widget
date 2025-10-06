@@ -1,0 +1,828 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Daydream Style Implementation Guide</title>
+    <style>
+        /* ============================================
+           DAYDREAM-INSPIRED INPUT BAR STYLES
+           Based on analysis of Daydream's design
+           ============================================ */
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #f9fafb;
+            padding: 20px;
+            min-height: 100vh;
+        }
+
+        .demo-section {
+            max-width: 1200px;
+            margin: 0 auto 60px;
+            padding: 40px;
+            background: white;
+            border-radius: 16px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+        }
+
+        h1 {
+            font-size: 2rem;
+            color: #111827;
+            margin-bottom: 10px;
+        }
+
+        .subtitle {
+            color: #6b7280;
+            margin-bottom: 30px;
+        }
+
+        h2 {
+            font-size: 1.5rem;
+            color: #111827;
+            margin: 30px 0 20px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid #e5e7eb;
+        }
+
+        /* ============================================
+           DAYDREAM EXACT RECREATION
+           ============================================ */
+
+        .daydream-container {
+            position: fixed;
+            right: 0;
+            bottom: 0;
+            left: 0;
+            display: flex;
+            flex-direction: column;
+            max-height: 80dvh; /* Dynamic viewport height */
+            width: 100%;
+            touch-action: pan-y;
+            overscroll-behavior: contain;
+            overflow-y: auto;
+            scrollbar-width: none;
+            -ms-overflow-style: none;
+            border-radius: 24px 24px 0 0; /* rounded-t-3xl */
+            background: #ffffff; /* bg-surface */
+            outline: none;
+            box-shadow: 0px -4px 16px 0px rgba(0, 0, 0, 0.10);
+
+            /* GPU optimization */
+            transform: translateZ(0);
+            -webkit-transform: translateZ(0);
+            transform-style: preserve-3d;
+            -webkit-transform-style: preserve-3d;
+            will-change: transform;
+            -webkit-backface-visibility: hidden;
+            backface-visibility: hidden;
+        }
+
+        .daydream-container::-webkit-scrollbar {
+            display: none;
+        }
+
+        /* Expand/Collapse Button */
+        .daydream-expand-button {
+            flex-shrink: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 100%;
+            padding: 12px;
+            height: 48px; /* Calculated button height */
+            background: transparent;
+            border: none;
+            cursor: pointer;
+            transition: background 0.2s ease;
+        }
+
+        .daydream-expand-button:hover {
+            background: rgba(0, 0, 0, 0.02);
+        }
+
+        .daydream-expand-icon {
+            font-size: 24px;
+            color: #6b7280;
+            transform: rotate(-90deg);
+            transition: transform 0.3s ease;
+        }
+
+        .daydream-expand-button.expanded .daydream-expand-icon {
+            transform: rotate(90deg);
+        }
+
+        /* Chat Messages Container */
+        .daydream-messages {
+            display: flex;
+            min-height: 0;
+            width: 100%;
+            flex: 1;
+            padding: 0 16px; /* px-4 */
+            max-height: 100dvh;
+            opacity: 1;
+            transition: opacity 0.3s ease;
+        }
+
+        /* Input Form Container */
+        .daydream-input-wrapper {
+            flex-shrink: 0;
+            padding: 0 16px 16px; /* px-4 pb-4 */
+        }
+
+        .daydream-form {
+            position: relative;
+            display: flex;
+            width: 100%;
+            align-items: center;
+        }
+
+        .daydream-fieldset {
+            width: 100%;
+            flex-shrink: 0;
+            border: none;
+            margin: 0;
+            padding: 0;
+        }
+
+        /* The Magic Input Container with Dynamic Height */
+        .daydream-input-container {
+            min-height: 44px; /* Base height (11 * 4px) */
+            height: 44px;
+            display: flex;
+            align-items: center;
+            flex-wrap: nowrap;
+            border-radius: 4px; /* rounded-sm */
+            border: 1px solid #9ca3af; /* border-grey */
+            box-shadow: 0px 0px 24px 0px rgba(201, 208, 245, 0.4);
+            background: white;
+            position: relative;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            padding: 0 8px;
+        }
+
+        /* Focus state - Expand to 88px */
+        .daydream-input-container:has(:focus-within) {
+            min-height: 88px; /* Expanded height (22 * 4px) */
+            height: auto;
+            box-shadow: 0px 0px 32px 0px rgba(201, 208, 245, 0.8);
+            border-color: #6366f1;
+        }
+
+        /* Textarea with Dynamic Positioning */
+        .daydream-textarea {
+            field-sizing: content; /* Modern auto-sizing */
+            width: 100%;
+            border: none;
+            outline: none;
+            resize: none;
+            height: 32px; /* Base height (8 * 4px) */
+            background: transparent;
+            font-size: 15px;
+            color: #1f2937;
+            font-family: inherit;
+            padding: 8px 0;
+            position: absolute;
+            top: 50%;
+            transform: translateY(-50%);
+            transition: all 0.3s ease;
+        }
+
+        /* On focus, make textarea relative for proper expansion */
+        .daydream-input-container:has(:focus-within) .daydream-textarea {
+            position: relative;
+            top: auto;
+            transform: none;
+            height: auto;
+            min-height: 32px;
+        }
+
+        .daydream-textarea::placeholder {
+            color: #9ca3af;
+        }
+
+        /* Action Buttons Container - Progressive Disclosure */
+        .daydream-buttons-wrapper {
+            gap: 8px; /* gap-2 */
+            position: absolute;
+            left: 0;
+            right: 0;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0 8px; /* px-2 */
+            bottom: 8px; /* bottom-2 */
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.3s ease;
+        }
+
+        /* Show buttons on focus */
+        .daydream-input-container:has(:focus-within) .daydream-buttons-wrapper {
+            opacity: 1;
+            pointer-events: auto;
+        }
+
+        .daydream-button-group {
+            display: flex;
+            gap: 8px;
+        }
+
+        /* Action Buttons Styling */
+        .daydream-action-button {
+            aspect-ratio: 1 / 1;
+            height: 32px; /* h-8 */
+            width: 32px; /* w-8 */
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+            font-size: 16px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        /* Light variant for secondary actions */
+        .daydream-action-button.light {
+            background: #f3f4f6; /* bg-accent-light */
+            color: #6b7280;
+        }
+
+        .daydream-action-button.light:hover {
+            background: #e5e7eb;
+            transform: translateY(-1px);
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        }
+
+        /* Primary variant for submit */
+        .daydream-action-button.primary {
+            background: #3b82f6; /* bg-accent-primary */
+            color: white;
+        }
+
+        .daydream-action-button.primary:hover {
+            background: #2563eb;
+            transform: translateY(-1px);
+            box-shadow: 0 2px 12px rgba(59, 130, 246, 0.4);
+        }
+
+        /* Active state with micro-interaction */
+        .daydream-action-button:active {
+            transform: scale(0.92);
+        }
+
+        /* Ripple effect on click */
+        .daydream-action-button::after {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 0;
+            height: 0;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.5);
+            transform: translate(-50%, -50%);
+            transition: width 0.4s, height 0.4s;
+        }
+
+        .daydream-action-button:active::after {
+            width: 100%;
+            height: 100%;
+        }
+
+        /* Material Icons styling */
+        .material-icon {
+            font-family: 'Material Icons', 'Material Symbols Outlined';
+            font-size: 16px;
+            line-height: 1;
+            font-weight: normal;
+            font-style: normal;
+            letter-spacing: normal;
+            text-transform: none;
+            display: inline-block;
+            white-space: nowrap;
+            word-wrap: normal;
+            direction: ltr;
+            -webkit-font-smoothing: antialiased;
+            text-rendering: optimizeLegibility;
+            -moz-osx-font-smoothing: grayscale;
+            font-feature-settings: 'liga';
+        }
+
+        /* ============================================
+           YOUR CURRENT IMPLEMENTATION (IMPROVED)
+           ============================================ */
+
+        .improved-input-bar {
+            position: fixed;
+            bottom: 12px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: min(520px, calc(100% - 32px));
+            z-index: 100000;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .improved-input-main {
+            position: relative;
+            background: #ffffff;
+            border-radius: 24px;
+            box-shadow:
+                0 4px 16px rgba(0, 0, 0, 0.08),
+                0 2px 8px rgba(0, 0, 0, 0.04);
+            display: flex;
+            align-items: center;
+            min-height: 48px;
+            overflow: hidden;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+
+            /* Add GPU optimization */
+            transform: translateZ(0);
+            will-change: transform, box-shadow, min-height;
+            backface-visibility: hidden;
+        }
+
+        /* Enhanced focus state with Daydream-style expansion */
+        .improved-input-main:focus-within {
+            min-height: 88px; /* Expand like Daydream */
+            box-shadow:
+                0 8px 32px rgba(0, 0, 0, 0.12),
+                0 4px 16px rgba(0, 0, 0, 0.08),
+                0 0 24px rgba(201, 208, 245, 0.8); /* Blue glow */
+            transform: translateY(-2px);
+        }
+
+        /* Brand zone stays the same */
+        .improved-brand {
+            display: flex;
+            align-items: center;
+            gap: 0;
+            background: color-mix(in srgb, #3b82f6 15%, white);
+            border-radius: 24px 0 0 24px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            padding-right: 16px;
+            padding-left: 44px;
+            height: 48px;
+            position: relative;
+            flex-shrink: 0;
+        }
+
+        .improved-logo {
+            position: absolute;
+            left: 6px;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #3B82F6, #2563EB);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 18px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+        }
+
+        /* Improved input field with dynamic sizing */
+        .improved-input-field {
+            flex: 1;
+            background: none;
+            border: none;
+            outline: none;
+            font-size: 15px;
+            color: #111827;
+            font-family: inherit;
+            padding: 12px 16px;
+            min-height: 48px;
+            field-sizing: content; /* Add auto-sizing */
+            resize: none;
+            transition: all 0.3s ease;
+        }
+
+        .improved-input-field::placeholder {
+            color: #9CA3AF;
+        }
+
+        /* Action buttons with progressive disclosure */
+        .improved-actions {
+            position: absolute;
+            bottom: 8px;
+            right: 8px;
+            display: flex;
+            gap: 6px;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.3s ease;
+        }
+
+        .improved-input-main:focus-within .improved-actions {
+            opacity: 1;
+            pointer-events: auto;
+        }
+
+        .improved-action-btn {
+            width: 32px;
+            height: 32px;
+            border-radius: 8px;
+            border: none;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            background: rgba(59, 130, 246, 0.1);
+            color: #3b82f6;
+        }
+
+        .improved-action-btn:hover {
+            background: rgba(59, 130, 246, 0.2);
+            transform: scale(1.05);
+        }
+
+        .improved-action-btn:active {
+            transform: scale(0.95);
+        }
+
+        .improved-action-btn.primary {
+            background: #3b82f6;
+            color: white;
+        }
+
+        .improved-action-btn.primary:hover {
+            background: #2563eb;
+        }
+
+        /* ============================================
+           COMPARISON STYLES
+           ============================================ */
+
+        .comparison-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 30px;
+            margin-top: 30px;
+        }
+
+        .comparison-item {
+            background: #f9fafb;
+            padding: 20px;
+            border-radius: 12px;
+            border: 1px solid #e5e7eb;
+        }
+
+        .comparison-item h3 {
+            font-size: 1.1rem;
+            margin-bottom: 15px;
+            color: #111827;
+        }
+
+        .feature-list {
+            list-style: none;
+            padding: 0;
+        }
+
+        .feature-list li {
+            padding: 8px 0;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 0.95rem;
+            color: #4b5563;
+        }
+
+        .check {
+            color: #10b981;
+            font-weight: bold;
+        }
+
+        .cross {
+            color: #ef4444;
+            font-weight: bold;
+        }
+
+        .code-snippet {
+            background: #1e293b;
+            color: #e2e8f0;
+            padding: 20px;
+            border-radius: 8px;
+            overflow-x: auto;
+            margin-top: 20px;
+            font-family: 'Courier New', monospace;
+            font-size: 14px;
+            line-height: 1.6;
+        }
+
+        .highlight-line {
+            background: rgba(59, 130, 246, 0.1);
+            display: block;
+            margin: 0 -20px;
+            padding: 2px 20px;
+        }
+
+        /* Demo container styles */
+        .demo-preview {
+            position: relative;
+            height: 400px;
+            background: linear-gradient(135deg, #f3f4f6 0%, #e5e7eb 100%);
+            border-radius: 12px;
+            margin: 20px 0;
+            overflow: hidden;
+        }
+
+        .demo-label {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            background: rgba(0, 0, 0, 0.8);
+            color: white;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 12px;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            z-index: 1000;
+        }
+    </style>
+</head>
+<body>
+    <div class="demo-section">
+        <h1>🎨 Daydream Style Implementation</h1>
+        <p class="subtitle">Exact recreation of Daydream's bottom chat input bar with modern patterns</p>
+
+        <h2>📊 Feature Comparison</h2>
+        <div class="comparison-grid">
+            <div class="comparison-item">
+                <h3>✅ Daydream Features</h3>
+                <ul class="feature-list">
+                    <li><span class="check">✓</span> Height expands on focus (44px → 88px)</li>
+                    <li><span class="check">✓</span> Buttons hide/show with opacity</li>
+                    <li><span class="check">✓</span> Blue glow shadow on focus</li>
+                    <li><span class="check">✓</span> GPU-accelerated transforms</li>
+                    <li><span class="check">✓</span> field-sizing-content for auto-resize</li>
+                    <li><span class="check">✓</span> Dynamic viewport height (dvh)</li>
+                    <li><span class="check">✓</span> Absolute → relative positioning</li>
+                    <li><span class="check">✓</span> Material Design icons</li>
+                </ul>
+            </div>
+            <div class="comparison-item">
+                <h3>🔄 Your Current Implementation</h3>
+                <ul class="feature-list">
+                    <li><span class="cross">✗</span> Static 48px height</li>
+                    <li><span class="cross">✗</span> Buttons always visible</li>
+                    <li><span class="cross">✗</span> Standard shadow only</li>
+                    <li><span class="cross">✗</span> Basic transitions</li>
+                    <li><span class="cross">✗</span> Fixed input height</li>
+                    <li><span class="check">✓</span> Centered pill design</li>
+                    <li><span class="check">✓</span> Brand zone with logo</li>
+                    <li><span class="check">✓</span> Typewriter effect</li>
+                </ul>
+            </div>
+        </div>
+
+        <h2>💡 Key Implementation Details</h2>
+        <div class="code-snippet">
+<pre>/* 1. CONTAINER WITH GPU OPTIMIZATION */
+<span class="highlight-line">.daydream-input-container {</span>
+  min-height: 44px; /* Base height */
+  height: 44px;
+  /* GPU acceleration for smooth animations */
+  transform: translateZ(0);
+  will-change: transform, box-shadow;
+  backface-visibility: hidden;
+}
+
+/* 2. FOCUS STATE WITH EXPANSION */
+<span class="highlight-line">.daydream-input-container:has(:focus-within) {</span>
+  min-height: 88px; /* Double height on focus */
+  height: auto;
+  /* Blue glow shadow */
+  box-shadow: 0px 0px 32px rgba(201, 208, 245, 0.8);
+}
+
+/* 3. DYNAMIC TEXTAREA POSITIONING */
+.daydream-textarea {
+  <span class="highlight-line">field-sizing: content; /* Modern auto-sizing */</span>
+  position: absolute; /* Centered when collapsed */
+  transition: all 0.3s ease;
+}
+
+.daydream-input-container:has(:focus-within) .daydream-textarea {
+  <span class="highlight-line">position: relative; /* Normal flow when expanded */</span>
+  height: auto;
+  min-height: 32px;
+}
+
+/* 4. PROGRESSIVE BUTTON DISCLOSURE */
+.daydream-buttons-wrapper {
+  position: absolute;
+  bottom: 8px;
+  <span class="highlight-line">opacity: 0; /* Hidden by default */</span>
+  pointer-events: none;
+  transition: opacity 0.3s ease;
+}
+
+.daydream-input-container:has(:focus-within) .daydream-buttons-wrapper {
+  <span class="highlight-line">opacity: 1; /* Show on focus */</span>
+  pointer-events: auto;
+}</pre>
+        </div>
+
+        <h2>🚀 Improved Version of Your Implementation</h2>
+        <div class="demo-preview">
+            <span class="demo-label">Live Demo - Enhanced</span>
+            <div class="improved-input-bar">
+                <div class="improved-input-main">
+                    <div class="improved-brand">
+                        <div class="improved-logo">AI</div>
+                        <span style="color: #3b82f6; font-weight: 600; font-size: 14px;">Ask AI</span>
+                    </div>
+                    <textarea class="improved-input-field" placeholder="Ask anything..." rows="1"></textarea>
+                    <div class="improved-actions">
+                        <button class="improved-action-btn" title="Attach">📎</button>
+                        <button class="improved-action-btn primary" title="Send">↑</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <h2>🎯 Critical Improvements Needed</h2>
+        <div class="code-snippet">
+<pre>/* UPDATE YOUR input-bar.ts WITH THESE CHANGES */
+
+/* 1. Add height expansion */
+.am-chat-input-bar-main {
+  <span class="highlight-line">min-height: 48px; /* Start small */</span>
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  /* Add GPU optimization */
+  <span class="highlight-line">transform: translateZ(0);</span>
+  <span class="highlight-line">will-change: transform, box-shadow, min-height;</span>
+}
+
+.am-chat-input-bar-main:focus-within {
+  <span class="highlight-line">min-height: 88px; /* Expand on focus */</span>
+  transform: translateY(-2px);
+  box-shadow:
+    0 8px 32px rgba(0, 0, 0, 0.12),
+    <span class="highlight-line">0 0 24px rgba(201, 208, 245, 0.8); /* Blue glow */</span>
+}
+
+/* 2. Make input field dynamic */
+.am-chat-input-bar-field {
+  <span class="highlight-line">field-sizing: content; /* Auto-resize */</span>
+  <span class="highlight-line">resize: vertical; /* Allow manual resize */</span>
+  min-height: 32px;
+  max-height: 120px; /* Limit growth */
+}
+
+/* 3. Progressive button disclosure */
+<span class="highlight-line">.am-chat-input-bar-actions {</span>
+  position: absolute;
+  bottom: 8px;
+  right: 8px;
+  display: flex;
+  gap: 6px;
+  <span class="highlight-line">opacity: 0;</span>
+  <span class="highlight-line">pointer-events: none;</span>
+  transition: opacity 0.3s ease;
+}
+
+<span class="highlight-line">.am-chat-input-bar-main:focus-within .am-chat-input-bar-actions {</span>
+  opacity: 1;
+  pointer-events: auto;
+}
+
+/* 4. Add micro-interactions */
+.am-chat-input-bar-icon:active {
+  <span class="highlight-line">transform: scale(0.92);</span>
+  transition: transform 0.1s ease;
+}
+
+/* 5. Mobile optimization with dvh units */
+@media (max-width: 768px) {
+  .am-chat-input-bar {
+    <span class="highlight-line">bottom: max(8px, env(safe-area-inset-bottom));</span>
+    width: calc(100% - 16px);
+  }
+
+  .am-chat-input-bar-main {
+    <span class="highlight-line">max-height: 50dvh; /* Dynamic viewport height */</span>
+  }
+}</pre>
+        </div>
+
+        <h2>✨ Final Recommendations</h2>
+        <div class="comparison-grid">
+            <div class="comparison-item">
+                <h3>🎯 Must-Have Features</h3>
+                <ul class="feature-list">
+                    <li><span class="check">✓</span> Height expansion on focus</li>
+                    <li><span class="check">✓</span> Progressive button disclosure</li>
+                    <li><span class="check">✓</span> Blue glow shadow effect</li>
+                    <li><span class="check">✓</span> GPU acceleration properties</li>
+                    <li><span class="check">✓</span> Field-sizing for auto-resize</li>
+                </ul>
+            </div>
+            <div class="comparison-item">
+                <h3>🚀 Nice-to-Have Enhancements</h3>
+                <ul class="feature-list">
+                    <li><span class="check">✓</span> Ripple effect on buttons</li>
+                    <li><span class="check">✓</span> Elastic animations</li>
+                    <li><span class="check">✓</span> Keyboard shortcuts</li>
+                    <li><span class="check">✓</span> Voice input support</li>
+                    <li><span class="check">✓</span> Drag-to-resize handle</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Add auto-resize behavior to improved input
+        const improvedInput = document.querySelector('.improved-input-field');
+        if (improvedInput) {
+            improvedInput.addEventListener('input', function() {
+                this.style.height = 'auto';
+                this.style.height = Math.min(this.scrollHeight, 120) + 'px';
+            });
+
+            // Reset on blur if empty
+            improvedInput.addEventListener('blur', function() {
+                if (!this.value.trim()) {
+                    this.style.height = '48px';
+                }
+            });
+        }
+
+        // Add focus animations
+        const improvedMain = document.querySelector('.improved-input-main');
+        if (improvedMain) {
+            improvedMain.addEventListener('focusin', function() {
+                this.style.animation = 'pulse 0.3s ease';
+            });
+
+            improvedMain.addEventListener('animationend', function() {
+                this.style.animation = '';
+            });
+        }
+
+        // Button click animations
+        document.querySelectorAll('.improved-action-btn').forEach(btn => {
+            btn.addEventListener('click', function(e) {
+                // Create ripple effect
+                const ripple = document.createElement('span');
+                ripple.style.cssText = `
+                    position: absolute;
+                    background: rgba(255, 255, 255, 0.5);
+                    border-radius: 50%;
+                    width: 20px;
+                    height: 20px;
+                    top: 50%;
+                    left: 50%;
+                    transform: translate(-50%, -50%);
+                    animation: ripple 0.4s ease;
+                    pointer-events: none;
+                `;
+                this.style.position = 'relative';
+                this.style.overflow = 'hidden';
+                this.appendChild(ripple);
+
+                setTimeout(() => ripple.remove(), 400);
+            });
+        });
+
+        // Add pulse animation
+        const style = document.createElement('style');
+        style.textContent = `
+            @keyframes pulse {
+                0% { transform: scale(1); }
+                50% { transform: scale(1.02); }
+                100% { transform: scale(1); }
+            }
+
+            @keyframes ripple {
+                from {
+                    width: 0;
+                    height: 0;
+                    opacity: 1;
+                }
+                to {
+                    width: 40px;
+                    height: 40px;
+                    opacity: 0;
+                }
+            }
+        `;
+        document.head.appendChild(style);
+    </script>
+</body>
+</html>

@@ -47,6 +47,97 @@ The plugin provides extensive customization options:
 - **Persistence**: Configure conversation storage settings
 - **Advanced**: Preview functionality, reset to defaults
 
+## Presentation Modes
+
+The plugin offers four distinct presentation modes for when the widget is closed. Configure this in the plugin settings under **Appearance** → **Closed View Mode**.
+
+### Available Modes
+
+#### 1. Toggle Only
+Minimal presence - just the chat button in the corner. Prompts appear inside the widget after opening.
+
+**Best for:** Clean, unobtrusive designs; mobile-first sites; limited screen space
+
+---
+
+#### 2. Floating Prompts (Traditional)
+Classic floating bubbles with welcome message and prompt buttons above the toggle.
+
+**Best for:** High engagement; e-commerce with common questions; traditional chat feel
+
+**Configuration:**
+- Enable in Appearance → Closed View Mode
+- Set welcome message and up to 3 prompts in Content tab
+
+---
+
+#### 3. Welcome Card (Premium)
+Modern glassmorphic card with blur effects, prompts integrated inside the card.
+
+**Best for:** Premium aesthetic; modern brands; maximum visual impact
+
+**Configuration:**
+- Enable in Appearance → Closed View Mode
+- Configure welcome message and prompts
+- Card automatically styles to match your theme
+
+---
+
+#### 4. Input Bar (AI Search) 🆕
+Modern AI search bar at bottom center of screen with typewriter animation.
+
+**Best for:** AI-first experiences; ChatGPT-style UX; minimalist designs; mobile-optimized
+
+**What visitors see:**
+- Floating search bar centered at bottom
+- Typewriter cycling through your prompts
+- Brand logo + custom text (e.g., "Ask AI")
+- Prompts slide up when focused
+- Smooth collapse animations
+
+**Key Features:**
+- Typewriter effect with your welcome message + prompts
+- Brand pill collapses to circle icon on focus
+- Progressive disclosure (menu appears when typing)
+- Mobile-optimized with Safari safe-area support
+- Enter to submit, Shift+Enter for new lines
+
+**Configuration in Admin:**
+1. Navigate to Settings → Agentman AI Agents
+2. Go to Appearance tab
+3. Set "Closed View Mode" to "Input Bar"
+4. Configure Content tab:
+   - Toggle Text: e.g., "Ask AI", "AI Search"
+   - Welcome Message: Shows in typewriter
+   - Prompts 1-3: Cycle in typewriter effect
+5. Optional: Customize input bar colors in Theme tab
+
+**Theming Options:**
+The Input Bar mode includes 7 additional color customization options:
+- Brand Background: Pill background color
+- Brand Text: "Ask AI" text color
+- Logo Icon: Icon color
+- Button Background: Menu button background
+- Button Icon: Menu button icon color
+- Glow Color: Focus effect color
+
+All auto-derive from your main theme colors if not customized.
+
+---
+
+### How to Choose
+
+| Use Case | Recommended Mode |
+|----------|-----------------|
+| Minimal, clean design | Toggle Only |
+| E-commerce with FAQs | Floating Prompts |
+| Premium brand experience | Welcome Card |
+| Modern AI-first UX | Input Bar |
+| Mobile-focused site | Input Bar or Toggle Only |
+| Maximum engagement | Floating Prompts or Welcome Card |
+
+---
+
 ## Persistence Functionality
 
 The Agentman AI Agents includes built-in persistence functionality that allows conversations to be saved and restored across page reloads and browser sessions.
@@ -117,6 +208,22 @@ When using the persistence functionality, you should inform your users that thei
 3. Set the number of days to store conversations
 4. Save changes
 
+### Presentation Mode Configuration
+
+1. Navigate to Settings → Agentman AI Agents
+2. Go to the Appearance tab
+3. Find "Closed View Mode" dropdown
+4. Select from four options:
+   - **Toggle Only**: Just the button
+   - **Floating Prompts**: Classic floating bubbles
+   - **Welcome Card**: Modern glassmorphic card
+   - **Input Bar**: AI search bar at bottom
+5. Configure related settings in Content tab (prompts, welcome message)
+6. Preview your selection
+7. Save changes
+
+**Note**: Input Bar mode includes additional theming options for the search bar appearance.
+
 ## Frequently Asked Questions
 
 ### Where do I get my Agentman Agent Token?
@@ -162,6 +269,36 @@ Advanced users can modify the plugin's CSS or JavaScript files for further custo
 ### Can I customize the appearance of the chat widget?
 
 Yes, the plugin provides extensive customization options including colors, icons, logos, and placement.
+
+### What's the difference between the presentation modes?
+
+The plugin offers four ways to display the widget when closed:
+
+1. **Toggle Only**: Just a button - cleanest, most minimal
+2. **Floating Prompts**: Traditional chat with floating prompt bubbles
+3. **Welcome Card**: Premium glassmorphic card with integrated prompts
+4. **Input Bar**: Modern AI search bar at screen bottom (like ChatGPT)
+
+Choose based on your design aesthetic and user experience goals. All modes work on mobile and desktop.
+
+### How do I customize the Input Bar colors?
+
+When using Input Bar mode, go to the Theme tab in plugin settings. You'll see additional color options:
+- Brand Background
+- Brand Text (e.g., "Ask AI")
+- Logo Icon Color
+- Button Background/Icon
+- Focus Glow Color
+
+These auto-derive from your main theme colors but can be overridden for custom branding.
+
+### Does the Input Bar work on mobile Safari?
+
+Yes! The Input Bar includes special optimizations for iOS Safari:
+- Respects safe-area-inset-bottom for notch/home indicator
+- Keyboard handling with dynamic viewport units
+- Touch-optimized interactions
+- May require slight scroll on initial load for Safari address bar to auto-hide (standard Safari behavior)
 
 ## Support
 

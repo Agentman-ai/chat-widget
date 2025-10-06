@@ -60,6 +60,8 @@ export class ChatWidget {
   // State flags
   private isSwitchingConversation: boolean = false;
   private floatingPromptsTimeout: NodeJS.Timeout | null = null;
+  private inputBarCleanup: (() => void)[] = [];
+  private inputBarTypewriterCleanup: (() => void) | null = null;
   private eventBus!: EventBus;
   private errorHandler!: ErrorHandler;
   private messageHandler: MessageHandler | null = null;
@@ -277,10 +279,12 @@ export class ChatWidget {
     
     // Show floating prompts if widget starts closed (corner variant only)
     if (this.config.variant === 'corner' && !this.config.initiallyOpen && !this.state.isOpen) {
+      // Input bar mode shows immediately, others wait 5 seconds
+      const delay = this.config.agentClosedView === 'input-bar' ? 0 : 5000;
       this.floatingPromptsTimeout = setTimeout(() => {
         this.showFloatingPrompts();
         this.floatingPromptsTimeout = null;
-      }, 5000);
+      }, delay);
     }
     
     // Setup conversation management if persistence is enabled
@@ -395,11 +399,12 @@ export class ChatWidget {
           }
         }
       } else {
-        // Show floating prompts after 5 seconds delay
+        // Show floating prompts after delay (immediate for input-bar, 5s for others)
+        const delay = this.config.agentClosedView === 'input-bar' ? 0 : 5000;
         this.floatingPromptsTimeout = setTimeout(() => {
           this.showFloatingPrompts();
           this.floatingPromptsTimeout = null;
-        }, 5000);
+        }, delay);
       }
     }
   }
@@ -1551,7 +1556,8 @@ export class ChatWidget {
     // Check if already exists
     const existingPrompts = document.querySelector('.am-chat-floating-prompts-container');
     const existingCard = document.querySelector('.am-chat-floating-welcome-card');
-    if (existingPrompts || existingCard) return;
+    const existingInputBar = document.querySelector('.am-chat-input-bar');
+    if (existingPrompts || existingCard || existingInputBar) return;
 
     // Determine mode using new helper
     const mode = this.getClosedViewMode();
@@ -1571,6 +1577,12 @@ export class ChatWidget {
         // Show welcome card with or without prompts
         this.logger.debug('Mode: welcome-card - showing card');
         this.showWelcomeCard(prompts);
+        return;
+
+      case 'input-bar':
+        // Show modern AI search bar at bottom
+        this.logger.debug('Mode: input-bar - showing AI search bar');
+        this.showInputBar(prompts);
         return;
 
       case 'floating-prompts':
@@ -2143,6 +2155,323 @@ export class ChatWidget {
     // Clear active card reference
     if (this.activeWelcomeCard === card) {
       this.activeWelcomeCard = null;
+    }
+  }
+
+  /**
+   * Show modern AI input bar at bottom of screen
+   * @param prompts Optional array of prompt strings
+   */
+  private showInputBar(prompts: string[] = []): void {
+    // Check if input bar already exists
+    const existingBar = document.querySelector('.am-chat-input-bar');
+    if (existingBar) {
+      this.logger.debug('Input bar already exists');
+      return;
+    }
+
+    // Prepare messages for typewriter (cycle through prompts if available)
+    const typewriterMessages: string[] = [];
+    const welcomeMessage = this.config.messagePrompts?.welcome_message;
+    if (welcomeMessage) {
+      typewriterMessages.push(welcomeMessage);
+    }
+    if (prompts.length > 0) {
+      typewriterMessages.push(...prompts);
+    }
+    if (typewriterMessages.length === 0) {
+      typewriterMessages.push('Ask anything...');
+    }
+
+    // Create main container
+    const inputBar = document.createElement('div');
+    inputBar.className = 'am-chat-input-bar am-chat-input-bar-enter';
+
+    // Create main input container
+    const mainContainer = document.createElement('div');
+    mainContainer.className = 'am-chat-input-bar-main';
+
+    // Create branded zone (logo + text using config values)
+    const brandZone = document.createElement('div');
+    brandZone.className = 'am-chat-input-bar-brand';
+    brandZone.setAttribute('aria-label', 'AI Assistant');
+
+    // Logo element - use am-chat-logo with same logic as toggle button
+    const logo = document.createElement('div');
+    logo.className = 'am-chat-input-bar-logo am-chat-logo';
+    logo.innerHTML = this.assets.logo || icons.agentmanLogo;
+
+    // Brand text - use configured toggleText (color from CSS variable)
+    const brandText = document.createElement('span');
+    brandText.className = 'am-chat-input-bar-brand-text';
+    brandText.textContent = this.config.toggleText || 'AI Mode';
+
+    brandZone.appendChild(logo);
+    brandZone.appendChild(brandText);
+
+    // Create typewriter text element (shown when not focused)
+    const typewriterText = document.createElement('div');
+    typewriterText.className = 'am-chat-input-bar-typewriter';
+
+    // Create actual input field (textarea for auto-resize)
+    const inputField = document.createElement('textarea');
+    inputField.className = 'am-chat-input-bar-field';
+    inputField.placeholder = this.config.placeholder || 'Ask anything...';
+    inputField.rows = 1;
+    inputField.style.display = 'none';
+
+    // Create menu icon (three-dot menu)
+    const menuButton = document.createElement('button');
+    menuButton.className = 'am-chat-input-bar-icon am-chat-input-bar-menu';
+    menuButton.setAttribute('aria-label', 'Menu');
+    menuButton.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+      <circle cx="12" cy="6" r="1.5" fill="currentColor"/>
+      <circle cx="12" cy="12" r="1.5" fill="currentColor"/>
+      <circle cx="12" cy="18" r="1.5" fill="currentColor"/>
+    </svg>`;
+
+    // Assemble main container
+    mainContainer.appendChild(brandZone);
+    mainContainer.appendChild(typewriterText);
+    mainContainer.appendChild(inputField);
+    mainContainer.appendChild(menuButton);
+
+    // Create prompts container (shown when focused, floats above)
+    const promptsContainer = document.createElement('div');
+    promptsContainer.className = 'am-chat-input-bar-prompts';
+
+    if (prompts.length > 0) {
+      prompts.forEach(prompt => {
+        const promptButton = document.createElement('button');
+        promptButton.className = 'am-chat-input-bar-prompt';
+        promptButton.textContent = prompt;
+
+        const clickHandler = () => this.handleInputBarPromptClick(prompt);
+        promptButton.addEventListener('click', clickHandler);
+        this.inputBarCleanup.push(() =>
+          promptButton.removeEventListener('click', clickHandler)
+        );
+
+        promptsContainer.appendChild(promptButton);
+      });
+    }
+
+    // Assemble input bar (main container + prompts outside)
+    inputBar.appendChild(mainContainer);
+    if (prompts.length > 0) {
+      inputBar.appendChild(promptsContainer);
+    }
+
+    // Add to DOM
+    document.body.appendChild(inputBar);
+
+    // Hide the toggle button when input bar is shown
+    const toggleButton = this.element.querySelector('.am-chat-toggle');
+    if (toggleButton instanceof HTMLElement) {
+      toggleButton.style.display = 'none';
+    }
+
+    // Start typewriter effect with cleanup
+    this.inputBarTypewriterCleanup = this.startTypewriterEffectCycling(typewriterText, typewriterMessages);
+
+    // Focus handler
+    const focusHandler = () => mainContainer.classList.add('focused');
+    inputField.addEventListener('focus', focusHandler);
+    this.inputBarCleanup.push(() =>
+      inputField.removeEventListener('focus', focusHandler)
+    );
+
+    // Blur handler
+    const blurHandler = () => {
+      setTimeout(() => mainContainer.classList.remove('focused'), 200);
+    };
+    inputField.addEventListener('blur', blurHandler);
+    this.inputBarCleanup.push(() =>
+      inputField.removeEventListener('blur', blurHandler)
+    );
+
+    // Typewriter click handler
+    const typewriterClickHandler = () => {
+      typewriterText.style.display = 'none';
+      inputField.style.display = 'block';
+      inputField.focus();
+      mainContainer.classList.add('focused');
+    };
+    typewriterText.addEventListener('click', typewriterClickHandler);
+    this.inputBarCleanup.push(() =>
+      typewriterText.removeEventListener('click', typewriterClickHandler)
+    );
+
+    // Input blur handler for typewriter
+    const inputBlurHandler = () => {
+      setTimeout(() => {
+        if (!inputField.value.trim()) {
+          inputField.style.display = 'none';
+          typewriterText.style.display = 'block';
+          this.inputBarTypewriterCleanup = this.startTypewriterEffectCycling(
+            typewriterText,
+            typewriterMessages
+          );
+        }
+      }, 200);
+    };
+    inputField.addEventListener('blur', inputBlurHandler);
+    this.inputBarCleanup.push(() =>
+      inputField.removeEventListener('blur', inputBlurHandler)
+    );
+
+    // Enter key handler
+    const keydownHandler = (e: KeyboardEvent) => {
+      if (e.key === 'Enter' && !e.shiftKey) {
+        e.preventDefault();
+        const value = (e.target as HTMLTextAreaElement).value.trim();
+        if (value) {
+          this.handleInputBarSubmit(value);
+          (e.target as HTMLTextAreaElement).value = '';
+        }
+      }
+    };
+    inputField.addEventListener('keydown', keydownHandler);
+    this.inputBarCleanup.push(() =>
+      inputField.removeEventListener('keydown', keydownHandler)
+    );
+
+    // Menu button handler
+    const menuClickHandler = () => {
+      this.emitToggleEvent();
+      this.hideInputBar();
+    };
+    menuButton.addEventListener('click', menuClickHandler);
+    this.inputBarCleanup.push(() =>
+      menuButton.removeEventListener('click', menuClickHandler)
+    );
+
+    this.logger.debug('Input bar displayed with typewriter effect');
+  }
+
+  /**
+   * Typewriter effect for input bar (single message)
+   */
+  private startTypewriterEffect(element: HTMLElement, text: string): void {
+    let index = 0;
+    element.textContent = '';
+
+    const type = () => {
+      if (index < text.length) {
+        element.textContent = text.substring(0, index + 1);
+        index++;
+        setTimeout(type, 80); // Typing speed
+      }
+    };
+
+    type();
+  }
+
+  /**
+   * Typewriter effect that cycles through multiple messages
+   */
+  private startTypewriterEffectCycling(element: HTMLElement, messages: string[]): () => void {
+    if (messages.length === 0) return () => {};
+
+    let messageIndex = 0;
+    let charIndex = 0;
+    let isDeleting = false;
+    let timeoutId: ReturnType<typeof setTimeout> | null = null;
+
+    const typeNextChar = () => {
+      const currentMessage = messages[messageIndex];
+
+      if (!isDeleting) {
+        // Typing
+        element.textContent = currentMessage.substring(0, charIndex + 1);
+        charIndex++;
+
+        if (charIndex === currentMessage.length) {
+          // Pause at end of message, then start deleting
+          timeoutId = setTimeout(() => {
+            isDeleting = true;
+            typeNextChar();
+          }, 2000);
+          return;
+        }
+      } else {
+        // Deleting
+        element.textContent = currentMessage.substring(0, charIndex - 1);
+        charIndex--;
+
+        if (charIndex === 0) {
+          // Move to next message
+          isDeleting = false;
+          messageIndex = (messageIndex + 1) % messages.length;
+          timeoutId = setTimeout(typeNextChar, 500);
+          return;
+        }
+      }
+
+      timeoutId = setTimeout(typeNextChar, isDeleting ? 40 : 80);
+    };
+
+    typeNextChar();
+
+    // Return cleanup function
+    return () => {
+      if (timeoutId) {
+        clearTimeout(timeoutId);
+        timeoutId = null;
+      }
+    };
+  }
+
+  /**
+   * Handle input bar prompt click
+   */
+  private handleInputBarPromptClick(prompt: string): void {
+    this.logger.debug('Input bar prompt clicked:', prompt);
+    this.hideInputBar();
+    this.emitToggleEvent();
+    // Emit prompt event after widget opens
+    setTimeout(() => {
+      this.emitPromptClickEvent(prompt);
+    }, 400);
+  }
+
+  /**
+   * Handle input bar submission
+   */
+  private handleInputBarSubmit(message: string): void {
+    this.logger.debug('Input bar submission:', message);
+    this.hideInputBar();
+    this.emitToggleEvent();
+    // Send message after widget opens - use prompt event which will handle it
+    setTimeout(() => {
+      this.emitPromptClickEvent(message);
+    }, 400);
+  }
+
+  /**
+   * Hide input bar and restore toggle button
+   */
+  private hideInputBar(): void {
+    // Run all cleanup functions
+    this.inputBarCleanup.forEach(cleanup => cleanup());
+    this.inputBarCleanup = [];
+
+    // Stop typewriter animation
+    if (this.inputBarTypewriterCleanup) {
+      this.inputBarTypewriterCleanup();
+      this.inputBarTypewriterCleanup = null;
+    }
+
+    // Remove DOM element
+    const inputBar = document.querySelector('.am-chat-input-bar');
+    if (inputBar) {
+      inputBar.remove();
+    }
+
+    // Restore the toggle button visibility
+    const toggleButton = this.element.querySelector('.am-chat-toggle');
+    if (toggleButton instanceof HTMLElement) {
+      toggleButton.style.display = '';
     }
   }
 

@@ -3,7 +3,7 @@
  * Plugin Name: Agentman AI Agents
  * Plugin URI: https://github.com/Agentman-ai/chat-widget/tree/main/wordpress
  * Description: Integrates the Agentman AI Agents into your WordPress site with admin customization options.
- * Version: 5.12.1
+ * Version: 5.13.0
  * Author: Agentman
  * Author URI: https://agentman.ai
  * License: MIT

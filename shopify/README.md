@@ -104,15 +104,20 @@ shopify/
 
 ### What's New in v5? 🎉
 
-Version 5.2.0 includes major security and accessibility improvements:
+Version 5.x includes major new features and improvements:
 
+- **🆕 Input Bar Mode**: Modern AI search bar at bottom of screen (ChatGPT/Perplexity-style)
+- **🎨 Enhanced Theming**: 7 new CSS variables for input bar customization
+- **📱 Safari Mobile**: Safe-area-inset support for iOS notch/home indicator
 - **🔐 Security**: XSS vulnerability fixes using safe DOM APIs
 - **♿ Accessibility**: Full keyboard navigation with Arrow keys, Home/End, Enter/Space
 - **🎯 ARIA Support**: Comprehensive ARIA attributes for screen readers
-- **⚡ Performance**: Improved TypeScript type safety
-- **📱 Mobile**: Better touch and keyboard support
+- **⚡ Performance**: Improved TypeScript type safety, GPU-optimized animations
+- **🎬 Animations**: Typewriter effects, progressive disclosure, elastic easing
 
 **Upgrade from v2**: Simply change `v2` to `v5` in your script URL. No breaking changes!
+
+**New in v5**: The `input-bar` presentation mode is only available in v5. Requires `data-agent-closed-view="input-bar"`.
 
 ## Configuration Options
 
@@ -158,10 +163,17 @@ All ChatWidget options can now be customized directly in your Shopify theme usin
 | | `data-disclaimer-message` | `AI-generated responses` | Disclaimer text |
 | | `data-disclaimer-link-text` | - | Optional link text (e.g., "Learn more") |
 | | `data-disclaimer-link-url` | - | Optional URL to AI policy |
+| **Input Bar** | `data-input-bar-brand-bg` | Auto-derived | Brand pill background (input-bar mode only) |
+| | `data-input-bar-brand-text` | `#0066FF` | Brand text color (e.g., "Ask AI") |
+| | `data-input-bar-logo-bg` | `transparent` | Logo circle background |
+| | `data-input-bar-logo-icon` | Same as brand text | Logo icon color |
+| | `data-input-bar-button-bg` | Auto-derived | Menu button background |
+| | `data-input-bar-button-icon` | `#6B7280` | Menu button icon color |
+| | `data-input-bar-glow-color` | Auto-derived | Focus glow effect color |
 
 ### AgentClosedView Presentation Modes 🆕
 
-Control how the widget appears when closed using the `data-agent-closed-view` attribute. Choose from three distinct presentation modes:
+Control how the widget appears when closed using the `data-agent-closed-view` attribute. Choose from four distinct presentation modes:
 
 #### **Mode 1: Toggle Only** (`toggle-only`)
 Just the chat button, no external prompts. Clean and minimal.
@@ -235,6 +247,51 @@ data-agent-closed-view="welcome-card"
 data-welcome-message="Click below to chat!"
 <!-- No prompts defined = minimal card -->
 ```
+
+---
+
+#### **Mode 4: Input Bar** (`input-bar`) 🆕 **[v5 Required]**
+
+Modern AI search bar at bottom of screen. Perplexity/ChatGPT-style interface.
+
+> **Note**: This mode requires v5 or later. Make sure your script tag uses `/v5/widget.js`
+
+```html
+<script src="https://storage.googleapis.com/chatwidget-shopify-storage-for-cdn/shopify/v5/widget.js"
+        data-agent-token="YOUR_TOKEN"
+        data-agent-closed-view="input-bar"
+        data-toggle-text="Ask AI"
+        data-placeholder="Ask anything..."
+        data-welcome-message="How can I help you today?"
+        data-prompt-1="Product information"
+        data-prompt-2="Track my order"
+        data-prompt-3="Return policy"></script>
+```
+
+**Best for:**
+- Modern, AI-first user experiences
+- Mobile-optimized chat/search
+- Minimalist, clean designs
+- Sites inspired by ChatGPT/Perplexity UX
+
+**What customers see:**
+- Floating search bar centered at bottom of screen
+- Typewriter animation cycling through prompts
+- Brand logo + "Ask AI" text (collapses to circle on focus)
+- Prompts slide up above bar when customer clicks
+- Smooth animations and modern micro-interactions
+
+**Visual Design:**
+- **Unfocused**: Pill-shaped bar with logo, brand text, and typewriter placeholder
+- **Focused**: Brand collapses to circle, input expands, prompts appear above, menu button revealed
+- **Mobile**: Respects Safari safe areas, keyboard-optimized
+
+**Technical Features:**
+- Typewriter cycles: welcome message → prompt 1 → prompt 2 → prompt 3 → repeat
+- GPU-accelerated animations (60fps)
+- Safari iOS safe-area support (`env(safe-area-inset-bottom)`)
+- Progressive disclosure (menu appears on focus)
+- Enter to submit, Shift+Enter for multi-line
 
 ---
 
@@ -318,6 +375,21 @@ Classic floating prompts for customer support:
         data-prompt-1="Contact support"
         data-prompt-2="FAQ"
         data-prompt-3="Shipping info">
+</script>
+```
+
+#### **AI Search Experience (Input Bar)** 🆕
+Modern bottom search bar with typewriter effect:
+```html
+<script src="https://storage.googleapis.com/chatwidget-shopify-storage-for-cdn/shopify/v5/widget.js"
+        data-agent-token="YOUR_TOKEN"
+        data-agent-closed-view="input-bar"
+        data-toggle-text="Ask {{ shop.name }} AI"
+        data-welcome-message="Welcome to {{ shop.name }}! What are you looking for?"
+        data-prompt-1="Find products"
+        data-prompt-2="Track my order"
+        data-prompt-3="Help & Support"
+        data-toggle-bg-color="{{ settings.colors_accent_1 }}">
 </script>
 ```
 

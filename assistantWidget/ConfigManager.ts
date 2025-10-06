@@ -129,6 +129,18 @@ export class ConfigManager {
   }
 
   public getCSSVariables(): Record<string, string> {
+    // Derive input bar colors from toggle colors if not explicitly set
+    const inputBarBrandBg = this.theme.inputBarBrandBackground ||
+      `color-mix(in srgb, ${this.theme.toggleBackgroundColor} 8%, white)`;
+    const inputBarBrandText = this.theme.inputBarBrandText || '#0066FF'; // Electric blue
+    const inputBarLogoBg = this.theme.inputBarLogoBackground || 'transparent'; // No circle background
+    const inputBarLogoIcon = this.theme.inputBarLogoIcon || (this.theme.inputBarBrandText || '#0066FF'); // Match text
+    const inputBarButtonBg = this.theme.inputBarButtonBackground ||
+      `color-mix(in srgb, ${this.theme.toggleBackgroundColor} 10%, white)`;
+    const inputBarButtonIcon = this.theme.inputBarButtonIcon || '#6B7280';
+    const inputBarGlow = this.theme.inputBarGlowColor ||
+      `color-mix(in srgb, ${this.theme.toggleBackgroundColor} 30%, transparent)`;
+
     return {
       '--chat-text-color': this.theme.textColor,
       '--chat-background-color': this.theme.backgroundColor,
@@ -138,7 +150,15 @@ export class ConfigManager {
       '--chat-user-foreground-color': this.theme.userForegroundColor,
       '--chat-toggle-background-color': this.theme.toggleBackgroundColor,
       '--chat-toggle-text-color': this.theme.toggleTextColor,
-      '--chat-toggle-icon-color': this.theme.toggleIconColor
+      '--chat-toggle-icon-color': this.theme.toggleIconColor,
+      // Input Bar CSS Variables
+      '--input-bar-brand-background': inputBarBrandBg,
+      '--input-bar-brand-text': inputBarBrandText,
+      '--input-bar-logo-background': inputBarLogoBg,
+      '--input-bar-logo-icon': inputBarLogoIcon,
+      '--input-bar-button-background': inputBarButtonBg,
+      '--input-bar-button-icon': inputBarButtonIcon,
+      '--input-bar-glow-color': inputBarGlow
     };
   }
 

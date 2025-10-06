@@ -338,6 +338,7 @@ export default {
 | `toggleText` | `string` | No | `'Ask AI'` | Text on toggle button (corner variant) |
 | `initialMessage` | `string` | No | `'Hello'` | Initial message sent to agent |
 | `enableAttachments` | `boolean` | No | `true` | Enable file attachments |
+| `agentClosedView` | `'toggle-only' \| 'floating-prompts' \| 'welcome-card' \| 'input-bar'` | No | Auto | Widget presentation when closed |
 
 ### Message Prompts
 
@@ -364,6 +365,139 @@ const config = {
 | `prompts` | `string[]` | No | `[]` | Array of prompt buttons (max 3) |
 
 Prompts appear above the toggle button in corner variant and automatically send the message when clicked.
+
+### Presentation Modes (AgentClosedView)
+
+Control how the chat widget appears when closed using the `agentClosedView` configuration option. Choose from four distinct presentation modes:
+
+#### Mode 1: Toggle Only (`'toggle-only'`)
+Just the chat button, no external prompts. Clean and minimal.
+
+```javascript
+const config = {
+  agentClosedView: 'toggle-only',
+  toggleText: 'Chat with us'
+};
+```
+
+**Best for:**
+- Minimal, unobtrusive presence
+- Mobile-first designs
+- Sites with limited screen space
+
+**What users see:**
+- Only the chat toggle button
+- Prompts appear inside after opening
+
+---
+
+#### Mode 2: Floating Prompts (`'floating-prompts'`)
+Traditional floating bubbles with prompts. The classic approach.
+
+```javascript
+const config = {
+  agentClosedView: 'floating-prompts',
+  messagePrompts: {
+    welcome_message: 'How can I help you today?',
+    prompts: [
+      'What can you do?',
+      'Give me a tour',
+      'Help me get started'
+    ]
+  }
+};
+```
+
+**Best for:**
+- High engagement - prompts visible immediately
+- E-commerce sites with common questions
+- Traditional chat widget feel
+
+---
+
+#### Mode 3: Welcome Card (`'welcome-card'`)
+Modern glassmorphic card with prompts inside. Premium look and feel.
+
+```javascript
+const config = {
+  agentClosedView: 'welcome-card',
+  messagePrompts: {
+    welcome_message: 'Welcome! How can I help?',
+    prompts: [
+      'Product information',
+      'Support',
+      'Get started'
+    ]
+  }
+};
+```
+
+**Best for:**
+- Modern, premium aesthetic
+- Maximum visual impact
+- Sites with space for larger welcome element
+
+---
+
+#### Mode 4: Input Bar (`'input-bar'`) 🆕
+Modern AI search bar at bottom of screen with typewriter effect.
+
+```javascript
+const config = {
+  agentClosedView: 'input-bar',
+  toggleText: 'AI Mode',
+  placeholder: 'Ask anything...',
+  messagePrompts: {
+    welcome_message: 'How can I help you today?',
+    prompts: [
+      'Tell me about your features',
+      'How can you help?',
+      'What can you do?'
+    ]
+  },
+  // Input bar specific theming (optional)
+  theme: {
+    toggleBackgroundColor: '#0066FF',
+
+    // Input Bar Colors (optional - auto-derived if not specified)
+    inputBarBrandBackground: 'color-mix(in srgb, #0066FF 8%, white)',
+    inputBarBrandText: '#0066FF',           // "AI Mode" text color
+    inputBarLogoBackground: 'transparent',   // Logo background
+    inputBarLogoIcon: '#0066FF',            // Logo icon color
+    inputBarButtonBackground: 'color-mix(in srgb, #0066FF 10%, white)',
+    inputBarButtonIcon: '#6B7280',          // Menu button icon
+    inputBarGlowColor: 'color-mix(in srgb, #0066FF 30%, transparent)'
+  }
+};
+```
+
+**Best for:**
+- Modern AI-first interfaces (like Perplexity, ChatGPT)
+- Clean, focused user experience
+- Mobile-optimized search/chat experiences
+- Minimalist designs
+
+**What users see:**
+- Floating search bar at bottom center of screen
+- Typewriter effect cycling through prompts
+- Brand logo and "AI Mode" text (collapsible)
+- Prompts appear above bar when focused
+- Transforms: Brand pill → circle on focus
+
+**Key Features:**
+- **Typewriter Animation**: Cycles through welcome message + prompts
+- **Progressive Disclosure**: Menu button appears only on focus
+- **Collapsing Brand**: Logo pill collapses to circular icon when focused
+- **Safari Mobile Support**: Uses `env(safe-area-inset-bottom)` for iOS
+- **GPU Optimized**: Smooth 60fps animations
+- **Keyboard Support**: Enter to submit, Shift+Enter for new line
+
+---
+
+#### Default Behavior
+If `agentClosedView` is not specified:
+- **Floating prompts** mode if `messagePrompts.prompts` are defined
+- **Toggle only** mode if no prompts defined
 
 ### Theme Customization
 
@@ -393,6 +527,34 @@ const config = {
 ```
 
 **Theme Simplification**: The new ChatWidget uses a streamlined theme system focused on essential customization options. Message bubbles have been replaced with a Claude-style conversation layout using role labels.
+
+#### Input Bar Theme Properties
+
+When using `agentClosedView: 'input-bar'`, you can customize the input bar appearance with these optional properties. All auto-derive from toggle colors if not specified:
+
+| Property | Default (derives from) | Description |
+|----------|----------------------|-------------|
+| `inputBarBrandBackground` | `color-mix(toggleBg 8%, white)` | Brand pill background |
+| `inputBarBrandText` | `#0066FF` (electric blue) | "AI Mode" text color |
+| `inputBarLogoBackground` | `transparent` | Logo circle background |
+| `inputBarLogoIcon` | `inputBarBrandText` | Logo icon color |
+| `inputBarButtonBackground` | `color-mix(toggleBg 10%, white)` | Menu button background |
+| `inputBarButtonIcon` | `#6B7280` (gray) | Menu button icon |
+| `inputBarGlowColor` | `color-mix(toggleBg 30%, transparent)` | Focus glow effect |
+
+**Example:**
+```javascript
+theme: {
+  // Standard theme
+  toggleBackgroundColor: '#0066FF',
+
+  // Input bar inherits and derives from toggle
+  // OR override specifically:
+  inputBarBrandText: '#FF6B00',
+  inputBarLogoIcon: '#FF6B00',
+  inputBarGlowColor: 'rgba(255, 107, 0, 0.3)'
+}
+```
 
 ### Icon Customization
 

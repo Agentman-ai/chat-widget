@@ -478,7 +478,7 @@ export class ViewManager {
           ${icons.agentmanLogo}
         </div>
         <span class="am-chat-toggle-text">
-          ${this.config.toggleText || 'Ask AI'}
+          ${this.config.toggleText || 'AI Mode'}
         </span>
       </div>
     `;

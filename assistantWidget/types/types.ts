@@ -6,26 +6,36 @@ export type ChatVariant = 'inline' | 'corner' | 'centered';
  * - toggle-only: Just the chat button, no prompts shown externally
  * - floating-prompts: Traditional floating bubbles with prompts
  * - welcome-card: Glassmorphic card with prompts inside
+ * - input-bar: Modern AI search bar at bottom of screen with typewriter effect
  */
-export type ClosedViewMode = 'toggle-only' | 'floating-prompts' | 'welcome-card';
+export type ClosedViewMode = 'toggle-only' | 'floating-prompts' | 'welcome-card' | 'input-bar';
 
 export interface ChatTheme {
   // Core Colors
   textColor: string;
   backgroundColor: string;
-  
+
   // Buttons
   buttonColor: string;
   buttonTextColor: string;
-  
+
   // Messages (No Bubbles - Text Only)
   agentForegroundColor: string;
   userForegroundColor: string;
-  
+
   // Toggle Button (Including agentmanLogo)
   toggleBackgroundColor: string;
   toggleTextColor: string;
   toggleIconColor: string;
+
+  // Input Bar Colors (Optional - defaults derive from toggle colors)
+  inputBarBrandBackground?: string;     // Pill background color
+  inputBarBrandText?: string;           // "Ask AI" text color
+  inputBarLogoBackground?: string;      // Circular logo background
+  inputBarLogoIcon?: string;            // Icon color inside logo
+  inputBarButtonBackground?: string;    // Menu button background
+  inputBarButtonIcon?: string;          // Menu button icon color
+  inputBarGlowColor?: string;           // Focus glow effect color
 }
 
 export interface ChatAssets {

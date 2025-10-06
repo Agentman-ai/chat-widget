@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Input Bar Mode Test - Agentman Chat Widget</title>
+  <style>
+    body {
+      margin: 0;
+      padding: 40px;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      min-height: 100vh;
+    }
+    .container {
+      max-width: 800px;
+      margin: 0 auto;
+      background: white;
+      padding: 40px;
+      border-radius: 12px;
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+    }
+    h1 {
+      margin-top: 0;
+      color: #1a202c;
+    }
+    .info {
+      background: #f7fafc;
+      padding: 20px;
+      border-radius: 8px;
+      border-left: 4px solid #667eea;
+      margin: 20px 0;
+    }
+    .info h2 {
+      margin-top: 0;
+      font-size: 18px;
+      color: #2d3748;
+    }
+    .info ul {
+      margin-bottom: 0;
+    }
+    .info li {
+      margin: 8px 0;
+    }
+    .test-section {
+      margin: 30px 0;
+      padding: 20px;
+      background: #edf2f7;
+      border-radius: 8px;
+    }
+    .button {
+      background: #667eea;
+      color: white;
+      border: none;
+      padding: 12px 24px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 16px;
+      transition: all 0.2s;
+    }
+    .button:hover {
+      background: #5a67d8;
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+    }
+  </style>
+</head>
+<body>
+  <!-- Widget container -->
+  <div id="agentman-chat-widget"></div>
+
+  <div class="container">
+    <h1>🤖 Input Bar Mode Test</h1>
+
+    <div class="info">
+      <h2>Testing the new 'input-bar' agentClosedView mode</h2>
+      <ul>
+        <li><strong>Desktop:</strong> 460px centered bar at bottom</li>
+        <li><strong>Mobile:</strong> Full-width bar at bottom</li>
+        <li><strong>Typewriter effect:</strong> Animated welcome message</li>
+        <li><strong>Focus expansion:</strong> Bar grows and shows prompts</li>
+        <li><strong>Glassmorphism:</strong> Blur and transparency effects</li>
+        <li><strong>Icons:</strong> Plus (left), Microphone & Waveform (right)</li>
+      </ul>
+    </div>
+
+    <div class="test-section">
+      <h3>Interactive Test</h3>
+      <p>The input bar should appear at the bottom of the screen. Try:</p>
+      <ul>
+        <li>Click on the typewriter text to focus</li>
+        <li>Watch prompts appear above/below</li>
+        <li>Click a prompt to start conversation</li>
+        <li>Type a message and press Enter</li>
+        <li>Click the waveform icon to open the full chat</li>
+      </ul>
+    </div>
+
+    <button class="button" onclick="reloadWidget()">🔄 Reload Widget</button>
+  </div>
+
+  <!-- Load the widget -->
+  <script src="./dist/index.js"></script>
+  <script>
+    // Initialize widget with input-bar mode
+    const widget = new AgentmanChatWidget.ChatWidget({
+      apiUrl: 'https://api.agentman.ai',
+      agentToken: 'demo-token-12345',
+      variant: 'corner',
+      containerId: 'agentman-chat-widget',
+      title: 'Input Bar Demo',
+      initiallyOpen: false,
+      agentClosedView: 'input-bar',
+      messagePrompts: {
+        welcome_message: 'Ask me anything...',
+        prompts: [
+          'Tell me about your features',
+          'How can you help me?',
+          'What can you do?'
+        ]
+      },
+      theme: {
+        textColor: '#1a202c',
+        backgroundColor: '#ffffff',
+        buttonColor: '#667eea',
+        buttonTextColor: '#ffffff',
+        agentForegroundColor: '#2d3748',
+        userForegroundColor: '#667eea',
+        toggleBackgroundColor: '#667eea',
+        toggleTextColor: '#ffffff',
+        toggleIconColor: '#ffffff'
+      }
+    });
+
+    function reloadWidget() {
+      if (widget) {
+        widget.destroy();
+      }
+      window.location.reload();
+    }
+
+    console.log('Widget initialized with input-bar mode:', widget);
+  </script>
+</body>
+</html>

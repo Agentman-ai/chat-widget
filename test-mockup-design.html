@@ -1,0 +1,370 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Mockup Design Implementation - AI Input Bar</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Inter', 'Segoe UI', Roboto, sans-serif;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+    }
+
+    .comparison-container {
+      background: white;
+      border-radius: 16px;
+      padding: 32px;
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+      max-width: 800px;
+      width: 100%;
+    }
+
+    h1 {
+      font-size: 24px;
+      margin-bottom: 8px;
+      color: #111827;
+    }
+
+    .subtitle {
+      color: #6B7280;
+      margin-bottom: 32px;
+      font-size: 14px;
+    }
+
+    .design-section {
+      margin-bottom: 48px;
+    }
+
+    .design-label {
+      font-size: 12px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: #9CA3AF;
+      margin-bottom: 16px;
+    }
+
+    /* Mockup Design Implementation */
+    .input-bar-container {
+      position: relative;
+      padding: 40px 0;
+      background: #F9FAFB;
+      border-radius: 12px;
+      display: flex;
+      justify-content: center;
+    }
+
+    .am-chat-input-bar {
+      width: 520px;
+      max-width: calc(100% - 32px);
+    }
+
+    .am-chat-input-bar-main {
+      position: relative;
+      background: #FFFFFF;
+      border-radius: 24px;
+      padding: 0;
+      box-shadow:
+        0 4px 16px rgba(0, 0, 0, 0.08),
+        0 2px 8px rgba(0, 0, 0, 0.04),
+        0 0 0 1px rgba(0, 0, 0, 0.05);
+      display: flex;
+      align-items: center;
+      gap: 0;
+      min-height: 48px;
+      overflow: hidden;
+    }
+
+    /* Branded Zone - Integrated Design */
+    .am-chat-input-bar-brand {
+      display: flex;
+      align-items: center;
+      background: #E0F2FD;
+      border-radius: 24px 0 0 24px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      flex-shrink: 0;
+      position: relative;
+      padding-right: 16px;
+      padding-left: 44px;
+      height: 48px;
+    }
+
+    .am-chat-input-bar-brand:hover {
+      background: #DBEAFE;
+    }
+
+    /* Circular Logo */
+    .am-chat-input-bar-logo {
+      position: absolute;
+      left: 6px;
+      top: 50%;
+      transform: translateY(-50%);
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, #3B82F6, #2563EB);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 2px 8px rgba(59, 130, 246, 0.25);
+    }
+
+    /* AI Robot Icon */
+    .ai-icon {
+      width: 20px;
+      height: 20px;
+      fill: white;
+    }
+
+    /* Brand Text */
+    .am-chat-input-bar-brand-text {
+      font-size: 14px;
+      font-weight: 600;
+      color: #1E40AF;
+      white-space: nowrap;
+      letter-spacing: -0.01em;
+    }
+
+    /* Input Field */
+    .am-chat-input-bar-field {
+      flex: 1;
+      background: none;
+      border: none;
+      outline: none;
+      font-size: 15px;
+      color: #111827;
+      padding: 0 16px;
+      height: 48px;
+    }
+
+    .am-chat-input-bar-field::placeholder {
+      color: #9CA3AF;
+      font-weight: 400;
+    }
+
+    /* Right Icons */
+    .am-chat-input-bar-icons {
+      display: flex;
+      gap: 4px;
+      flex-shrink: 0;
+      padding-right: 8px;
+    }
+
+    .am-chat-input-bar-icon {
+      width: 36px;
+      height: 36px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: transparent;
+      border: none;
+      border-radius: 50%;
+      cursor: pointer;
+      color: #9CA3AF;
+      transition: all 0.2s ease;
+    }
+
+    .am-chat-input-bar-icon:hover {
+      background: rgba(0, 0, 0, 0.04);
+      color: #6B7280;
+    }
+
+    /* Comparison Notes */
+    .comparison-notes {
+      background: #FEF3C7;
+      border: 1px solid #FCD34D;
+      border-radius: 8px;
+      padding: 16px;
+      margin-top: 24px;
+    }
+
+    .comparison-notes h3 {
+      font-size: 14px;
+      color: #92400E;
+      margin-bottom: 8px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .comparison-notes ul {
+      margin: 0;
+      padding-left: 20px;
+      color: #78350F;
+      font-size: 13px;
+      line-height: 1.6;
+    }
+
+    /* Alternative Color Schemes */
+    .alt-scheme-1 .am-chat-input-bar-brand {
+      background: #E3F9FD; /* Cyan variant */
+    }
+
+    .alt-scheme-1 .am-chat-input-bar-logo {
+      background: linear-gradient(135deg, #06B6D4, #0891B2);
+    }
+
+    .alt-scheme-1 .am-chat-input-bar-brand-text {
+      color: #0E7490;
+    }
+
+    .alt-scheme-2 .am-chat-input-bar-brand {
+      background: #F3E8FF; /* Purple variant */
+    }
+
+    .alt-scheme-2 .am-chat-input-bar-logo {
+      background: linear-gradient(135deg, #A855F7, #9333EA);
+    }
+
+    .alt-scheme-2 .am-chat-input-bar-brand-text {
+      color: #7E22CE;
+    }
+  </style>
+</head>
+<body>
+  <div class="comparison-container">
+    <h1>AI Input Bar - Mockup Design Implementation</h1>
+    <p class="subtitle">Clean, modern design matching your mockup specifications</p>
+
+    <!-- Primary Design -->
+    <div class="design-section">
+      <div class="design-label">Primary Design - Blue Theme (#E0F2FD)</div>
+      <div class="input-bar-container">
+        <div class="am-chat-input-bar">
+          <div class="am-chat-input-bar-main">
+            <div class="am-chat-input-bar-brand">
+              <div class="am-chat-input-bar-logo">
+                <svg class="ai-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/>
+                </svg>
+              </div>
+              <span class="am-chat-input-bar-brand-text">Ask AI</span>
+            </div>
+            <input type="text" class="am-chat-input-bar-field" placeholder="Type your message here...">
+            <div class="am-chat-input-bar-icons">
+              <button class="am-chat-input-bar-icon">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3z"/>
+                  <path d="M19 10v2a7 7 0 0 1-14 0v-2"/>
+                  <line x1="12" y1="19" x2="12" y2="23"/>
+                  <line x1="8" y1="23" x2="16" y2="23"/>
+                </svg>
+              </button>
+              <button class="am-chat-input-bar-icon">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <line x1="22" y1="2" x2="11" y2="13"/>
+                  <polygon points="22 2 15 22 11 13 2 9 22 2"/>
+                </svg>
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Alternative Color Scheme 1 -->
+    <div class="design-section alt-scheme-1">
+      <div class="design-label">Alternative 1 - Cyan Theme (#E3F9FD)</div>
+      <div class="input-bar-container">
+        <div class="am-chat-input-bar">
+          <div class="am-chat-input-bar-main">
+            <div class="am-chat-input-bar-brand">
+              <div class="am-chat-input-bar-logo">
+                <svg class="ai-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/>
+                </svg>
+              </div>
+              <span class="am-chat-input-bar-brand-text">Ask AI</span>
+            </div>
+            <input type="text" class="am-chat-input-bar-field" placeholder="What can I help you with today?">
+            <div class="am-chat-input-bar-icons">
+              <button class="am-chat-input-bar-icon">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3z"/>
+                  <path d="M19 10v2a7 7 0 0 1-14 0v-2"/>
+                  <line x1="12" y1="19" x2="12" y2="23"/>
+                  <line x1="8" y1="23" x2="16" y2="23"/>
+                </svg>
+              </button>
+              <button class="am-chat-input-bar-icon">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <line x1="22" y1="2" x2="11" y2="13"/>
+                  <polygon points="22 2 15 22 11 13 2 9 22 2"/>
+                </svg>
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Alternative Color Scheme 2 -->
+    <div class="design-section alt-scheme-2">
+      <div class="design-label">Alternative 2 - Purple Theme (#F3E8FF)</div>
+      <div class="input-bar-container">
+        <div class="am-chat-input-bar">
+          <div class="am-chat-input-bar-main">
+            <div class="am-chat-input-bar-brand">
+              <div class="am-chat-input-bar-logo">
+                <svg class="ai-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/>
+                </svg>
+              </div>
+              <span class="am-chat-input-bar-brand-text">Ask AI</span>
+            </div>
+            <input type="text" class="am-chat-input-bar-field" placeholder="Ask me anything...">
+            <div class="am-chat-input-bar-icons">
+              <button class="am-chat-input-bar-icon">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3z"/>
+                  <path d="M19 10v2a7 7 0 0 1-14 0v-2"/>
+                  <line x1="12" y1="19" x2="12" y2="23"/>
+                  <line x1="8" y1="23" x2="16" y2="23"/>
+                </svg>
+              </button>
+              <button class="am-chat-input-bar-icon">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <line x1="22" y1="2" x2="11" y2="13"/>
+                  <polygon points="22 2 15 22 11 13 2 9 22 2"/>
+                </svg>
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Implementation Notes -->
+    <div class="comparison-notes">
+      <h3>
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+          <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-6h2v6zm0-8h-2V7h2v2z"/>
+        </svg>
+        Key Implementation Details
+      </h3>
+      <ul>
+        <li><strong>Solid Backgrounds:</strong> Removed glassmorphism, using solid #FFFFFF for main container</li>
+        <li><strong>Circular Avatar:</strong> 36px diameter circle with blue gradient (#3B82F6 to #2563EB)</li>
+        <li><strong>Integrated Pill:</strong> "Ask AI" zone uses #E0F2FD background, seamlessly connected to circle</li>
+        <li><strong>Clean Typography:</strong> 14px semibold text in #1E40AF (dark blue)</li>
+        <li><strong>Minimal Shadows:</strong> Subtle elevation with layered box-shadows</li>
+        <li><strong>48px Height:</strong> Standard height for optimal touch targets</li>
+        <li><strong>No Gaps:</strong> Circle overlaps pill for integrated appearance</li>
+      </ul>
+    </div>
+  </div>
+</body>
+</html>

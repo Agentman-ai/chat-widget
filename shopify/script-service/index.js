@@ -11,7 +11,7 @@
     'use strict';
     
     // Script metadata
-    const SCRIPT_VERSION = '5.13.1';
+    const SCRIPT_VERSION = '5.14.0';
     // Use your own CDN URL for the core widget
     const WIDGET_CDN = 'https://storage.googleapis.com/chatwidget-shopify-storage-for-cdn/core/chat-widget.js';
     
@@ -106,6 +106,16 @@
         if (!result.messagePrompts) result.messagePrompts = {};
         if (!result.persistence) result.persistence = {};
 
+        // Check if any prompt data attributes are provided
+        const hasAnyPromptOverride = Object.keys(overrides).some(key =>
+            key.startsWith('messagePrompts.prompt')
+        );
+
+        // If any prompt is provided via data attributes, clear defaults to start fresh
+        if (hasAnyPromptOverride && result.messagePrompts.prompts) {
+            result.messagePrompts.prompts = [];
+        }
+
         for (const [key, value] of Object.entries(overrides)) {
             if (value !== null && value !== undefined) {
                 if (key.includes('.')) {
@@ -192,11 +202,7 @@
         messagePrompts: {
             show: true,
             welcome_message: 'How can I help you today?',
-            prompts: [
-                'Track my order',
-                'Product information',
-                'Return policy'
-            ]
+            prompts: [] // No default prompts - must be configured via data attributes
         },
         
         // Advanced features

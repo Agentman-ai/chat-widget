@@ -13,6 +13,7 @@ import { notificationStyles } from './notifications';
 import { welcomeStyles } from './welcome';
 import { inputStyles } from './input';
 import { disclaimerStyles } from './disclaimer';
+import { inputBarStyles } from './input-bar';
 
 export class StyleManager {
   private styleElement: HTMLStyleElement | null = null;
@@ -33,6 +34,7 @@ export class StyleManager {
       welcomeStyles,
       inputStyles,
       disclaimerStyles,
+      inputBarStyles,
       variantStyles[this.variant],
       animationStyles,
       responsiveStyles

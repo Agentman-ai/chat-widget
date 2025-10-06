@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Debug Input Bar</title>
+  <style>
+    body {
+      margin: 0;
+      padding: 20px;
+      font-family: monospace;
+      background: #f0f0f0;
+      min-height: 100vh;
+    }
+    .debug-info {
+      background: white;
+      padding: 20px;
+      border-radius: 8px;
+      margin-bottom: 20px;
+    }
+    .debug-info pre {
+      background: #000;
+      color: #0f0;
+      padding: 10px;
+      border-radius: 4px;
+      overflow-x: auto;
+    }
+  </style>
+</head>
+<body>
+  <div class="debug-info">
+    <h2>Debug Console</h2>
+    <pre id="debug-output">Initializing...</pre>
+  </div>
+
+  <!-- Widget container -->
+  <div id="agentman-chat-widget"></div>
+
+  <!-- Load the widget -->
+  <script src="./dist/index.js"></script>
+  <script>
+    const debugEl = document.getElementById('debug-output');
+
+    function log(msg) {
+      console.log(msg);
+      debugEl.textContent += '\n' + msg;
+    }
+
+    log('Script loaded');
+
+    // Initialize widget with input-bar mode
+    try {
+      log('AgentmanChatWidget available: ' + (typeof AgentmanChatWidget !== 'undefined'));
+      log('AgentmanChatWidget.ChatWidget available: ' + (typeof AgentmanChatWidget?.ChatWidget !== 'undefined'));
+
+      const widget = new AgentmanChatWidget.ChatWidget({
+        apiUrl: 'https://api.agentman.ai',
+        agentToken: 'demo-token-12345',
+        variant: 'corner',
+        containerId: 'agentman-chat-widget',
+        title: 'Input Bar Debug',
+        initiallyOpen: false,
+        agentClosedView: 'input-bar',
+        messagePrompts: {
+          welcome_message: 'Ask me anything...',
+          prompts: [
+            'Test prompt 1',
+            'Test prompt 2',
+            'Test prompt 3'
+          ]
+        },
+        debug: true // Enable debug mode
+      });
+
+      log('Widget initialized: ' + (widget ? 'SUCCESS' : 'FAILED'));
+      log('Widget variant: ' + widget?.config?.variant);
+      log('Widget agentClosedView: ' + widget?.config?.agentClosedView);
+
+      // Check if input bar exists in DOM
+      setTimeout(() => {
+        const inputBar = document.querySelector('.am-chat-input-bar');
+        log('Input bar in DOM: ' + (inputBar ? 'YES' : 'NO'));
+
+        if (inputBar) {
+          const styles = window.getComputedStyle(inputBar);
+          log('Input bar position: ' + styles.position);
+          log('Input bar bottom: ' + styles.bottom);
+          log('Input bar left: ' + styles.left);
+          log('Input bar zIndex: ' + styles.zIndex);
+          log('Input bar display: ' + styles.display);
+          log('Input bar visibility: ' + styles.visibility);
+        }
+
+        // List all elements in body
+        log('\nAll body children:');
+        document.body.childNodes.forEach((node, i) => {
+          if (node.nodeType === 1) { // Element node
+            log(`  ${i}: <${node.tagName.toLowerCase()}> class="${node.className}"`);
+          }
+        });
+      }, 100);
+
+    } catch (err) {
+      log('ERROR: ' + err.message);
+      log('Stack: ' + err.stack);
+    }
+  </script>
+</body>
+</html>
