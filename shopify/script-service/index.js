@@ -78,6 +78,9 @@
         'theme.toggleTextColor': extractDataAttribute('toggle-text-color', '#ffffff'),
         'theme.toggleIconColor': extractDataAttribute('toggle-icon-color', '#ffffff'),
         
+        // AgentClosedView mode (NEW - recommended)
+        agentClosedView: extractDataAttribute('agent-closed-view', null),
+
         // Message prompts
         'messagePrompts.show': extractDataAttribute('show-prompts', true, v => v === 'true'),
         'messagePrompts.welcome_message': extractDataAttribute('welcome-message', 'How can I help you today?'),

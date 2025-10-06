@@ -260,11 +260,33 @@
                     </tr>
                     <tr>
                         <th scope="row">
+                            <label for="agentman_chat_widget_options[agent_closed_view]"><?php _e('Closed View Mode', 'agentman-chat-widget'); ?></label>
+                        </th>
+                        <td>
+                            <select id="agentman_chat_widget_options[agent_closed_view]" name="agentman_chat_widget_options[agent_closed_view]">
+                                <option value="" <?php selected('', isset($this->options['agent_closed_view']) ? $this->options['agent_closed_view'] : ''); ?>><?php _e('Default (based on prompts)', 'agentman-chat-widget'); ?></option>
+                                <option value="toggle-only" <?php selected('toggle-only', isset($this->options['agent_closed_view']) ? $this->options['agent_closed_view'] : ''); ?>><?php _e('Toggle Only', 'agentman-chat-widget'); ?></option>
+                                <option value="floating-prompts" <?php selected('floating-prompts', isset($this->options['agent_closed_view']) ? $this->options['agent_closed_view'] : ''); ?>><?php _e('Floating Prompts', 'agentman-chat-widget'); ?></option>
+                                <option value="welcome-card" <?php selected('welcome-card', isset($this->options['agent_closed_view']) ? $this->options['agent_closed_view'] : ''); ?>><?php _e('Welcome Card', 'agentman-chat-widget'); ?></option>
+                            </select>
+                            <p class="description">
+                                <?php _e('How to display the widget when closed:', 'agentman-chat-widget'); ?><br>
+                                <strong><?php _e('Toggle Only', 'agentman-chat-widget'); ?></strong> - <?php _e('Just the chat button', 'agentman-chat-widget'); ?><br>
+                                <strong><?php _e('Floating Prompts', 'agentman-chat-widget'); ?></strong> - <?php _e('Traditional floating bubbles with prompts', 'agentman-chat-widget'); ?><br>
+                                <strong><?php _e('Welcome Card', 'agentman-chat-widget'); ?></strong> - <?php _e('Glassmorphic card with prompts inside', 'agentman-chat-widget'); ?><br>
+                                <em><?php _e('Note: Prompts will only be shown on desktop devices.', 'agentman-chat-widget'); ?></em>
+                            </p>
+                        </td>
+                    </tr>
+                    <tr>
+                        <th scope="row">
                             <label for="agentman_chat_widget_options[show_prompts]"><?php _e('Show Message Prompts', 'agentman-chat-widget'); ?></label>
                         </th>
                         <td>
                             <input type="checkbox" id="agentman_chat_widget_options[show_prompts]" name="agentman_chat_widget_options[show_prompts]" value="1" <?php checked(1, isset($this->options['show_prompts']) ? $this->options['show_prompts'] : 1); ?> />
-                            <p class="description"><?php _e('Enable or disable the welcome message and prompt buttons. Note: Prompts will only be shown on desktop devices.', 'agentman-chat-widget'); ?></p>
+                            <p class="description">
+                                <em style="color: #d97706;"><?php _e('⚠️ DEPRECATED: Use "Closed View Mode" above instead. This option is kept for backward compatibility.', 'agentman-chat-widget'); ?></em>
+                            </p>
                         </td>
                     </tr>
                     <tr>

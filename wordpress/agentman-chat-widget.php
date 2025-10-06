@@ -125,7 +125,8 @@ class Agentman_Chat_Widget {
             'initially_open' => false,
             'initial_message' => 'Hello! How can I help you today?',
             'welcome_message' => 'How can I help you today?',
-            'show_prompts' => true,
+            'agent_closed_view' => '', // New: toggle-only, floating-prompts, or welcome-card
+            'show_prompts' => true, // Deprecated: kept for backward compatibility
             'prompt_1' => 'Tell me about your services',
             'prompt_2' => 'How do I get started?',
             'prompt_3' => 'I need help with...',
@@ -203,6 +204,11 @@ class Agentman_Chat_Widget {
         $sanitized['persistence_enabled'] = isset($input['persistence_enabled']) ? (bool) $input['persistence_enabled'] : true;
         $sanitized['hide_branding'] = isset($input['hide_branding']) ? (bool) $input['hide_branding'] : true;
         $sanitized['show_prompts'] = isset($input['show_prompts']) ? (bool) $input['show_prompts'] : true;
+
+        // AgentClosedView mode - validate against allowed values
+        $allowed_modes = array('', 'toggle-only', 'floating-prompts', 'welcome-card');
+        $agent_closed_view = isset($input['agent_closed_view']) ? sanitize_text_field($input['agent_closed_view']) : '';
+        $sanitized['agent_closed_view'] = in_array($agent_closed_view, $allowed_modes, true) ? $agent_closed_view : '';
         
         // Text options (with safety checks for required fields)
         $sanitized['agent_token'] = sanitize_text_field(isset($input['agent_token']) ? $input['agent_token'] : '');
@@ -390,8 +396,10 @@ class Agentman_Chat_Widget {
                 'enabled' => isset($this->options['persistence_enabled']) ? $this->options['persistence_enabled'] : true,
                 'days' => isset($this->options['persistence_days']) ? $this->options['persistence_days'] : 7
             ),
+            // AgentClosedView mode (NEW - recommended)
+            'agentClosedView' => isset($this->options['agent_closed_view']) && !empty($this->options['agent_closed_view']) ? $this->options['agent_closed_view'] : null,
             'messagePrompts' => array(
-                // Include the show option to toggle visibility
+                // Include the show option to toggle visibility (DEPRECATED - use agentClosedView instead)
                 'show' => isset($this->options['show_prompts']) ? (bool)$this->options['show_prompts'] : true,
                 // Properly escape the welcome message for JS
                 'welcome_message' => isset($this->options['welcome_message']) ? esc_js($this->options['welcome_message']) : '',
