@@ -68,21 +68,28 @@ shopify/
 
 ### Script Tag Example
 
-**Basic Installation:**
+**v5 (Latest - Recommended for New Installations):**
 ```html
-<script src="https://storage.googleapis.com/chatwidget-shopify-storage-for-cdn/shopify/v2/widget.js" 
+<script src="https://storage.googleapis.com/chatwidget-shopify-storage-for-cdn/shopify/v5/widget.js"
         data-agent-token="YOUR_AGENT_TOKEN"></script>
 ```
 
-**Customized Installation:**
+**v2 (Legacy - For Existing Installations):**
 ```html
-<script src="https://storage.googleapis.com/chatwidget-shopify-storage-for-cdn/shopify/v2/widget.js" 
+<script src="https://storage.googleapis.com/chatwidget-shopify-storage-for-cdn/shopify/v2/widget.js"
+        data-agent-token="YOUR_AGENT_TOKEN"></script>
+```
+
+**Customized Installation (v5 with all features):**
+```html
+<script src="https://storage.googleapis.com/chatwidget-shopify-storage-for-cdn/shopify/v5/widget.js"
         data-agent-token="YOUR_AGENT_TOKEN"
         data-title="{{ shop.name }} Assistant"
         data-bg-color="{{ settings.colors_background_1 }}"
         data-button-color="{{ settings.colors_accent_1 }}"
         data-text-color="{{ settings.colors_text }}"
         data-toggle-text="Chat with us"
+        data-agent-closed-view="welcome-card"
         data-welcome-message="Welcome to {{ shop.name }}! How can I help you today?"
         data-prompt-1="Track my order"
         data-prompt-2="Product information"
@@ -94,6 +101,18 @@ shopify/
         data-disclaimer-link-text="Learn more"
         data-disclaimer-link-url="https://{{ shop.domain }}/pages/ai-policy"></script>
 ```
+
+### What's New in v5? 🎉
+
+Version 5.2.0 includes major security and accessibility improvements:
+
+- **🔐 Security**: XSS vulnerability fixes using safe DOM APIs
+- **♿ Accessibility**: Full keyboard navigation with Arrow keys, Home/End, Enter/Space
+- **🎯 ARIA Support**: Comprehensive ARIA attributes for screen readers
+- **⚡ Performance**: Improved TypeScript type safety
+- **📱 Mobile**: Better touch and keyboard support
+
+**Upgrade from v2**: Simply change `v2` to `v5` in your script URL. No breaking changes!
 
 ## Configuration Options
 
@@ -125,7 +144,8 @@ All ChatWidget options can now be customized directly in your Shopify theme usin
 | | `data-toggle-bg-color` | `#2563eb` | Toggle button background |
 | | `data-toggle-text-color` | `#ffffff` | Toggle button text color |
 | | `data-toggle-icon-color` | `#ffffff` | Toggle button icon color |
-| **Content** | `data-show-prompts` | `true` | Show message prompts |
+| **Closed View** | `data-agent-closed-view` | `null` | Presentation mode: toggle-only, floating-prompts, welcome-card |
+| **Content** | `data-show-prompts` | `true` | (Deprecated) Show message prompts - use data-agent-closed-view |
 | | `data-welcome-message` | `How can I help you today?` | Welcome message |
 | | `data-prompt-1` | - | First quick prompt |
 | | `data-prompt-2` | - | Second quick prompt |
@@ -139,9 +159,108 @@ All ChatWidget options can now be customized directly in your Shopify theme usin
 | | `data-disclaimer-link-text` | - | Optional link text (e.g., "Learn more") |
 | | `data-disclaimer-link-url` | - | Optional URL to AI policy |
 
-### AI Disclaimer Feature 🆕
+### AgentClosedView Presentation Modes 🆕
 
-The widget now supports displaying an AI disclaimer to inform customers that responses are AI-generated:
+Control how the widget appears when closed using the `data-agent-closed-view` attribute. Choose from three distinct presentation modes:
+
+#### **Mode 1: Toggle Only** (`toggle-only`)
+Just the chat button, no external prompts. Clean and minimal.
+
+```html
+data-agent-closed-view="toggle-only"
+```
+
+**Best for:**
+- Minimal, unobtrusive presence
+- When you don't want to show prompts outside the widget
+- Mobile-first designs
+- Sites with limited screen space
+
+**What users see:**
+- Only the chat toggle button in the corner
+- Prompts appear inside the widget after opening
+
+---
+
+#### **Mode 2: Floating Prompts** (`floating-prompts`)
+Traditional floating bubbles with prompts. The classic approach.
+
+```html
+data-agent-closed-view="floating-prompts"
+data-welcome-message="How can I help you today?"
+data-prompt-1="Track my order"
+data-prompt-2="Product information"
+data-prompt-3="Return policy"
+```
+
+**Best for:**
+- High engagement - prompts visible immediately
+- E-commerce stores with common questions
+- Desktop-focused experiences
+- Traditional chat widget feel
+
+**What users see:**
+- Welcome message bubble above toggle button
+- 3 clickable prompt buttons
+- Traditional chat widget appearance
+
+---
+
+#### **Mode 3: Welcome Card** (`welcome-card`)
+Modern glassmorphic card with prompts inside. Premium look and feel.
+
+```html
+data-agent-closed-view="welcome-card"
+data-welcome-message="Welcome! How can I help?"
+data-prompt-1="What can you do?"
+data-prompt-2="Tell me about features"
+data-prompt-3="Get started"
+```
+
+**Best for:**
+- Modern, premium aesthetic
+- Apps that want a unique, standout design
+- Sites with space for a larger welcome element
+- Maximum visual impact
+
+**What users see:**
+- Beautiful glassmorphic card with blur effects
+- Welcome message and prompts contained inside
+- Toggle button integrated into the card
+- Smooth animations and hover effects
+
+**Minimal version** (no prompts):
+```html
+data-agent-closed-view="welcome-card"
+data-welcome-message="Click below to chat!"
+<!-- No prompts defined = minimal card -->
+```
+
+---
+
+#### **Default Behavior** (no attribute)
+If you don't specify `data-agent-closed-view`, the widget automatically chooses:
+- **Floating prompts** if you have prompts defined
+- **Toggle only** if no prompts are defined
+
+---
+
+#### **Migration from Old API**
+
+If you were using `data-show-prompts="false"`:
+```html
+<!-- OLD (still works but deprecated) -->
+data-show-prompts="false"
+
+<!-- NEW (recommended) -->
+data-agent-closed-view="toggle-only"
+```
+
+---
+
+### AI Disclaimer Feature
+
+The widget supports displaying an AI disclaimer to inform customers that responses are AI-generated:
 
 **Basic Disclaimer:**
 ```html
@@ -162,6 +281,46 @@ data-disclaimer-link-url="https://{{ shop.domain }}/pages/ai-policy"
 - Next to "Powered by Agentman" in the conversation view
 - Responsive design optimized for mobile devices
 
+### Quick Start Examples
+
+#### **E-Commerce Store (Recommended)**
+High-engagement setup with welcome card and order tracking:
+```html
+<script src="https://storage.googleapis.com/chatwidget-shopify-storage-for-cdn/shopify/v5/widget.js"
+        data-agent-token="YOUR_TOKEN"
+        data-agent-closed-view="welcome-card"
+        data-title="{{ shop.name }} Assistant"
+        data-welcome-message="Welcome to {{ shop.name }}! How can I help you?"
+        data-prompt-1="Track my order"
+        data-prompt-2="Product information"
+        data-prompt-3="Return policy"
+        data-button-color="{{ settings.colors_accent_1 }}">
+</script>
+```
+
+#### **Minimal Setup (Clean & Simple)**
+Just the essentials - toggle button only:
+```html
+<script src="https://storage.googleapis.com/chatwidget-shopify-storage-for-cdn/shopify/v5/widget.js"
+        data-agent-token="YOUR_TOKEN"
+        data-agent-closed-view="toggle-only"
+        data-title="{{ shop.name }} Support">
+</script>
+```
+
+#### **Support-Focused (Traditional)**
+Classic floating prompts for customer support:
+```html
+<script src="https://storage.googleapis.com/chatwidget-shopify-storage-for-cdn/shopify/v5/widget.js"
+        data-agent-token="YOUR_TOKEN"
+        data-agent-closed-view="floating-prompts"
+        data-welcome-message="Need help?"
+        data-prompt-1="Contact support"
+        data-prompt-2="FAQ"
+        data-prompt-3="Shipping info">
+</script>
+```
+
 ### Integration with Shopify Themes
 
 **Use Theme Colors:**
@@ -180,6 +339,15 @@ data-text-color="{{ settings.text_color }}"
 {% elsif template.name == 'cart' %}
   data-title="Checkout Help"
   data-prompt-1="Payment options"
+{% endif %}
+```
+
+**Conditional Presentation Modes:**
+```html
+{% if template.name == 'index' %}
+  data-agent-closed-view="welcome-card"
+{% else %}
+  data-agent-closed-view="toggle-only"
 {% endif %}
 ```
 
