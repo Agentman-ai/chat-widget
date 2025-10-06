@@ -1,5 +1,5 @@
 // ChatWidget.ts - Service-based ChatWidget architecture
-import type { ChatConfig, ChatState, ChatTheme, ChatAssets, Message } from './types/types';
+import type { ChatConfig, ChatState, ChatTheme, ChatAssets, Message, ClosedViewMode } from './types/types';
 import { PersistenceManager } from './PersistenceManager';
 import { ConfigManager } from './ConfigManager';
 import { StateManager } from './StateManager';
@@ -1509,39 +1509,83 @@ export class ChatWidget {
   }
 
   /**
-   * Show floating prompts when widget is closed
+   * Determine the AgentClosedView mode based on config (with backward compatibility)
+   * Priority: agentClosedView > showWelcomeCard > messagePrompts.show > default
+   */
+  private getClosedViewMode(): ClosedViewMode {
+    // 1. New explicit mode (highest priority)
+    if (this.config.agentClosedView) {
+      return this.config.agentClosedView;
+    }
+
+    // 2. Legacy showWelcomeCard
+    if (this.config.showWelcomeCard === true) {
+      return 'welcome-card';
+    }
+
+    // 3. Legacy messagePrompts.show
+    if (this.config.messagePrompts?.show === false) {
+      return 'toggle-only';
+    }
+
+    // 4. Default based on prompts (legacy behavior)
+    const prompts = this.config.messagePrompts?.prompts?.filter((p): p is string => !!p && p.trim().length > 0) || [];
+    if (prompts.length > 0) {
+      return 'floating-prompts'; // Default legacy behavior
+    }
+
+    return 'toggle-only';
+  }
+
+  /**
+   * Show AgentClosedView based on configuration
+   * Determines which mode to display: toggle-only, floating-prompts, or welcome-card
    */
   private showFloatingPrompts(): void {
-    if (this.config.variant !== 'corner' || !this.config.messagePrompts?.show) {
+    // Only show for corner variant
+    if (this.config.variant !== 'corner') {
       return;
     }
 
-    // Check if user has previously dismissed floating prompts
+    // Check if user has previously dismissed
     if (this.areFloatingPromptsDismissed()) {
-      this.logger.debug('Floating prompts previously dismissed, not showing');
+      this.logger.debug('AgentClosedView previously dismissed, not showing');
       return;
     }
 
-    // Check if floating prompts already exist
+    // Check if already exists
     const existingPrompts = document.querySelector('.am-chat-floating-prompts-container');
     const existingCard = document.querySelector('.am-chat-floating-welcome-card');
     if (existingPrompts || existingCard) return;
 
+    // Determine mode using new helper
+    const mode = this.getClosedViewMode();
+    this.logger.debug('AgentClosedView mode:', mode);
+
     // Filter non-empty prompts
-    const prompts = (this.config.messagePrompts.prompts?.filter((p): p is string => !!p && p.trim().length > 0) || []) as string[];
+    const prompts = (this.config.messagePrompts?.prompts?.filter((p): p is string => !!p && p.trim().length > 0) || []) as string[];
 
-    // Decision logic based on showWelcomeCard config
-    if (this.config.showWelcomeCard) {
-      // User explicitly wants welcome card - show it with or without prompts
-      this.showWelcomeCard(prompts);
-      return;
-    }
+    // Handle each mode
+    switch (mode) {
+      case 'toggle-only':
+        // Just the toggle button, nothing to show
+        this.logger.debug('Mode: toggle-only - no external UI');
+        return;
 
-    // showWelcomeCard is false or undefined
-    if (prompts.length === 0) {
-      // No prompts and no welcome card requested - show nothing
-      this.logger.debug('No prompts defined and welcome card disabled, showing nothing');
-      return;
+      case 'welcome-card':
+        // Show welcome card with or without prompts
+        this.logger.debug('Mode: welcome-card - showing card');
+        this.showWelcomeCard(prompts);
+        return;
+
+      case 'floating-prompts':
+        // Show traditional floating prompts
+        if (prompts.length === 0) {
+          this.logger.debug('Mode: floating-prompts but no prompts defined - showing nothing');
+          return;
+        }
+        this.logger.debug('Mode: floating-prompts - showing traditional bubbles');
+        break; // Continue to render floating prompts below
     }
 
     // Create floating prompts container
@@ -1549,7 +1593,7 @@ export class ChatWidget {
     floatingPrompts.className = 'am-chat-floating-prompts-container';
 
     // Add welcome message
-    const welcomeMessage = this.config.messagePrompts.welcome_message || 'How can I help you today?';
+    const welcomeMessage = this.config.messagePrompts?.welcome_message || 'How can I help you today?';
 
     floatingPrompts.innerHTML = `
       <div class="am-chat-floating-welcome-message">

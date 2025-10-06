@@ -1,0 +1,378 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AgentClosedView API Test</title>
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      padding: 20px;
+      background: #f5f5f5;
+    }
+    .header {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      padding: 32px;
+      border-radius: 16px;
+      margin-bottom: 24px;
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
+    }
+    .header h1 {
+      margin: 0 0 12px 0;
+      font-size: 32px;
+      font-weight: 700;
+    }
+    .header p {
+      margin: 0;
+      font-size: 16px;
+      opacity: 0.95;
+    }
+    .header code {
+      background: rgba(255, 255, 255, 0.2);
+      padding: 2px 6px;
+      border-radius: 4px;
+      font-size: 14px;
+    }
+    .controls {
+      background: white;
+      padding: 24px;
+      border-radius: 12px;
+      margin-bottom: 20px;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    }
+    .section {
+      margin-bottom: 32px;
+    }
+    .section h2 {
+      margin: 0 0 16px 0;
+      font-size: 20px;
+      font-weight: 600;
+      color: #1f2937;
+    }
+    .test-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 16px;
+    }
+    .test-card {
+      background: #f9fafb;
+      border: 2px solid #e5e7eb;
+      border-radius: 12px;
+      padding: 16px;
+      transition: all 0.2s;
+    }
+    .test-card:hover {
+      border-color: #667eea;
+      box-shadow: 0 4px 12px rgba(102, 126, 234, 0.1);
+    }
+    .test-card h3 {
+      margin: 0 0 8px 0;
+      font-size: 16px;
+      font-weight: 600;
+      color: #1f2937;
+    }
+    .test-card .mode-badge {
+      display: inline-block;
+      background: #667eea;
+      color: white;
+      padding: 4px 10px;
+      border-radius: 12px;
+      font-size: 11px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin-bottom: 12px;
+    }
+    .test-card .code {
+      background: #1f2937;
+      color: #10b981;
+      padding: 12px;
+      border-radius: 8px;
+      font-family: 'Monaco', 'Courier New', monospace;
+      font-size: 12px;
+      line-height: 1.6;
+      margin: 12px 0;
+      overflow-x: auto;
+    }
+    .test-card .code .key {
+      color: #60a5fa;
+    }
+    .test-card .code .string {
+      color: #fbbf24;
+    }
+    .test-btn {
+      width: 100%;
+      padding: 10px 16px;
+      border: none;
+      background: #667eea;
+      color: white;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 14px;
+      font-weight: 600;
+      transition: all 0.2s ease;
+    }
+    .test-btn:hover {
+      background: #5568d3;
+      transform: translateY(-1px);
+    }
+    .test-btn:active {
+      transform: translateY(0);
+    }
+    .expected {
+      margin-top: 12px;
+      padding: 10px;
+      background: #ecfdf5;
+      border-left: 3px solid #10b981;
+      font-size: 12px;
+      color: #065f46;
+      line-height: 1.5;
+    }
+    .expected strong {
+      display: block;
+      margin-bottom: 4px;
+    }
+    .reset-section {
+      text-align: center;
+      margin-top: 24px;
+    }
+    .reset-btn {
+      background: #dc2626;
+      max-width: 300px;
+    }
+    .reset-btn:hover {
+      background: #b91c1c;
+    }
+    .legacy-note {
+      background: #fef3c7;
+      border-left: 3px solid #f59e0b;
+      padding: 12px;
+      margin-top: 12px;
+      font-size: 12px;
+      color: #92400e;
+    }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <h1>🎨 AgentClosedView API</h1>
+    <p>Test the new simplified configuration with <code>agentClosedView</code></p>
+  </div>
+
+  <div class="controls">
+    <!-- NEW API SECTION -->
+    <div class="section">
+      <h2>✨ New API (Recommended)</h2>
+      <div class="test-grid">
+        <!-- Mode 1: toggle-only -->
+        <div class="test-card">
+          <div class="mode-badge">toggle-only</div>
+          <h3>Just Toggle Button</h3>
+          <div class="code"><span class="key">agentClosedView:</span> <span class="string">'toggle-only'</span></div>
+          <button class="test-btn" onclick="testNewToggleOnly()">Test</button>
+          <div class="expected">
+            <strong>Expected:</strong>
+            ✓ Only toggle button visible<br>
+            ✓ No external prompts<br>
+            ✓ Prompts still in WelcomeScreen
+          </div>
+        </div>
+
+        <!-- Mode 2: floating-prompts -->
+        <div class="test-card">
+          <div class="mode-badge">floating-prompts</div>
+          <h3>Traditional Floating Bubbles</h3>
+          <div class="code"><span class="key">agentClosedView:</span> <span class="string">'floating-prompts'</span></div>
+          <button class="test-btn" onclick="testNewFloatingPrompts()">Test</button>
+          <div class="expected">
+            <strong>Expected:</strong>
+            ✓ Floating prompt bubbles<br>
+            ✓ Welcome message bubble<br>
+            ✓ Traditional style
+          </div>
+        </div>
+
+        <!-- Mode 3: welcome-card -->
+        <div class="test-card">
+          <div class="mode-badge">welcome-card</div>
+          <h3>Glassmorphic Card</h3>
+          <div class="code"><span class="key">agentClosedView:</span> <span class="string">'welcome-card'</span></div>
+          <button class="test-btn" onclick="testNewWelcomeCard()">Test</button>
+          <div class="expected">
+            <strong>Expected:</strong>
+            ✓ Welcome card with blur<br>
+            ✓ Prompts inside card<br>
+            ✓ Modern glassmorphism
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- LEGACY API SECTION -->
+    <div class="section">
+      <h2>🔧 Legacy API (Still Works)</h2>
+      <div class="test-grid">
+        <!-- Legacy 1: messagePrompts.show = false -->
+        <div class="test-card">
+          <h3>Legacy: show = false</h3>
+          <div class="code">
+            messagePrompts: {<br>
+            &nbsp;&nbsp;<span class="key">show:</span> <span class="string">false</span><br>
+            }
+          </div>
+          <button class="test-btn" onclick="testLegacyShowFalse()">Test</button>
+          <div class="legacy-note">
+            ⚠️ Deprecated - Use <code>agentClosedView: 'toggle-only'</code> instead
+          </div>
+        </div>
+
+        <!-- Legacy 2: showWelcomeCard = true -->
+        <div class="test-card">
+          <h3>Legacy: showWelcomeCard</h3>
+          <div class="code">
+            <span class="key">showWelcomeCard:</span> <span class="string">true</span>
+          </div>
+          <button class="test-btn" onclick="testLegacyWelcomeCard()">Test</button>
+          <div class="legacy-note">
+            ⚠️ Deprecated - Use <code>agentClosedView: 'welcome-card'</code> instead
+          </div>
+        </div>
+
+        <!-- Legacy 3: Default behavior -->
+        <div class="test-card">
+          <h3>Legacy: Default</h3>
+          <div class="code">
+            // No agentClosedView<br>
+            // Has prompts
+          </div>
+          <button class="test-btn" onclick="testLegacyDefault()">Test</button>
+          <div class="legacy-note">
+            ℹ️ Falls back to floating-prompts
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="reset-section">
+      <button class="test-btn reset-btn" onclick="cleanup()">
+        🗑️ Clean Up / Reset
+      </button>
+    </div>
+  </div>
+
+  <script src="./dist/index.js"></script>
+  <script>
+    let currentWidget = null;
+
+    function cleanup() {
+      const card = document.querySelector('.am-chat-floating-welcome-card');
+      const prompts = document.querySelector('.am-chat-floating-prompts-container');
+      if (card) card.remove();
+      if (prompts) prompts.remove();
+
+      if (currentWidget) {
+        try {
+          currentWidget.destroy();
+        } catch (e) {
+          console.error('Error destroying widget:', e);
+        }
+        currentWidget = null;
+      }
+
+      try {
+        localStorage.clear();
+      } catch (e) {
+        console.error('Error clearing localStorage:', e);
+      }
+
+      console.log('✅ Cleaned up');
+    }
+
+    function initWidget(config) {
+      cleanup();
+
+      setTimeout(() => {
+        currentWidget = new AgentmanChatWidget.ChatWidget({
+          agentToken: 'test-token-' + Date.now(),
+          apiUrl: 'https://studio-api.agentman.ai',
+          containerId: 'agentman-chat-test',
+          variant: 'corner',
+          position: 'bottom-right',
+          title: 'AgentClosedView Test',
+          ...config
+        });
+      }, 300);
+    }
+
+    // NEW API TESTS
+    function testNewToggleOnly() {
+      console.log('NEW API: agentClosedView = toggle-only');
+      initWidget({
+        agentClosedView: 'toggle-only',
+        messagePrompts: {
+          welcome_message: 'How can I help you today?',
+          prompts: ['What can you do?', 'Tell me about features', 'Get started']
+        }
+      });
+    }
+
+    function testNewFloatingPrompts() {
+      console.log('NEW API: agentClosedView = floating-prompts');
+      initWidget({
+        agentClosedView: 'floating-prompts',
+        messagePrompts: {
+          welcome_message: 'Choose a prompt below:',
+          prompts: ['What can you do?', 'Tell me about features', 'Get started']
+        }
+      });
+    }
+
+    function testNewWelcomeCard() {
+      console.log('NEW API: agentClosedView = welcome-card');
+      initWidget({
+        agentClosedView: 'welcome-card',
+        messagePrompts: {
+          welcome_message: 'Welcome! How can I help?',
+          prompts: ['What can you do?', 'Tell me about features', 'Get started']
+        }
+      });
+    }
+
+    // LEGACY API TESTS
+    function testLegacyShowFalse() {
+      console.log('LEGACY: messagePrompts.show = false');
+      initWidget({
+        messagePrompts: {
+          show: false,
+          welcome_message: 'Hello!',
+          prompts: ['Q1', 'Q2', 'Q3']
+        }
+      });
+    }
+
+    function testLegacyWelcomeCard() {
+      console.log('LEGACY: showWelcomeCard = true');
+      initWidget({
+        showWelcomeCard: true,
+        messagePrompts: {
+          show: true,
+          welcome_message: 'Welcome!',
+          prompts: ['Q1', 'Q2', 'Q3']
+        }
+      });
+    }
+
+    function testLegacyDefault() {
+      console.log('LEGACY: Default behavior (floating-prompts)');
+      initWidget({
+        messagePrompts: {
+          show: true,
+          welcome_message: 'Hello! Choose a prompt:',
+          prompts: ['Q1', 'Q2', 'Q3']
+        }
+      });
+    }
+  </script>
+</body>
+</html>

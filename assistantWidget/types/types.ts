@@ -1,6 +1,14 @@
 // types.ts
 export type ChatVariant = 'inline' | 'corner' | 'centered';
 
+/**
+ * AgentClosedView modes - How to display the widget when closed
+ * - toggle-only: Just the chat button, no prompts shown externally
+ * - floating-prompts: Traditional floating bubbles with prompts
+ * - welcome-card: Glassmorphic card with prompts inside
+ */
+export type ClosedViewMode = 'toggle-only' | 'floating-prompts' | 'welcome-card';
+
 export interface ChatTheme {
   // Core Colors
   textColor: string;
@@ -40,12 +48,13 @@ export interface ChatIcons {
 export interface ChatConfig {
   /**
    * Optional message prompts for the welcome area.
-   * Only shown if at least one prompt is provided.
+   * Content is shared between AgentClosedView and WelcomeScreen.
    */
   messagePrompts?: {
-    show: boolean;
-    welcome_message: string;
-    prompts: [string?, string?, string?];
+    /** @deprecated Use agentClosedView instead to control visibility */
+    show?: boolean;
+    welcome_message?: string;
+    prompts?: [string?, string?, string?];
   };
 
   apiUrl: string;
@@ -121,12 +130,22 @@ export interface ChatConfig {
     linkUrl?: string;
   };
   /**
+   * @deprecated Use agentClosedView instead for clearer intent
    * Enable welcome card display (default: false)
    * - If true: Shows welcome card with or without prompts
    * - If false and no prompts: No card or prompts shown
    * - If false and has prompts: Shows traditional floating prompt bubbles
    */
   showWelcomeCard?: boolean;
+  /**
+   * AgentClosedView mode - How to display the widget when closed
+   * - 'toggle-only': Just the chat button, no prompts shown externally
+   * - 'floating-prompts': Traditional floating bubbles with prompts
+   * - 'welcome-card': Glassmorphic card with prompts inside
+   *
+   * If not specified, falls back to legacy showWelcomeCard and messagePrompts.show logic
+   */
+  agentClosedView?: ClosedViewMode;
 }
 
 export interface DebugConfig {
