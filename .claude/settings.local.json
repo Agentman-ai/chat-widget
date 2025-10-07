@@ -53,7 +53,8 @@
       "Bash(npx size-limit:*)",
       "Bash(npx tsc:*)",
       "Bash(npx eslint:*)",
-      "Bash(kill:*)"
+      "Bash(kill:*)",
+      "Bash(npm version:*)"
     ],
     "deny": []
   }

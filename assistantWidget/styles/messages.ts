@@ -348,7 +348,7 @@ export const messageStyles = `
 
   @media (max-width: 480px) {
     .am-message-content {
-      font-size: 13px;
+      font-size: 16px;
       padding: 0;  /* Keep padding consistent with desktop */
     }
     
