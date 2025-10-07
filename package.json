@@ -24,9 +24,10 @@
     "test": "jest --passWithNoTests",
     "lint": "eslint . --ext .ts",
     "docs": "mkdir -p docs && cp README.md docs/index.md",
-    "release:patch": "npm version patch",
-    "release:minor": "npm version minor",
-    "release:major": "npm version major",
+    "release": "./release.sh patch",
+    "release:patch": "./release.sh patch",
+    "release:minor": "./release.sh minor",
+    "release:major": "./release.sh major",
     "postversion": "git push && git push --tags",
     "version": "npm run build",
     "preversion": "echo 'Skipping lint check'"
