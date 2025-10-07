@@ -57,9 +57,9 @@ export const inputBarStyles = `
       /* Mid shadow */
       0 6px 24px rgba(0, 0, 0, 0.08),
       /* Brand glow - multi-layer for depth */
-      0 0 0 1px var(--input-bar-logo-background, var(--chat-toggle-background-color, #0066FF)),
-      0 0 32px var(--input-bar-glow-color, color-mix(in srgb, var(--chat-toggle-background-color, #0066FF) 40%, transparent)),
-      0 0 64px var(--input-bar-glow-color, color-mix(in srgb, var(--chat-toggle-background-color, #0066FF) 20%, transparent));
+      0 0 0 1px var(--chat-input-bar-logo-background, var(--chat-toggle-background-color, #0066FF)),
+      0 0 32px var(--chat-input-bar-glow-color, color-mix(in srgb, var(--chat-toggle-background-color, #0066FF) 40%, transparent)),
+      0 0 64px var(--chat-input-bar-glow-color, color-mix(in srgb, var(--chat-toggle-background-color, #0066FF) 20%, transparent));
     transform: translateY(-3px) scale(1.02); /* Subtle lift + scale */
     border-color: transparent;
   }
@@ -97,7 +97,7 @@ export const inputBarStyles = `
     display: flex;
     align-items: center;
     gap: 0;
-    background: var(--input-bar-brand-background, color-mix(in srgb, var(--chat-toggle-background-color, #0066FF) 8%, white));
+    background: var(--chat-input-bar-brand-background, color-mix(in srgb, var(--chat-toggle-background-color, #0066FF) 8%, white));
     border-radius: 24px 0 0 24px;
     cursor: pointer;
     transition: all 0.2s cubic-bezier(0.34, 1.56, 0.64, 1); /* Elastic easing */
@@ -120,7 +120,7 @@ export const inputBarStyles = `
   }
 
   .am-chat-input-bar-brand:hover {
-    background: color-mix(in srgb, var(--input-bar-brand-background, var(--chat-toggle-background-color, #3B82F6)) 120%, white);
+    background: color-mix(in srgb, var(--chat-input-bar-brand-background, var(--chat-toggle-background-color, #3B82F6)) 120%, white);
   }
 
   /* Brand Logo - No Circle, Just Icon */
@@ -131,7 +131,7 @@ export const inputBarStyles = `
     display: flex;
     align-items: center;
     justify-content: center;
-    color: var(--input-bar-logo-icon, var(--input-bar-brand-text, #0066FF));
+    color: var(--chat-input-bar-logo-icon, var(--chat-input-bar-brand-text, #0066FF));
     flex-shrink: 0;
     margin-right: 8px;
     transition: all 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
@@ -161,7 +161,7 @@ export const inputBarStyles = `
   .am-chat-input-bar-brand-text {
     font-size: 14px;
     font-weight: 600;
-    color: var(--input-bar-brand-text, #0066FF);
+    color: var(--chat-input-bar-brand-text, #0066FF);
     white-space: nowrap;
     font-family: -apple-system, BlinkMacSystemFont, 'Inter', 'Segoe UI', sans-serif;
     letter-spacing: -0.01em;
@@ -331,11 +331,11 @@ export const inputBarStyles = `
     display: flex;
     align-items: center;
     justify-content: center;
-    background: var(--input-bar-button-background, color-mix(in srgb, var(--chat-toggle-background-color, #3B82F6) 10%, white));
+    background: var(--chat-input-bar-button-background, color-mix(in srgb, var(--chat-toggle-background-color, #3B82F6) 10%, white));
     border: none;
     border-radius: 12px;
     cursor: pointer;
-    color: var(--input-bar-button-icon, #6B7280);
+    color: var(--chat-input-bar-button-icon, #6B7280);
     transition: all 0.25s cubic-bezier(0.34, 1.56, 0.64, 1); /* Elastic easing */
     margin-right: 8px;
     flex-shrink: 0;
@@ -355,8 +355,8 @@ export const inputBarStyles = `
   }
 
   .am-chat-input-bar-icon:hover {
-    background: color-mix(in srgb, var(--input-bar-button-background, var(--chat-toggle-background-color, #3B82F6)) 150%, white);
-    color: var(--input-bar-logo-background, var(--chat-toggle-background-color, #3B82F6));
+    background: color-mix(in srgb, var(--chat-input-bar-button-background, var(--chat-toggle-background-color, #3B82F6)) 150%, white);
+    color: var(--chat-input-bar-logo-background, var(--chat-toggle-background-color, #3B82F6));
   }
 
   .am-chat-input-bar-icon:active {
