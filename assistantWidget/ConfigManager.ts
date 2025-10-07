@@ -139,7 +139,7 @@ export class ConfigManager {
       `color-mix(in srgb, ${this.theme.toggleBackgroundColor} 10%, white)`;
     const inputBarButtonIcon = this.theme.inputBarButtonIcon || '#6B7280';
     const inputBarGlow = this.theme.inputBarGlowColor ||
-      `color-mix(in srgb, ${this.theme.toggleBackgroundColor} 30%, transparent)`;
+      (this.theme.inputBarBrandText || this.theme.toggleBackgroundColor);
 
     return {
       '--chat-text-color': this.theme.textColor,
@@ -152,13 +152,13 @@ export class ConfigManager {
       '--chat-toggle-text-color': this.theme.toggleTextColor,
       '--chat-toggle-icon-color': this.theme.toggleIconColor,
       // Input Bar CSS Variables
-      '--input-bar-brand-background': inputBarBrandBg,
-      '--input-bar-brand-text': inputBarBrandText,
-      '--input-bar-logo-background': inputBarLogoBg,
-      '--input-bar-logo-icon': inputBarLogoIcon,
-      '--input-bar-button-background': inputBarButtonBg,
-      '--input-bar-button-icon': inputBarButtonIcon,
-      '--input-bar-glow-color': inputBarGlow
+      '--chat-input-bar-brand-background': inputBarBrandBg,
+      '--chat-input-bar-brand-text': inputBarBrandText,
+      '--chat-input-bar-logo-background': inputBarLogoBg,
+      '--chat-input-bar-logo-icon': inputBarLogoIcon,
+      '--chat-input-bar-button-background': inputBarButtonBg,
+      '--chat-input-bar-button-icon': inputBarButtonIcon,
+      '--chat-input-bar-glow-color': inputBarGlow
     };
   }
 

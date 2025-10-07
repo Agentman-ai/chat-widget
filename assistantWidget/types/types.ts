@@ -35,7 +35,7 @@ export interface ChatTheme {
   inputBarLogoIcon?: string;            // Icon color inside logo
   inputBarButtonBackground?: string;    // Menu button background
   inputBarButtonIcon?: string;          // Menu button icon color
-  inputBarGlowColor?: string;           // Focus glow effect color
+  inputBarGlowColor?: string;           // Ambient glow/gradient color around input bar
 }
 
 export interface ChatAssets {

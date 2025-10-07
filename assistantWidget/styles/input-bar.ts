@@ -15,6 +15,79 @@ export const inputBarStyles = `
     max-height: 80dvh; /* Mobile keyboard handling */
   }
 
+  /* Subtle glow wrapper - sits behind the main input */
+  .am-chat-input-bar::before {
+    content: '';
+    position: absolute;
+    inset: -4px;
+    border-radius: 28px;
+    background: linear-gradient(
+      135deg,
+      rgba(99, 102, 241, 0.3) 0%,
+      rgba(168, 85, 247, 0.3) 25%,
+      rgba(236, 72, 153, 0.3) 50%,
+      rgba(99, 102, 241, 0.3) 100%
+    );
+    background-size: 200% 200%;
+    opacity: 0.4;
+    filter: blur(20px);
+    animation: inputBarGradientGlow 8s ease-in-out infinite;
+    z-index: -1;
+    pointer-events: none;
+    transition: all 0.3s ease;
+  }
+
+  @keyframes inputBarGradientGlow {
+    0%, 100% {
+      background-position: 0% 50%;
+    }
+    50% {
+      background-position: 100% 50%;
+    }
+  }
+
+  /* Subtle ambient orb - even further behind */
+  .am-chat-input-bar::after {
+    content: '';
+    position: absolute;
+    inset: -80px -60px;
+    background: radial-gradient(
+      ellipse at center,
+      rgba(139, 92, 246, 0.15) 0%,
+      rgba(168, 85, 247, 0.1) 30%,
+      transparent 60%
+    );
+    opacity: 0.3;
+    filter: blur(60px);
+    animation: inputBarOrbPulse 10s ease-in-out infinite;
+    z-index: -2;
+    pointer-events: none;
+    transition: all 0.3s ease;
+  }
+
+  @keyframes inputBarOrbPulse {
+    0%, 100% {
+      transform: scale(1);
+    }
+    50% {
+      transform: scale(1.05);
+    }
+  }
+
+  /* Moderate glow enhancement on focus */
+  .am-chat-input-bar:has(.am-chat-input-bar-main.focused)::before {
+    opacity: 0.7;
+    filter: blur(28px);
+    inset: -6px;
+    animation: inputBarGradientGlow 4s ease-in-out infinite;
+  }
+
+  .am-chat-input-bar:has(.am-chat-input-bar-main.focused)::after {
+    opacity: 0.5;
+    filter: blur(80px);
+    transform: scale(1.1);
+  }
+
   /* Mobile: Full width + safe area handling */
   @media (max-width: 768px) {
     .am-chat-input-bar {
@@ -23,89 +96,101 @@ export const inputBarStyles = `
     }
   }
 
-  /* Main Input Container - Expandable Design with Brand-Colored Glow */
+  /* Main Input Container - Premium Glassmorphism */
   .am-chat-input-bar-main {
     position: relative;
-    background: #FFFFFF;
+    background: rgba(255, 255, 255, 0.85);
+    backdrop-filter: blur(16px) saturate(180%);
+    -webkit-backdrop-filter: blur(16px) saturate(180%);
     border-radius: 24px;
     padding: 0;
     box-shadow:
-      0 4px 16px rgba(0, 0, 0, 0.08),
-      0 2px 8px rgba(0, 0, 0, 0.04),
-      0 0 0 1px rgba(0, 0, 0, 0.05);
-    border: 1px solid rgba(0, 0, 0, 0.08);
-    transition: all 0.2s cubic-bezier(0.34, 1.56, 0.64, 1); /* Elastic easing */
+      0 4px 24px rgba(0, 0, 0, 0.06),
+      0 1px 2px rgba(0, 0, 0, 0.08),
+      inset 0 1px 1px rgba(255, 255, 255, 0.5);
+    border: 1px solid rgba(255, 255, 255, 0.6);
+    transition: all 0.3s cubic-bezier(0.23, 1, 0.320, 1);
     display: flex;
     align-items: center;
     gap: 0;
-    height: 48px; /* Collapsed height */
-    overflow: hidden;
+    height: 48px;
+    overflow: visible;
     transform: translateZ(0);
     will-change: height, box-shadow, transform;
     backface-visibility: hidden;
     perspective: 1000px;
-    contain: layout style paint;
   }
 
-  /* Focused State - Height Expansion + Multi-Layer Glow */
+  /* Focused State - Enhanced Glassmorphism */
   .am-chat-input-bar-main.focused {
-    height: 80px; /* Fixed height */
-    align-items: center; /* Keep elements vertically centered */
+    height: 80px;
+    align-items: center;
+    background: rgba(255, 255, 255, 0.9);
+    backdrop-filter: blur(20px) saturate(200%);
+    -webkit-backdrop-filter: blur(20px) saturate(200%);
     box-shadow:
-      /* Primary shadow */
-      0 12px 48px rgba(0, 0, 0, 0.15),
-      /* Mid shadow */
-      0 6px 24px rgba(0, 0, 0, 0.08),
-      /* Brand glow - multi-layer for depth */
-      0 0 0 1px var(--chat-input-bar-logo-background, var(--chat-toggle-background-color, #0066FF)),
-      0 0 32px var(--chat-input-bar-glow-color, color-mix(in srgb, var(--chat-toggle-background-color, #0066FF) 40%, transparent)),
-      0 0 64px var(--chat-input-bar-glow-color, color-mix(in srgb, var(--chat-toggle-background-color, #0066FF) 20%, transparent));
-    transform: translateY(-3px) scale(1.02); /* Subtle lift + scale */
-    border-color: transparent;
+      0 8px 32px rgba(0, 0, 0, 0.08),
+      0 2px 4px rgba(0, 0, 0, 0.06),
+      inset 0 1px 2px rgba(255, 255, 255, 0.8);
+    transform: translateY(-2px) scale(1.01);
+    border: 1px solid rgba(255, 255, 255, 0.8);
   }
 
-  /* Gradient border effect on focus */
+  /* Show gradient border on focus */
   .am-chat-input-bar-main.focused::before {
-    content: '';
-    position: absolute;
-    inset: -2px;
-    border-radius: 26px;
-    padding: 2px;
-    background: linear-gradient(
-      45deg,
-      var(--chat-toggle-background-color, #0066FF),
-      color-mix(in srgb, var(--chat-toggle-background-color, #0066FF) 60%, #FF00FF)
-    );
-    -webkit-mask:
-      linear-gradient(#fff 0 0) content-box,
-      linear-gradient(#fff 0 0);
-    -webkit-mask-composite: xor;
-    mask-composite: exclude;
-    opacity: 0.8;
-    animation: glowPulse 3s ease-in-out infinite;
-    pointer-events: none;
-    z-index: -1;
+    opacity: 0.6;
+  }
+
+  /* Enhanced background gradient animation on focus */
+  .am-chat-input-bar-main.focused::after {
+    opacity: 0.5;
+    filter: blur(80px);
   }
 
   @keyframes glowPulse {
-    0%, 100% { opacity: 0.6; }
-    50% { opacity: 1; }
+    0%, 100% {
+      opacity: 0.6;
+      filter: saturate(1) brightness(1);
+    }
+    50% {
+      opacity: 1;
+      filter: saturate(1.3) brightness(1.15);
+    }
   }
 
-  /* Branded Zone - Fully Customizable */
+  /* Branded Zone - Refined Modern Design */
   .am-chat-input-bar-brand {
     display: flex;
     align-items: center;
     gap: 0;
     background: var(--chat-input-bar-brand-background, color-mix(in srgb, var(--chat-toggle-background-color, #0066FF) 8%, white));
     border-radius: 24px 0 0 24px;
+    border: 1px solid color-mix(in srgb, var(--chat-input-bar-brand-background, var(--chat-toggle-background-color, #0066FF)) 85%, white);
     cursor: pointer;
-    transition: all 0.2s cubic-bezier(0.34, 1.56, 0.64, 1); /* Elastic easing */
+    transition: all 0.3s cubic-bezier(0.23, 1, 0.320, 1);
     flex-shrink: 0;
     position: relative;
     padding-right: 16px;
     padding-left: 16px;
     height: 48px;
+    overflow: hidden;
+  }
+
+  /* Subtle gradient overlay for premium feel */
+  .am-chat-input-bar-brand::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: linear-gradient(
+      135deg,
+      rgba(255, 255, 255, 0.15) 0%,
+      transparent 50%
+    );
+    pointer-events: none;
+    border-radius: inherit;
   }
 
   /* Brand zone collapses to circular icon on focus */
@@ -120,7 +205,13 @@ export const inputBarStyles = `
   }
 
   .am-chat-input-bar-brand:hover {
-    background: color-mix(in srgb, var(--chat-input-bar-brand-background, var(--chat-toggle-background-color, #3B82F6)) 120%, white);
+    background: color-mix(in srgb, var(--chat-input-bar-brand-background, var(--chat-toggle-background-color, #3B82F6)) 110%, white);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+  }
+
+  .am-chat-input-bar-brand:active {
+    transform: scale(0.98) translateY(0);
   }
 
   /* Brand Logo - No Circle, Just Icon */
@@ -144,28 +235,40 @@ export const inputBarStyles = `
     height: 32px;
   }
 
-  /* Robot/AI Icon in Logo - Matches Text Color */
+  /* Robot/AI Icon in Logo - Clean with Micro-interactions */
   .am-chat-input-bar-logo svg {
     width: 28px;
     height: 28px;
-    transition: all 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
+    transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
   }
 
-  /* Scale up icon when focused */
+  /* Playful rotation on hover */
+  .am-chat-input-bar-brand:hover .am-chat-input-bar-logo svg {
+    transform: rotate(-8deg);
+  }
+
+  /* Scale up when focused with subtle shadow */
   .am-chat-input-bar-main.focused .am-chat-input-bar-logo svg {
     width: 32px;
     height: 32px;
+    filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.1));
   }
 
-  /* Brand Text - Electric Blue Default */
+  /* Brand Text - Clean and Confident */
   .am-chat-input-bar-brand-text {
     font-size: 14px;
-    font-weight: 600;
+    font-weight: 500;
     color: var(--chat-input-bar-brand-text, #0066FF);
     white-space: nowrap;
     font-family: -apple-system, BlinkMacSystemFont, 'Inter', 'Segoe UI', sans-serif;
-    letter-spacing: -0.01em;
-    transition: all 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
+    letter-spacing: -0.02em;
+    user-select: none;
+    transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
+  }
+
+  /* Subtle micro-interaction on hover */
+  .am-chat-input-bar-brand:hover .am-chat-input-bar-brand-text {
+    transform: translateX(2px);
   }
 
   /* Hide text when focused - only show icon */
@@ -271,6 +374,8 @@ export const inputBarStyles = `
     field-sizing: content; /* Auto-resize textarea */
     transition: font-size 0.2s cubic-bezier(0.34, 1.56, 0.64, 1), padding 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
     display: none; /* Hidden by default, shown via JS on focus */
+    position: relative;
+    
   }
 
   /* Larger font and more breathing room when focused */
@@ -303,6 +408,8 @@ export const inputBarStyles = `
     height: 48px; /* Match input field height */
     display: flex;
     align-items: center;
+    position: relative;
+    
   }
 
   .am-chat-input-bar-typewriter::after {
@@ -322,6 +429,8 @@ export const inputBarStyles = `
     gap: 4px;
     flex-shrink: 0;
     padding-right: 8px; /* Padding from right edge */
+    position: relative;
+    
   }
 
   /* Menu Icon Button - Integrated into Layout Flow */
@@ -390,26 +499,26 @@ export const inputBarStyles = `
     }
   }
 
-  /* Prompts Container - Floating Above Input Bar */
+  /* Prompts Container - Premium Glassmorphism */
   .am-chat-input-bar-prompts {
     position: absolute;
     left: 0;
     right: 0;
-    bottom: calc(100% + 8px); /* Above input bar */
-    background: rgba(255, 255, 255, 0.92);
-    backdrop-filter: blur(24px) saturate(200%);
-    -webkit-backdrop-filter: blur(24px) saturate(200%);
-    border-radius: 18px;
-    padding: 8px;
+    bottom: calc(100% + 12px);
+    background: rgba(255, 255, 255, 0.85);
+    backdrop-filter: blur(16px) saturate(180%);
+    -webkit-backdrop-filter: blur(16px) saturate(180%);
+    border-radius: 20px;
+    padding: 10px;
     box-shadow:
       0 4px 24px rgba(0, 0, 0, 0.06),
-      0 1px 6px rgba(0, 0, 0, 0.04),
-      inset 0 1px 0 rgba(255, 255, 255, 0.8);
-    border: 1px solid rgba(0, 0, 0, 0.06);
+      0 1px 2px rgba(0, 0, 0, 0.08),
+      inset 0 1px 1px rgba(255, 255, 255, 0.5);
+    border: 1px solid rgba(255, 255, 255, 0.6);
     display: flex;
     flex-wrap: wrap;
     justify-content: center;
-    gap: 6px;
+    gap: 8px;
     opacity: 0;
     transform: translateY(12px) scale(0.95);
     filter: blur(4px);
@@ -441,17 +550,19 @@ export const inputBarStyles = `
     }
   }
 
-  /* Prompt Button - Compact Pills */
+  /* Prompt Button - Glassmorphic Pills */
   .am-chat-input-bar-prompt {
     flex: 0 1 auto;
     padding: 8px 14px;
-    background: rgba(255, 255, 255, 0.8);
-    border: 1px solid rgba(0, 0, 0, 0.04);
-    border-radius: 10px;
+    background: rgba(255, 255, 255, 0.75);
+    backdrop-filter: blur(12px) saturate(150%);
+    -webkit-backdrop-filter: blur(12px) saturate(150%);
+    border: 1px solid rgba(255, 255, 255, 0.5);
+    border-radius: 12px;
     font-size: 13px;
-    color: #4b5563;
+    color: #374151;
     cursor: pointer;
-    transition: all 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
+    transition: all 0.2s cubic-bezier(0.23, 1, 0.320, 1);
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
@@ -460,14 +571,19 @@ export const inputBarStyles = `
     max-width: 280px;
     font-family: -apple-system, BlinkMacSystemFont, 'Inter', 'Segoe UI', sans-serif;
     font-weight: 450;
+    box-shadow:
+      0 1px 3px rgba(0, 0, 0, 0.04),
+      inset 0 1px 1px rgba(255, 255, 255, 0.3);
   }
 
   .am-chat-input-bar-prompt:hover {
-    background: white;
-    border-color: rgba(99, 102, 241, 0.2);
-    color: #1f2937;
-    transform: translateY(-1px) scale(1.02);
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+    background: rgba(255, 255, 255, 0.9);
+    border-color: rgba(255, 255, 255, 0.7);
+    color: #111827;
+    transform: translateY(-2px);
+    box-shadow:
+      0 4px 12px rgba(0, 0, 0, 0.06),
+      inset 0 1px 1px rgba(255, 255, 255, 0.5);
   }
 
   .am-chat-input-bar-prompt:active {
@@ -478,10 +594,12 @@ export const inputBarStyles = `
   @media (max-width: 480px) {
     .am-chat-input-bar-prompts {
       flex-direction: column;
+      align-items: center; /* Center prompts within container */
     }
 
     .am-chat-input-bar-prompt {
       width: 100%;
+      max-width: 100%; /* Ensure full width */
     }
   }
 
@@ -550,5 +668,16 @@ export const inputBarStyles = `
 
   .am-chat-input-bar.am-chat-input-bar-enter {
     animation: inputBarSlideUp 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  /* Accessibility: Respect user's motion preferences */
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+    }
   }
 `;
