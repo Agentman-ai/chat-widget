@@ -89,6 +89,10 @@ shopify/
         data-button-color="{{ settings.colors_accent_1 }}"
         data-text-color="{{ settings.colors_text }}"
         data-toggle-text="Chat with us"
+        data-initial-height="600px"
+        data-initial-width="400px"
+        data-mobile-height="100vh"
+        data-mobile-max-height="100vh"
         data-agent-closed-view="welcome-card"
         data-welcome-message="Welcome to {{ shop.name }}! How can I help you today?"
         data-prompt-1="Track my order"
@@ -134,8 +138,10 @@ All ChatWidget options can now be customized directly in your Shopify theme usin
 | | `data-position` | `bottom-right` | Position: bottom-right, bottom-left, etc. |
 | | `data-initially-open` | `false` | Open widget on page load |
 | | `data-enable-attachments` | `true` | Enable file attachments |
-| **Appearance** | `data-initial-height` | `600px` | Widget height when opened |
-| | `data-initial-width` | `400px` | Widget width when opened |
+| **Appearance** | `data-initial-height` | `600px` | Widget height when opened (desktop) |
+| | `data-initial-width` | `400px` | Widget width when opened (desktop) |
+| | `data-mobile-height` | `100vh` | Widget height on mobile devices |
+| | `data-mobile-max-height` | `100vh` | Maximum height on mobile devices |
 | | `data-title` | `AI Assistant` | Widget title in header |
 | | `data-placeholder` | `Type your message...` | Input placeholder text |
 | | `data-toggle-text` | `Ask AI` | Toggle button text |

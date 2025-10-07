@@ -203,6 +203,10 @@ const config = {
   initiallyOpen: false,
   initialHeight: '600px',
   initialWidth: '400px',
+
+  // Mobile-specific dimensions (optional)
+  mobileHeight: '100vh',        // Full viewport height on mobile
+  mobileMaxHeight: '100vh',     // Maximum height on mobile
   
   // Content and behavior
   title: 'AI Assistant',
@@ -331,8 +335,10 @@ export default {
 | `variant` | `'corner' \| 'centered' \| 'inline'` | No | `'corner'` | Widget placement style |
 | `position` | `'bottom-right' \| 'bottom-left' \| 'top-right' \| 'top-left'` | No | `'bottom-right'` | Position for corner variant |
 | `initiallyOpen` | `boolean` | No | `false` | Whether to open chat on load |
-| `initialHeight` | `string` | No | `'600px'` | Initial height of the widget |
-| `initialWidth` | `string` | No | `'400px'` | Initial width of the widget |
+| `initialHeight` | `string` | No | `'600px'` | Initial height of the widget (desktop) |
+| `initialWidth` | `string` | No | `'400px'` | Initial width of the widget (desktop) |
+| `mobileHeight` | `string` | No | `'100vh'` | Height of the widget on mobile |
+| `mobileMaxHeight` | `string` | No | `'100vh'` | Maximum height of the widget on mobile |
 | `title` | `string` | No | `'AI Assistant'` | Chat widget title |
 | `placeholder` | `string` | No | `'Type your message...'` | Input field placeholder |
 | `toggleText` | `string` | No | `'Ask AI'` | Text on toggle button (corner variant) |

@@ -98,6 +98,17 @@ export const variantStyles = {
       }
 
       @media (max-width: 640px) {
+        .am-chat-widget--corner .am-chat-container {
+          width: 100% !important;
+          height: var(--chat-mobile-height, 100vh) !important;
+          max-height: var(--chat-mobile-max-height, 100vh) !important;
+          left: 0 !important;
+          right: 0 !important;
+          bottom: 0 !important;
+          top: auto !important;
+          border-radius: 16px 16px 0 0 !important;
+        }
+
         .am-chat-widget--corner .am-chat-toggle {
           border-radius: 20px;
         }

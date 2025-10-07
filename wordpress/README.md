@@ -42,7 +42,7 @@ This plugin allows you to easily add the Agentman AI Agents to your WordPress we
 The plugin provides extensive customization options:
 
 - **General Settings**: Enable/disable the widget, placement, position
-- **Appearance**: Colors, logos, icons, dimensions
+- **Appearance**: Colors, logos, icons, dimensions (desktop and mobile)
 - **Content**: Widget title, placeholder text, initial message
 - **Persistence**: Configure conversation storage settings
 - **Advanced**: Preview functionality, reset to defaults
@@ -191,8 +191,16 @@ When using the persistence functionality, you should inform your users that thei
 1. Navigate to the Appearance tab in the settings
 2. Customize colors to match your brand
 3. Upload custom logos or icons if desired
-4. Configure widget dimensions
+4. Configure widget dimensions:
+   - **Desktop**: Initial Height and Initial Width (e.g., 600px × 400px)
+   - **Mobile**: Mobile Height and Mobile Max Height (e.g., 100vh for full screen)
 5. Preview changes and save
+
+**Mobile Dimensions:**
+- **Mobile Height**: Controls the height of the widget on mobile devices (default: 100vh)
+- **Mobile Max Height**: Sets the maximum height on mobile (default: 100vh)
+- Use viewport units (vh) for responsive sizing or fixed units (px) for consistent height
+- Common values: `100vh` (full screen), `80vh` (most of screen), `500px` (fixed height)
 
 ### Content Configuration
 

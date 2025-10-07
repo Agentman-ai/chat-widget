@@ -49,6 +49,8 @@
         position: extractDataAttribute('position', 'bottom-right'),
         initialHeight: extractDataAttribute('initial-height', '600px'),
         initialWidth: extractDataAttribute('initial-width', '460px'),
+        mobileHeight: extractDataAttribute('mobile-height', null),
+        mobileMaxHeight: extractDataAttribute('mobile-max-height', null),
         title: extractDataAttribute('title', 'AI Assistant'),
         placeholder: extractDataAttribute('placeholder', 'Ask me anything...'),
         toggleText: extractDataAttribute('toggle-text', 'Ask Agentman'),
@@ -77,7 +79,16 @@
         'theme.toggleBackgroundColor': extractDataAttribute('toggle-bg-color', '#2563eb'),
         'theme.toggleTextColor': extractDataAttribute('toggle-text-color', '#ffffff'),
         'theme.toggleIconColor': extractDataAttribute('toggle-icon-color', '#ffffff'),
-        
+
+        // Input Bar colors (for input-bar mode)
+        'theme.inputBarBrandBackground': extractDataAttribute('input-bar-brand-bg', null),
+        'theme.inputBarBrandText': extractDataAttribute('input-bar-brand-text', null),
+        'theme.inputBarLogoBackground': extractDataAttribute('input-bar-logo-bg', null),
+        'theme.inputBarLogoIcon': extractDataAttribute('input-bar-logo-icon', null),
+        'theme.inputBarButtonBackground': extractDataAttribute('input-bar-button-bg', null),
+        'theme.inputBarButtonIcon': extractDataAttribute('input-bar-button-icon', null),
+        'theme.inputBarGlowColor': extractDataAttribute('input-bar-glow-color', null),
+
         // AgentClosedView mode (NEW - recommended)
         agentClosedView: extractDataAttribute('agent-closed-view', null),
 

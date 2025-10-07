@@ -6,7 +6,6 @@ export const responsiveStyles = `
       height: 100vh;
       bottom: 0;
       right: 0;
-      border-radius: 0;
     }
 
     .am-chat-widget--centered {

@@ -808,37 +808,53 @@ export class ChatWidget {
     this.element.style.removeProperty('--chat-toggle-left');
     this.element.style.removeProperty('--chat-toggle-right');
 
+    // Apply desktop dimensions as CSS variables
+    if (this.config.initialWidth) {
+      this.element.style.setProperty('--chat-container-width', this.config.initialWidth);
+    }
+    if (this.config.initialHeight) {
+      this.element.style.setProperty('--chat-container-height', this.config.initialHeight);
+    }
+
+    // Apply mobile dimensions as CSS variables
+    if (this.config.mobileHeight) {
+      this.element.style.setProperty('--chat-mobile-height', this.config.mobileHeight);
+    }
+    if (this.config.mobileMaxHeight) {
+      this.element.style.setProperty('--chat-mobile-max-height', this.config.mobileMaxHeight);
+    }
+
     // Set position variables based on position config
     switch (position) {
       case 'bottom-right':
         this.element.style.setProperty('--chat-bottom', '12px');
         this.element.style.setProperty('--chat-right', '12px');
-        this.element.style.setProperty('--chat-container-bottom', '20px');
-        this.element.style.setProperty('--chat-container-right', '20px');
+        this.element.style.setProperty('--chat-container-bottom', '0px');
+        this.element.style.setProperty('--chat-container-right', '0px');
         this.element.style.setProperty('--chat-toggle-bottom', '12px');
         this.element.style.setProperty('--chat-toggle-right', '12px');
         break;
       case 'bottom-left':
         this.element.style.setProperty('--chat-bottom', '12px');
         this.element.style.setProperty('--chat-left', '12px');
-        this.element.style.setProperty('--chat-container-bottom', '20px');
-        this.element.style.setProperty('--chat-container-left', '20px');
+        this.element.style.setProperty('--chat-container-bottom', '0px');
+        this.element.style.setProperty('--chat-container-left', '0px');
         this.element.style.setProperty('--chat-toggle-bottom', '12px');
         this.element.style.setProperty('--chat-toggle-left', '12px');
         break;
       case 'top-right':
         this.element.style.setProperty('--chat-top', '12px');
         this.element.style.setProperty('--chat-right', '12px');
-        this.element.style.setProperty('--chat-container-top', '20px');
-        this.element.style.setProperty('--chat-container-right', '20px');
+        this.element.style.setProperty('--chat-container-top', '0px');
+        this.element.style.setProperty('--chat-container-right', '0px');
         this.element.style.setProperty('--chat-toggle-top', '12px');
         this.element.style.setProperty('--chat-toggle-right', '12px');
         break;
       case 'top-left':
         this.element.style.setProperty('--chat-top', '12px');
         this.element.style.setProperty('--chat-left', '12px');
-        this.element.style.setProperty('--chat-container-top', '20px');
-        this.element.style.setProperty('--chat-container-left', '20px');
+        this.element.style.setProperty('--chat-container-top', '0px');
+        this.element.style.setProperty('--chat-container-left', '0px');
         this.element.style.setProperty('--chat-toggle-top', '12px');
         this.element.style.setProperty('--chat-toggle-left', '12px');
         break;
@@ -1926,11 +1942,18 @@ export class ChatWidget {
       toggleButton.style.position = 'relative';
       toggleButton.style.transform = 'none';
 
-      // Override click handler to dismiss card and open widget
+      // Override click handler to dismiss card, then trigger original handler to open widget
       toggleButton.onclick = (e: MouseEvent) => {
         e.preventDefault();
         e.stopPropagation();
-        this.dismissWelcomeCard(card, true);
+        // Dismiss card but don't emit toggle event - we'll call original handler after
+        this.dismissWelcomeCard(card, false);
+        // After card animation completes, call the original handler to open widget
+        setTimeout(() => {
+          if (originalOnClick) {
+            originalOnClick.call(toggleButton, e);
+          }
+        }, 550); // After animation (400ms) + buffer (150ms)
       };
     }
 

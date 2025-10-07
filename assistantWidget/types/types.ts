@@ -79,6 +79,10 @@ export interface ChatConfig {
   position?: 'bottom-right' | 'bottom-left' | 'top-right' | 'top-left';
   initialHeight?: string;
   initialWidth?: string;
+  /** Mobile-specific height (defaults to 100vh) */
+  mobileHeight?: string;
+  /** Mobile-specific max height (defaults to 100vh) */
+  mobileMaxHeight?: string;
   assets?: Partial<ChatAssets>;
   icons?: Partial<ChatIcons>;
   toggleText?: string;
