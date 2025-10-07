@@ -2292,6 +2292,11 @@ export class ChatWidget {
 
     // Typewriter click handler
     const typewriterClickHandler = () => {
+      // Stop typewriter animation before hiding
+      if (this.inputBarTypewriterCleanup) {
+        this.inputBarTypewriterCleanup();
+        this.inputBarTypewriterCleanup = null;
+      }
       typewriterText.style.display = 'none';
       inputField.style.display = 'block';
       inputField.focus();
@@ -2306,8 +2311,14 @@ export class ChatWidget {
     const inputBlurHandler = () => {
       setTimeout(() => {
         if (!inputField.value.trim()) {
+          // Clean up any existing animation first
+          if (this.inputBarTypewriterCleanup) {
+            this.inputBarTypewriterCleanup();
+            this.inputBarTypewriterCleanup = null;
+          }
           inputField.style.display = 'none';
-          typewriterText.style.display = 'block';
+          typewriterText.style.display = 'flex'; // Use flex to maintain vertical centering
+          // Start fresh typewriter animation
           this.inputBarTypewriterCleanup = this.startTypewriterEffectCycling(
             typewriterText,
             typewriterMessages

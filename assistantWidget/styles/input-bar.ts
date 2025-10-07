@@ -50,6 +50,7 @@ export const inputBarStyles = `
   /* Focused State - Height Expansion + Multi-Layer Glow */
   .am-chat-input-bar-main.focused {
     height: 80px; /* Fixed height */
+    align-items: center; /* Keep elements vertically centered */
     box-shadow:
       /* Primary shadow */
       0 12px 48px rgba(0, 0, 0, 0.15),
@@ -269,6 +270,7 @@ export const inputBarStyles = `
     overflow-y: auto;
     field-sizing: content; /* Auto-resize textarea */
     transition: font-size 0.2s cubic-bezier(0.34, 1.56, 0.64, 1), padding 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
+    display: none; /* Hidden by default, shown via JS on focus */
   }
 
   /* Larger font and more breathing room when focused */
@@ -405,6 +407,8 @@ export const inputBarStyles = `
       inset 0 1px 0 rgba(255, 255, 255, 0.8);
     border: 1px solid rgba(0, 0, 0, 0.06);
     display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
     gap: 6px;
     opacity: 0;
     transform: translateY(12px) scale(0.95);
@@ -439,7 +443,7 @@ export const inputBarStyles = `
 
   /* Prompt Button - Compact Pills */
   .am-chat-input-bar-prompt {
-    flex: 1;
+    flex: 0 1 auto;
     padding: 8px 14px;
     background: rgba(255, 255, 255, 0.8);
     border: 1px solid rgba(0, 0, 0, 0.04);
@@ -451,6 +455,9 @@ export const inputBarStyles = `
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
+    text-align: center;
+    min-width: 120px;
+    max-width: 280px;
     font-family: -apple-system, BlinkMacSystemFont, 'Inter', 'Segoe UI', sans-serif;
     font-weight: 450;
   }
