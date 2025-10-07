@@ -1885,8 +1885,12 @@ export class ChatWidget {
         // Click handler
         button.addEventListener('click', () => {
           const prompt = prompts[index];
-          this.dismissWelcomeCard(card, false);
-          this.eventBus.emit('user:prompt_click', { prompt });
+          // Dismiss card and open widget
+          this.dismissWelcomeCard(card, true);
+          // Send prompt after card animation and widget open completes
+          setTimeout(() => {
+            this.eventBus.emit('user:prompt_click', { prompt });
+          }, 600); // After animation (400ms) + widget open + buffer
         });
 
         // Keyboard navigation
