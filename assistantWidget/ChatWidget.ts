@@ -2214,6 +2214,15 @@ export class ChatWidget {
     const inputBar = document.createElement('div');
     inputBar.className = 'am-chat-input-bar am-chat-input-bar-enter';
 
+    // Apply theme CSS variables to input bar (since it's appended to body, not widget element)
+    Object.entries(this.theme).forEach(([key, value]) => {
+      if (value) {
+        const kebabKey = key.replace(/([a-z0-9]|(?=[A-Z]))([A-Z])/g, '$1-$2').toLowerCase();
+        const cssVarName = `--chat-${kebabKey}`;
+        inputBar.style.setProperty(cssVarName, value);
+      }
+    });
+
     // Create main input container
     const mainContainer = document.createElement('div');
     mainContainer.className = 'am-chat-input-bar-main';

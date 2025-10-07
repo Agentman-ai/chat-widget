@@ -3,7 +3,7 @@ export const logo = `
 <svg id="eGF4vShlzWg1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="0 0 482 463" shape-rendering="geometricPrecision" text-rendering="geometricPrecision" project-id="b6a2902621314759b6f55f35963e502f" export-id="3ac2b3de3acd4688a4d0e052043a141a" cached="false">
   <style>
     .main-color {
-      fill: var(--input-bar-logo-icon, var(--chat-toggle-icon-color, #0066FF));
+      fill: var(--chat-input-bar-logo-icon, var(--chat-toggle-icon-color, #0066FF));
     }
   </style>
   <ellipse rx="195.69139" ry="195.69139" transform="matrix(1.029699 0 0 1.029699 240.53478 231.5)" class="main-color" stroke-width="0"/>
